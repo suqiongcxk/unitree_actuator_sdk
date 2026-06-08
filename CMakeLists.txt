@@ -4,7 +4,7 @@ project(unitree_actuator_sdk)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
-include_directories(include)
+include_directories(include motor_lib)
 link_directories(lib)
 
 if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64") 
@@ -44,3 +44,13 @@ target_link_libraries(motor_controller ${EXTRA_LIBS})
 
 add_executable(example_usage motor_lib/example_usage.cpp)
 target_link_libraries(example_usage motor_controller ${EXTRA_LIBS})
+
+# 多路并行总线（fast_gpio + parallel_bus）
+add_library(fast_gpio motor_lib/fast_gpio.cpp)
+target_link_libraries(fast_gpio ${EXTRA_LIBS})
+
+add_library(parallel_bus motor_lib/parallel_bus.cpp)
+target_link_libraries(parallel_bus fast_gpio motor_controller ${EXTRA_LIBS})
+
+add_executable(example_multi_bus motor_lib/example_multi_bus.cpp)
+target_link_libraries(example_multi_bus parallel_bus fast_gpio motor_controller ${EXTRA_LIBS} pthread)
