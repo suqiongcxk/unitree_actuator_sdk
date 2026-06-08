@@ -34,3 +34,13 @@ add_subdirectory(thirdparty/pybind11)
 pybind11_add_module(unitree_actuator_sdk thirdparty/python_wrapper/wrapper.cpp)
 target_link_libraries(unitree_actuator_sdk PRIVATE ${EXTRA_LIBS})
 set_target_properties(unitree_actuator_sdk PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${LIBRARY_OUTPUT_PATH}")
+
+add_executable(motor_test example/example_goM8010_6_orangepi.cpp)
+target_link_libraries(motor_test ${EXTRA_LIBS})
+
+# motor_lib — GO-M8010-6 motor control library
+add_library(motor_controller motor_lib/motor_controller.cpp)
+target_link_libraries(motor_controller ${EXTRA_LIBS})
+
+add_executable(example_usage motor_lib/example_usage.cpp)
+target_link_libraries(example_usage motor_controller ${EXTRA_LIBS})
