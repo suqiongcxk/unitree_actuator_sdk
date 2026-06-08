@@ -1,0 +1,169 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║          四足机器人 MPC+WBC 运控 — 开发路线图                                ║
+║          从仿真到真机部署的三阶段框架                                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━ 项目信息 ━━━━━━━━━━━━━━━━
+
+  机器人名称: Creeper
+  PC仿真: suqiongcxk/MOJUKO_MPC_VMWARE
+          (OCS2 + qpOASES + Pinocchio + MuJoCo 3.2.2 + ROS 2 Humble)
+  电机驱动: suqiongcxk/unitree_actuator_sdk
+          (motor_lib + FastGPIO + MultiBusController)
+  目标平台: Orange Pi 5 Pro (ARM64, RK3588S) + GO-M8010-6 × 12
+  IMU:    JY901S (IIC, 自带EKF姿态融合, 输出四元数)
+
+━━━━━━━━━━━━━━━━━ Creeper 机械参数 ━━━━━━━━━━━━━━━━
+
+  构型:     3DOF×4腿 = 12关节 (Hip Roll + Hip Pitch + Knee)
+  驱动方式:  关节电机直驱 (GO-M8010-6, 含内置减速器, 无额外减速)
+  全机质量:  ~11.5 kg (基座 6kg + 4腿 × ~1.37kg)
+  基座尺寸:  270 × 160 × 150 mm (碰撞盒)
+  大腿长度:  ~210 mm
+  小腿长度:  ~213 mm (含足端球 ~15mm半径)
+  关节力矩:  23.7 N·m (各关节一致)
+  关节速度:  30.1 rad/s (各关节一致)
+  关节限位:  Hip ±60° / 前Thigh -90°~200° / 后Thigh -30°~260° / 小腿 -156°~ -48°
+
+  URDF:      Creeper/urdf/Creeper.urdf  ✓ 已有
+  Mesh:      Creeper/meshes/ (13个STL) ✓ 已有
+
+═══════════════════════════════════════════════════════════════════════════════
+第一阶段: 仿真适配 (PC 虚拟机)
+═══════════════════════════════════════════════════════════════════════════════
+
+目标: 用 Creeper URDF 替换 B1，跑通 MuJoCo 仿真，站立→行走→跳跃
+
+[1.1] URDF 转 MuJoCo XML ★ 现在就可以开始
+  ├── 输入: Creeper/urdf/Creeper.urdf + Creeper/meshes/*.stl
+  ├── 目标: 生成 mujoco_simulator/models/creeper/creeper.xml
+  │          (MuJoCo 原生是 MJCF/XML 格式，URDF 需要转换)
+  ├── 转换方式:
+  │   方案A: MuJoCo 自带编译工具 mj_compile() 直接加载 URDF
+  │   方案B: 手动编写 MJCF (更可控，推荐)
+  ├── 关键: collision 几何体已定义 (圆柱/盒子/球)，直接可用
+  └── 输出: 一个 MuJoCo 能加载的模型 + 能显示的仿真画面
+
+[1.2] 扩展 launch 脚本支持 creeper
+  ├── launch_simulation/legged_robot_sqp.launch.py 目前只支持 a1/b1
+  ├── 添加 robot_type:=creeper → 加载对应模型和配置
+  └── 创建 config/creeper/ 目录:
+      ├── task.info      (基于 Creeper 实际参数)
+      ├── reference.info (站立构型关节角)
+      └── gait.info      (复用现有12种步态)
+
+[1.3] MPC 参数整定 (基于 ~11.5kg 机身)
+  ├── task.info 关键参数:
+  │   质量 11.5 kg / 质心高度 ~0.0m (base_link原点) / 力矩 23.7 N·m
+  │   摩擦系数 μ=0.3~0.5  / 预测时域 1.0s / 步长 0.015s (67Hz)
+  ├── 重新整定 Q/R 权重 (质量降为B1的~1/3，权重需相应调整)
+  └── 观察: 接触力、力矩曲线、跟踪误差
+
+[1.4] 仿真验证阶梯
+  站立60秒不倒 → Trot 速度0.3→0.8 m/s → 跳跃落地
+
+─── 产出 ───
+  Creeper MuJoCo 仿真模型 + 配置文件 + 整定好的MPC参数
+
+═══════════════════════════════════════════════════════════════════════════════
+第二阶段: 香橙派硬件层 + 状态估计
+═══════════════════════════════════════════════════════════════════════════════
+
+目标: motor_lib 跑通 12 电机，JY901S 数据可用，UDP 遥测链路通
+
+[2.1] 电机驱动对接 (已有基础)
+  ├── motor_lib 在 ~/unitree_actuator_sdk/motor_lib/ 就绪
+  ├── Wire up: 12电机 × 4路RS-485 + GPIO方向控制
+  ├── 按实际 GPIO 接线修改 BUS_CONFIGS
+  └── 验证: FOC模式全电机 @ 500Hz，丢包 < 1%
+
+[2.2] JY901S IMU 驱动
+  ├── 接口: I2C (/dev/i2c-*), 地址通常 0x50
+  ├── 模块内部自带 EKF (加速度+陀螺+磁力计 → 四元数)
+  │   → 直接读寄存器拿四元数 + 加速度 + 角速度
+  ├── C++ 类: JY901S imu("/dev/i2c-1");
+  │   imu.read() → {quat[w,x,y,z], accel, gyro}
+  └── 好处: 比 MPU6050 省掉姿态解算环节，降低状态估计难度
+
+[2.3] 状态估计适配
+  ├── JY901S 已输出四元数姿态 → 卡尔曼滤波只需估计:
+  │   base_velocity + foot_position (不需要姿态融合)
+  ├── 现有 LinearKalmanFilter.cpp 可裁剪简化
+  └── 共用 computeCentroidalStateFromRbdModel() 函数
+
+[2.4] UDP 遥测
+  ├── 独立线程 50Hz: 电机状态[12] + IMU四元数 → PC
+  ├── PC 端: Python matplotlib 实时画图
+  └── 不依赖 ROS，极简部署
+
+─── 产出 ───
+  12电机可驱动 + JY901S 数据可用 + UDP遥测 → PC实时看到数据
+
+═══════════════════════════════════════════════════════════════════════════════
+第三阶段: 控制代码迁移 → 香橙派 + 真机验证
+═══════════════════════════════════════════════════════════════════════════════
+
+目标: MPC+WBC 在香橙派实时运行，Creeper 站立→行走
+
+[3.1] 新建 hardware_bridge 节点
+  ├── 替代 mujoco_simulator，实现相同的 ROS 2 接口:
+  │   订阅 JointControlData (WBC输出→电机指令)
+  │   发布 SimulatorStateData (IMU+编码器→状态估计)
+  ├── 核心循环 (1个线程, ~500Hz):
+  │   motor_lib 读状态 + JY901S 读IMU → 打包SimulatorStateData
+  │   → 卡尔曼 → MPC → WBC → JointControlData → motor_lib 写指令
+  └── 不改 motion_control (MPC+WBC) 一行代码
+
+[3.2] 香橙派编译
+  ├── ROS 2 Humble ARM64 + OCS2 + qpOASES + Pinocchio
+  ├── 建议交叉编译 (板载编译太慢)
+  └── motor_lib 已编译通过 ✓
+
+[3.3] 真机调试阶梯
+  ├── 悬吊: 12电机空载运行，验证IMU+编码器数据流
+  ├── 站立: WBC力矩闭环，验证状态估计base_vel→0
+  ├── 踏步: Trot in place，验证步态调度+控制频率
+  └── 行走: 速度指令跟踪 0.3→0.5 m/s
+
+─── 产出 ───
+  Creeper 独立站立、行走 (~0.5 m/s)，香橙派全闭环
+
+═══════════════════════════════════════════════════════════════════════════════
+关键文件对照
+═══════════════════════════════════════════════════════════════════════════════
+
+  仿真                                    真机
+  ────                                    ────
+  mujoco_simulator/src/MujocoSimulation   → hardware_bridge (新建)
+  models/b1/*.xml                         → models/creeper/creeper.xml (新建)
+  user_command/config/b1/*.info           → config/creeper/*.info (改参数)
+  legged_estimation/LinearKalmanFilter    → 裁剪 (JY901S已给姿态, 减少维度)
+  MPC_WBC_ROS_Interface                   → 不改
+  WbcBase                                 → 不改
+  (不存在)                                 → motor_lib 对接 (已有)
+  (不存在)                                 → JY901S 驱动 (新建)
+  (不存在)                                 → UDP 遥测 (新建)
+
+═══════════════════════════════════════════════════════════════════════════════
+全部关键信息已确认，可以开始第一阶段。
+═══════════════════════════════════════════════════════════════════════════════
+
+  [✓] URDF    — Creeper.urdf + 13个STL mesh，已上传GitHub
+  [✓] 机械参数 — ~11.5kg, 基座270×160×150, 腿长~210/213mm
+  [✓] IMU     — JY901S (IIC, 自带EKF四元数输出)
+  [✓] 减速器  — 电机直驱，无额外减速，直接用 queryGearRatio(GO_M8010_6)
+
+═══════════════════════════════════════════════════════════════════════════════
+后续扩展
+═══════════════════════════════════════════════════════════════════════════════
+
+  [RL+MPC] 训练在 PC GPU，推理优先香橙派 NPU (6 TOPS)
+           模型太大再考虑 PC 实时链路
+  [感知]   深度相机 (Realsense/OAK-D) 接 USB 3.0 → 地形自适应步态
+
+═══════════════════════════════════════════════════════════════════════════════
+创建: 2026-06-08
+  v1: 初始框架
+  v2: 基于 MOJUKO_MPC_VMWARE 项目分析
+  v3: 纳入 Creeper URDF 实际参数 + JY901S IMU
+  v4: 确认减速与驱动方式 — 电机直驱，无额外减速机构
