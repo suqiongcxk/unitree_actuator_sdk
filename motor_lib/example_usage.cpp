@@ -152,7 +152,11 @@ void timeCalibration ()
 
 }
 
+void zzp_text() 
+{
 
+
+}
 int main()
 {
     MotorState s_text ;
