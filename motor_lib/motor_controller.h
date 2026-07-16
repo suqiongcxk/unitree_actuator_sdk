@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include "fast_gpio.h"
 #include "serialPort/SerialPort.h"
 #include "unitreeMotor/unitreeMotor.h"
 
@@ -61,8 +62,11 @@ public:
     /// 力矩控制：设定输出端目标力矩 (N·m)
     void setTorque(float tau);
 
+    //// 阻尼模式
+    void setdamping(float kd);
     /// 刹车/锁定电机
     void brake();
+
 
     // ── 状态查询 ──
 
@@ -81,11 +85,12 @@ public:
     bool isConnected() const { return connected_; }
 
 private:
-    void tx();              // GPIO 拉高 → RS-485 发送模式
-    void rx();              // GPIO 拉低 → RS-485 接收模式
+    void tx();              // GPIO 拉高 → RS-485 发送模式 (~1µs, FastGPIO ioctl)
+    void rx();              // GPIO 拉低 → RS-485 接收模式 (~1µs, FastGPIO ioctl)
     void applyGearRatio();  // 将 cmd_ 中的输出端值转为转子端值
 
-    int gpio_pin_;
+    int gpio_pin_;                        // 保留: 全局 GPIO 编号 (用于 getGpioPin)
+    std::unique_ptr<FastGPIO> gpio_;      // 高速 GPIO (Linux gpio-v2 ioctl, ~µs级)
     std::string serial_port_;
     unsigned short motor_id_;
     float gear_ratio_;
@@ -138,6 +143,7 @@ public:
     void setPosition(unsigned short motor_id, float q, float kp, float kd);
     void setVelocity(unsigned short motor_id, float dq, float kd);
     void setTorque(unsigned short motor_id, float tau);
+    void setDamping(unsigned short motor_id , float kd);
     void brake(unsigned short motor_id);
 
     // ── 通信 ──
@@ -171,7 +177,8 @@ private:
     void tx();
     void rx();
 
-    int gpio_pin_;
+    int gpio_pin_;                        // 保留: 全局 GPIO 编号 (用于 getGpioPin)
+    std::unique_ptr<FastGPIO> gpio_;      // 高速 GPIO (~µs级)
     std::string serial_port_;
     float gear_ratio_;
 

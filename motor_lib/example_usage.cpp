@@ -20,7 +20,7 @@
 #include <csignal>
 #include <unistd.h>
 #include "motor_controller.h"
-
+#include <time.h>
 // ── 硬件配置（请根据实际接线修改） ──────────────────────────────────────────
 constexpr int    GPIO_PIN    = 63;              // GPIO1_D7 → sysfs gpio63
 constexpr const char* SERIAL_PORT = "/dev/ttyS4"; // Orange Pi UART4
@@ -126,21 +126,14 @@ void demo_torque_control()
     const float tau_max = 0.3f;   // N·m
 
     for (int i = 0; i < 60 && g_running; ++i) {
-        // 斜坡上升 → 保持 → 斜坡下降
+
         float tau;
         if (i < 20)       tau = tau_max * (i / 20.0f);
         else if (i < 40)  tau = tau_max;
         else              tau = tau_max * ((60 - i) / 20.0f);
 
         motor.setTorque(tau);
-
         MotorState s = motor.getState();
-        std::cout << "[" << "力矩" << "] "
-                  << "指令力矩=" << std::fixed << std::setprecision(3) << tau
-                  << "  反馈力矩=" << s.tau
-                  << "  速度=" << s.dq
-                  << "  错误=" << s.merror << std::endl;
-
         usleep(50000);   // 50 ms 周期（力矩环可以跑得更快）
     }
 
@@ -148,84 +141,30 @@ void demo_torque_control()
     std::cout << "力矩演示结束。\n";
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 演示 4 —— 多电机总线
-// ═══════════════════════════════════════════════════════════════════════════════
-
-void demo_multimotor_bus()
+//校准时间
+void timeCalibration ()
 {
-    std::cout << "\n╔══════════════════════════════════════════════╗\n";
-    std::cout <<   "║  演示 4: 多电机总线                            ║\n";
-    std::cout <<   "╚══════════════════════════════════════════════╝\n";
-
-    MotorBus bus(GPIO_PIN, SERIAL_PORT);
-
-    // 注册两台电机
-    bus.addMotor(0);
-    bus.addMotor(1);
-    std::cout << "总线上电机数: " << bus.motorCount()
-              << "  减速比=" << bus.getGearRatio() << "\n";
-
-    // 双电机同步位置控制，相位相反（"镜像"运动）
-    const float kp = 0.03f;
-    const float kd = 0.01f;
-
-    for (int i = 0; i < 50 && g_running; ++i) {
-        float target0 = (i / 25 % 2 == 0) ? 0.3f : -0.3f;
-        float target1 = (i / 25 % 2 == 0) ? -0.3f : 0.3f;  // 反相
-
-        bus.setPosition(0, target0, kp, kd);
-        bus.setPosition(1, target1, kp, kd);
-
-        bus.sendRecv();   // 一次事务完成两台电机收发
-
-        if (i % 5 == 0) {
-            MotorState s0 = bus.getState(0);
-            MotorState s1 = bus.getState(1);
-            std::cout << "  电机0: q=" << s0.q << "  dq=" << s0.dq
-                      << "  |  电机1: q=" << s1.q << "  dq=" << s1.dq
-                      << std::endl;
-        }
-
-        usleep(100000);
+    for (int i = 0; i < 5 ; ++i) 
+    {
+        std::cout <<"1\n"<< std::endl;
+        usleep(2000000); 
     }
 
-    // 两台电机同时刹车
-    bus.brake(0);
-    bus.brake(1);
-    bus.sendRecv();
-
-    std::cout << "多电机演示结束。\n";
 }
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// 主函数 —— 依次运行四个演示
-// ═══════════════════════════════════════════════════════════════════════════════
 
 int main()
 {
-    std::signal(SIGINT, sigint_handler);
-
-    std::cout << "╔══════════════════════════════════════════════╗\n";
-    std::cout << "║  GO-M8010-6 电机控制库 演示程序              ║\n";
-    std::cout << "║  GPIO=" << GPIO_PIN << "  串口=" << SERIAL_PORT
-              << "  电机ID=" << MOTOR_ID << "\n";
-    std::cout << "╚══════════════════════════════════════════════╝\n";
-
-    std::cout << "\n[提示] 每个演示运行几秒，按 Ctrl+C 可跳到下一个演示。\n\n";
-
-    // ── 演示 1: 位置控制 ──
-    if (g_running) demo_position_control();
-
-    // ── 演示 2: 速度控制 ──
-    if (g_running) demo_velocity_control();
-
-    // ── 演示 3: 力矩控制 ──
-    if (g_running) demo_torque_control();
-
-    // ── 演示 4: 多电机总线 ──
-    if (g_running) demo_multimotor_bus();
-
-    std::cout << "\n全部演示完成。\n";
+    MotorState s_text ;
+    MotorController motor(GPIO_PIN, SERIAL_PORT, MOTOR_ID);
+    struct timespec t1,t2;
+    clock_gettime(CLOCK_MONOTONIC ,&t1);
+    motor.setdamping(-0.02);
+    s_text = motor.getState();
+    clock_gettime(CLOCK_MONOTONIC ,&t2);
+    long Count_ns = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
+    long Count_us = Count_ns/1000;
+    // std::cout << "spend"<< Count_us << "us\n" << std:: endl;    
+    std::cout << "position"<< s_text.q * 57.3 << "du" << std:: endl;   
     return 0;
 }

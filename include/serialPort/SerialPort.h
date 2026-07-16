@@ -73,6 +73,7 @@ public:
     bool sendRecv(uint8_t *sendMsg, uint8_t *recvMsg, size_t sendLength);
     bool sendRecv(MotorCmd* sendMsg, MotorData* recvMsg);
     bool sendRecv(std::vector<MotorCmd> &sendVec, std::vector<MotorData> &recvVec);
+    int fd() const { return _fd; }  // 获取串口文件描述符（用于 tcdrain 等）
     void test();
 private:
     void _open();

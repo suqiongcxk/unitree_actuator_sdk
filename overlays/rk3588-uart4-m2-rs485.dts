@@ -1,0 +1,19 @@
+/dts-v1/;
+/plugin/;
+
+/**
+ * UART4_M2 + RS-485 RTS via GPIO1_D7
+ *
+ * 在 uart4-m2 基础上，使用 GPIO1_D7 作为 RS-485 方向控制引脚。
+ * 配合 TIOCSRS485 ioctl，内核自动控制:
+ *   - GPIO1_D7 HIGH = 发送模式
+ *   - GPIO1_D7 LOW  = 接收模式
+ *
+ * 编译: dtc -@ -I dts -O dtb -o rk3588-uart4-m2-rs485.dtbo rk3588-uart4-m2-rs485.dts
+ * 安装: sudo cp rk3588-uart4-m2-rs485.dtbo /boot/dtb/rockchip/overlay/
+ * 启用: 在 /boot/orangepiEnv.txt 中添加 overlays=uart4-m2-rs485
+ */
+
+&uart4 {
+	rts-gpios = <&gpio1 31 0>;   /* GPIO1_D7, active high */
+};

@@ -1,60 +1,10 @@
 #include "motor_controller.h"
-#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
 #include <algorithm>
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// GPIO sysfs 辅助函数（RAII 风格 — 构造导出、析构释放）
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/// 向 sysfs 导出 GPIO，使 /sys/class/gpio/gpioN/ 目录出现
-static void gpio_export(int pin)
-{
-    std::ofstream e("/sys/class/gpio/export");
-    if (!e.is_open()) {
-        throw std::runtime_error("无法打开 /sys/class/gpio/export");
-    }
-    e << pin;
-    e.close();
-    // 等待 udev 创建 gpioN 目录并设置权限
-    usleep(150000);
-}
-
-/// 设置 GPIO 方向: "out" 或 "in"
-static void gpio_set_direction(int pin, const std::string& dir)
-{
-    std::string path = "/sys/class/gpio/gpio" + std::to_string(pin) + "/direction";
-    std::ofstream d(path);
-    if (!d.is_open()) {
-        throw std::runtime_error("无法打开 " + path + " —— GPIO 导出是否成功？");
-    }
-    d << dir;
-    d.close();
-}
-
-/// 写 GPIO 值: 1=高电平 0=低电平
-static void gpio_write(int pin, int value)
-{
-    std::string path = "/sys/class/gpio/gpio" + std::to_string(pin) + "/value";
-    std::ofstream v(path);
-    if (!v.is_open()) {
-        throw std::runtime_error("无法打开 " + path);
-    }
-    v << value;
-    v.close();
-}
-
-/// 从 sysfs 取消导出 GPIO（释放资源）
-static void gpio_unexport(int pin)
-{
-    std::ofstream e("/sys/class/gpio/unexport");
-    if (e.is_open()) {
-        e << pin;
-        e.close();
-    }
-}
+#include <time.h>
+#include <sys/ioctl.h>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // MotorController 实现
@@ -63,15 +13,13 @@ static void gpio_unexport(int pin)
 MotorController::MotorController(int gpio_pin, const std::string& serial_port,
                                  unsigned short motor_id)
     : gpio_pin_(gpio_pin)
+    , gpio_(std::make_unique<FastGPIO>(gpio_pin_ / 32, gpio_pin_ % 32))
     , serial_port_(serial_port)
     , motor_id_(motor_id)
     , gear_ratio_(queryGearRatio(MotorType::GO_M8010_6))
     , connected_(false)
-    , serial_(serial_port)   // 使用默认参数: 4M 波特率, 16 字节接收, 非阻塞
+    , serial_(serial_port)   // SDK 内部配 4M 波特率, 勿再 open 第二 fd
 {
-    // ── 初始化 GPIO ──
-    gpio_export(gpio_pin_);
-    gpio_set_direction(gpio_pin_, "out");
     rx();   // 默认为接收模式（安全状态）
 
     // ── 初始化电机指令/数据结构体 ──
@@ -92,21 +40,20 @@ MotorController::MotorController(int gpio_pin, const std::string& serial_port,
 MotorController::~MotorController()
 {
     connected_ = false;
-    gpio_unexport(gpio_pin_);
+    // FastGPIO 析构自动释放 GPIO 资源
 }
 
 // ── 私有辅助方法 ──
 
 void MotorController::tx()
 {
-    // GPIO 高电平 → RS-485 芯片进入发送模式
-    gpio_write(gpio_pin_, 1);
+    // FastGPIO ioctl → ~1-5µs (vs sysfs 1-5ms)
+    gpio_->set(1);
 }
 
 void MotorController::rx()
 {
-    // GPIO 低电平 → RS-485 芯片进入接收模式
-    gpio_write(gpio_pin_, 0);
+    gpio_->set(0);
 }
 
 /**
@@ -132,11 +79,77 @@ void MotorController::sendRecv()
 {
     if (!connected_) return;
 
-    // 一次完整的 RS-485 收发周期：
-    //   [GPIO TX] → [发送 MotorCmd 17 字节] → [接收 MotorData 16 字节] → [GPIO RX]
+    // RS-485 半双工: 必须在 send/recv 之间翻转 GPIO 方向
+    //
+    // serial_.sendRecv() 内部是 write→recv 连续调用, GPIO 全程高电平,
+    // 导致 recv 时收发器仍在发送模式, 永远收不到电机应答。
+    // 拆分为 send + GPIO翻转 + recv。FastGPIO 翻转仅 ~1-5µs,
+    // 而电机处理指令需 ~100-500µs, 翻转后完全来得及接收。
+
+    // 1) 打包指令
+    cmd_.modify_data(&cmd_);
+    uint8_t* sendData = cmd_.get_motor_send_data();
+    int sendLen = cmd_.hex_len;          // modify_data 设置: GO_M8010_6 = 17
+
+    uint8_t* recvData = data_.get_motor_recv_data();
+
+    // 2) 发送 → 等 TX 完成 → 翻 GPIO → 接收
+    struct timespec t0, t1, t2, t3, t4;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+
     tx();
-    serial_.sendRecv(&cmd_, &data_);   // SDK 内部完成 CRC 打包/校验和字段拆解
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+
+    serial_.send(sendData, static_cast<size_t>(sendLen));
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+
+    // ── TIOCOUTQ + TIOCSERGETLSR: 硬件级 TX 完成检测 ──
+    //
+    // tcdrain() 在 RK3588 内核 UART 驱动上间歇性阻塞 11-14ms (驱动用 ms 级
+    // 轮询替代了硬件寄存器检查), 不可靠。
+    //
+    // 替代方案 (两步, 均为非阻塞 ioctl):
+    //   (1) TIOCOUTQ:  等待内核 xmit 缓冲区清空 (数据推入硬件 FIFO)
+    //   (2) TIOCSERGETLSR: 轮询 UART 硬件 TEMT 位 (TX FIFO + 移位寄存器全空)
+    //       → 硬件传输真正完成的精确时刻
+    //   → 翻转 GPIO 的时机精确到 ~1µs, 无内核调度参与
+    {
+        int fd = serial_.fd();
+
+        // Step 1: 等内核缓冲清空 (通常 0-2 轮)
+        int outq = 1, polls = 0;
+        while (outq > 0 && polls < 10000) {
+            if (ioctl(fd, TIOCOUTQ, &outq) < 0) break;
+            polls++;
+        }
+
+        // Step 2: 轮询硬件 TX 状态 (TEMT=发送器完全空闲)
+        // TIOCSERGETLSR → 读取 Line Status Register
+        unsigned int lsr = 0;
+        polls = 0;
+        while (polls < 100000) {
+            if (ioctl(fd, TIOCSERGETLSR, &lsr) < 0) break;
+            if (lsr & TIOCSER_TEMT) break;  // TEMT=0x40: TX FIFO + 移位寄存器均空
+            polls++;
+        }
+    }
+    clock_gettime(CLOCK_MONOTONIC, &t3);
+
     rx();
+    clock_gettime(CLOCK_MONOTONIC, &t4);
+
+    serial_.recv(recvData);
+    data_.extract_data(&data_);  // 解包 raw bytes → 公有字段 + CRC 校验
+
+    long tx_us    = (t1.tv_sec - t0.tv_sec) * 1000000L + (t1.tv_nsec - t0.tv_nsec) / 1000;
+    long send_us  = (t2.tv_sec - t1.tv_sec) * 1000000L + (t2.tv_nsec - t1.tv_nsec) / 1000;
+    long wait_us  = (t3.tv_sec - t2.tv_sec) * 1000000L + (t3.tv_nsec - t2.tv_nsec) / 1000;
+    long rx_us    = (t4.tv_sec - t3.tv_sec) * 1000000L + (t4.tv_nsec - t3.tv_nsec) / 1000;
+    std::cout << "tx=" << tx_us << "us send=" << send_us << "us wait=" << wait_us
+              << "us rx=" << rx_us << "us total=" << (tx_us+send_us+wait_us+rx_us) << "us" << std::endl;
+
+
+
 }
 
 void MotorController::setPosition(float q, float kp, float kd)
@@ -164,6 +177,20 @@ void MotorController::setVelocity(float dq, float kd)
     applyGearRatio();
     sendRecv();
 }
+//设置阻尼模式
+void MotorController::setdamping(float kd)
+{
+    cmd_.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
+    cmd_.q    = 0.0f;
+    cmd_.kp   = 0.0f;
+    cmd_.kd   = kd  ;//设置kd系数，判断环境有关
+    cmd_.dq   = 0.0f;
+    cmd_.tau  = 0.0f;   
+
+    applyGearRatio();
+    sendRecv();
+
+};
 
 void MotorController::setTorque(float tau)
 {
@@ -222,18 +249,17 @@ MotorState MotorController::getState() const
 
 MotorBus::MotorBus(int gpio_pin, const std::string& serial_port)
     : gpio_pin_(gpio_pin)
+    , gpio_(std::make_unique<FastGPIO>(gpio_pin_ / 32, gpio_pin_ % 32))
     , serial_port_(serial_port)
     , gear_ratio_(queryGearRatio(MotorType::GO_M8010_6))
     , serial_(serial_port)
 {
-    gpio_export(gpio_pin_);
-    gpio_set_direction(gpio_pin_, "out");
     rx();   // 默认为接收模式
 }
 
 MotorBus::~MotorBus()
 {
-    gpio_unexport(gpio_pin_);
+    // FastGPIO 析构自动释放 GPIO 资源
 }
 
 MotorBus::MotorSlot* MotorBus::findSlot(unsigned short motor_id)
@@ -273,8 +299,8 @@ bool MotorBus::removeMotor(unsigned short motor_id)
     return true;
 }
 
-void MotorBus::tx() { gpio_write(gpio_pin_, 1); }
-void MotorBus::rx() { gpio_write(gpio_pin_, 0); }
+void MotorBus::tx() { gpio_->set(1); }
+void MotorBus::rx() { gpio_->set(0); }
 
 // ── 暂存指令（输出端量纲，直接在暂存时转换为转子端） ──
 
@@ -303,6 +329,19 @@ void MotorBus::setVelocity(unsigned short motor_id, float dq, float kd)
     s->cmd.dq   = dq * gear_ratio_;     // 输出端速度 → 转子端速度
     s->cmd.tau  = 0.0f;
 }
+
+//设置阻尼模式
+void MotorBus::setDamping(unsigned short motor_id , float kd)
+{   
+    auto* s = findSlot(motor_id);
+    if (!s) return;
+    s->cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
+    s->cmd.q    = 0.0f;
+    s->cmd.kp   = 0.0f;
+    s->cmd.kd   = kd  ;//设置kd系数，判断环境有关
+    s->cmd.dq   = 0.0f;
+    s->cmd.tau  = 0.0f;   
+};
 
 void MotorBus::setTorque(unsigned short motor_id, float tau)
 {
@@ -348,7 +387,6 @@ void MotorBus::sendRecv()
     }
 
     // 一次 RS-485 事务：GPIO TX → 逐个轮询各电机 → GPIO RX
-    // SerialPort 内部会按顺序发送每个 MotorCmd，接收对应 MotorData
     tx();
     serial_.sendRecv(sendVec, recvVec);
     rx();
