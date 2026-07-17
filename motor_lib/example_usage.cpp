@@ -22,9 +22,10 @@
 #include "motor_controller.h"
 #include <time.h>
 // ── 硬件配置（请根据实际接线修改） ──────────────────────────────────────────
-constexpr int    GPIO_PIN    = 63;              // GPIO1_D7 → sysfs gpio63
-constexpr const char* SERIAL_PORT = "/dev/ttyS4"; // Orange Pi UART4
-constexpr unsigned short MOTOR_ID = 0;
+constexpr int    GPIO_PIN[4]    = {63,39,35,133};              // GPIO1_D7 → sysfs gpio63
+constexpr const char* SERIAL_PORT[4] = {"/dev/ttyS4","/dev/ttyS6","/dev/ttyS7","/dev/ttyS0"}; // Orange Pi UART4
+constexpr unsigned short MOTOR_ID[4] = {0,0,0,0} ;
+const int text_number = 3; 
 
 // ── 全局运行标志，Ctrl+C 优雅退出 ───────────────────────────────────────────
 static volatile bool g_running = true;
@@ -55,7 +56,7 @@ void demo_position_control()
     std::cout <<   "║  演示 1: 位置控制（单电机独立模式）           ║\n";
     std::cout <<   "╚══════════════════════════════════════════════╝\n";
 
-    MotorController motor(GPIO_PIN, SERIAL_PORT, MOTOR_ID);
+    MotorController motor(GPIO_PIN[text_number], SERIAL_PORT[text_number], MOTOR_ID[text_number]);
     std::cout << "电机 ID=" << motor.getId()
               << "  减速比=" << motor.getGearRatio() << "\n";
 
@@ -88,7 +89,7 @@ void demo_velocity_control()
     std::cout <<   "║  演示 2: 速度控制（单电机独立模式）           ║\n";
     std::cout <<   "╚══════════════════════════════════════════════╝\n";
 
-    MotorController motor(GPIO_PIN, SERIAL_PORT, MOTOR_ID);
+    MotorController motor(GPIO_PIN[text_number], SERIAL_PORT[text_number], MOTOR_ID[text_number]);
 
     const float speed = 3.14f;   // 输出端 0.5 转/秒
     const float kd    = 0.02f;   // 阻尼系数
@@ -120,7 +121,7 @@ void demo_torque_control()
     std::cout <<   "║  演示 3: 力矩控制（单电机独立模式）           ║\n";
     std::cout <<   "╚══════════════════════════════════════════════╝\n";
 
-    MotorController motor(GPIO_PIN, SERIAL_PORT, MOTOR_ID);
+    MotorController motor(GPIO_PIN[text_number], SERIAL_PORT[text_number], MOTOR_ID[text_number]);
 
     // 施加小力矩斜坡，感受电机推力（请根据实际负载调整）
     const float tau_max = 0.3f;   // N·m
@@ -156,7 +157,7 @@ void timeCalibration ()
 int main()
 {
     MotorState s_text ;
-    MotorController motor(GPIO_PIN, SERIAL_PORT, MOTOR_ID);
+    MotorController motor(GPIO_PIN[text_number], SERIAL_PORT[text_number], MOTOR_ID[text_number]);
     struct timespec t1,t2;
     clock_gettime(CLOCK_MONOTONIC ,&t1);
     motor.setdamping(-0.02);
