@@ -44,7 +44,7 @@ target_link_libraries(motor_test ${EXTRA_LIBS})
 add_library(motor_controller motor_lib/motor_controller.cpp)
 target_link_libraries(motor_controller fast_gpio ${EXTRA_LIBS})
 
-add_executable(example_usage motor_lib/example_usage.cpp)
+add_executable(example_usage motor_lib/example_usage.cpp motor_lib/ZeroPointCalibration.cpp)
 target_link_libraries(example_usage motor_controller fast_gpio ${EXTRA_LIBS})
 
 # 多路并行总线（fast_gpio + parallel_bus）

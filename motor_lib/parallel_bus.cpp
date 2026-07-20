@@ -3,6 +3,7 @@
 #include <iostream>
 #include <ctime>
 #include <cstring>
+#include <sys/ioctl.h>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ParallelBus 实现
@@ -220,12 +221,42 @@ void ParallelBus::controlLoop()
             applyGearRatio(cmd);
         }
 
-        // ── 第三步: 一次 RS-485 事务 ──
-        //   GPIO TX → 逐个轮询电机 → GPIO RX
+        // ── 第三步: 逐电机独立 RS-485 事务 ──
+        //   每台电机: tx→send→等待TX完成→rx→recv
+        //   与 MotorController::sendRecv() 使用相同的硬件级 TX 完成检测
         std::vector<MotorData> recvVec(sendVec.size());
-        gpio_->set(1);   // TX 模式
-        serial_->sendRecv(sendVec, recvVec);
-        gpio_->set(0);   // RX 模式
+        for (size_t i = 0; i < sendVec.size(); ++i) {
+            sendVec[i].modify_data(&sendVec[i]);
+            uint8_t* sendData = sendVec[i].get_motor_send_data();
+            int sendLen = sendVec[i].hex_len;
+            uint8_t* recvData = recvVec[i].get_motor_recv_data();
+
+            gpio_->set(1);   // TX 模式
+
+            serial_->send(sendData, static_cast<size_t>(sendLen));
+
+            // TIOCOUTQ + TIOCSERGETLSR: 硬件级 TX 完成检测
+            {
+                int fd = serial_->fd();
+                int outq = 1, polls = 0;
+                while (outq > 0 && polls < 10000) {
+                    if (ioctl(fd, TIOCOUTQ, &outq) < 0) break;
+                    polls++;
+                }
+                unsigned int lsr = 0;
+                polls = 0;
+                while (polls < 100000) {
+                    if (ioctl(fd, TIOCSERGETLSR, &lsr) < 0) break;
+                    if (lsr & TIOCSER_TEMT) break;
+                    polls++;
+                }
+            }
+
+            gpio_->set(0);   // RX 模式
+
+            serial_->recv(recvData);
+            recvVec[i].extract_data(&recvVec[i]);
+        }
 
         // ── 第四步: 将接收数据写回 slots_ ──
         {

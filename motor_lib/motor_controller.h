@@ -158,6 +158,9 @@ public:
     /// 返回总线上所有已注册的电机 ID
     std::vector<unsigned short> getMotorIds() const;
 
+    /// 返回指定电机的原始接收报文指针和长度（十六进制打印用）
+    const uint8_t* getRawRecvData(unsigned short motor_id, int& len);
+
     // ── 属性访问 ──
 
     int getGpioPin() const { return gpio_pin_; }

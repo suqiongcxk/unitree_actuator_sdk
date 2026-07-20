@@ -214,7 +214,7 @@ void MotorController::brake()
     cmd_.dq   = 0.0f;
     cmd_.tau  = 0.0f;
 
-    // 刹车指令不需要减速比转换
+    // 刹车指令不需要减速比转换 
     sendRecv();
 }
 
@@ -376,24 +376,43 @@ void MotorBus::sendRecv()
 {
     if (slots_.empty()) return;
 
-    // 组装发送向量
-    std::vector<MotorCmd>  sendVec;
-    std::vector<MotorData> recvVec;
-    sendVec.reserve(slots_.size());
-    recvVec.resize(slots_.size());
-
+    // 逐一轮询各电机，每个电机独立完成 tx→send→等待TX完成→rx→recv
+    // 与 MotorController::sendRecv() 使用相同的硬件级 TX 完成检测
     for (auto& slot : slots_) {
-        sendVec.push_back(slot.cmd);
-    }
+        slot.cmd.modify_data(&slot.cmd);
+        uint8_t* sendData = slot.cmd.get_motor_send_data();
+        int sendLen = slot.cmd.hex_len;
+        uint8_t* recvData = slot.data.get_motor_recv_data();
 
-    // 一次 RS-485 事务：GPIO TX → 逐个轮询各电机 → GPIO RX
-    tx();
-    serial_.sendRecv(sendVec, recvVec);
-    rx();
+        // TX 模式
+        gpio_->set(1);
 
-    // 将接收数据分发回各电机槽位
-    for (size_t i = 0; i < recvVec.size() && i < slots_.size(); ++i) {
-        slots_[i].data = recvVec[i];
+        serial_.send(sendData, static_cast<size_t>(sendLen));
+
+        // TIOCOUTQ + TIOCSERGETLSR: 硬件级 TX 完成检测
+        {
+            int fd = serial_.fd();
+
+            int outq = 1, polls = 0;
+            while (outq > 0 && polls < 10000) {
+                if (ioctl(fd, TIOCOUTQ, &outq) < 0) break;
+                polls++;
+            }
+
+            unsigned int lsr = 0;
+            polls = 0;
+            while (polls < 100000) {
+                if (ioctl(fd, TIOCSERGETLSR, &lsr) < 0) break;
+                if (lsr & TIOCSER_TEMT) break;
+                polls++;
+            }
+        }
+
+        // RX 模式
+        gpio_->set(0);
+
+        serial_.recv(recvData);
+        slot.data.extract_data(&slot.data);
     }
 }
 
@@ -406,7 +425,7 @@ MotorState MotorBus::getState(unsigned short motor_id) const
 
         constexpr bool TORQUE_IS_ROTOR = true;
 
-        s.q       = slot.data.q  / gear_ratio_;
+        s.q       = slot.data.q  / gear_ratio_ *57.3f;
         s.dq      = slot.data.dq / gear_ratio_;
         s.tau     = TORQUE_IS_ROTOR ? (slot.data.tau * gear_ratio_) : slot.data.tau;
         s.temp    = slot.data.temp;
@@ -427,4 +446,15 @@ std::vector<unsigned short> MotorBus::getMotorIds() const
         ids.push_back(s.id);
     }
     return ids;
+}
+
+const uint8_t* MotorBus::getRawRecvData(unsigned short motor_id, int& len)
+{
+    for (auto& slot : slots_) {
+        if (slot.id != motor_id) continue;
+        len = slot.data.hex_len;
+        return slot.data.get_motor_recv_data();
+    }
+    len = 0;
+    return nullptr;
 }

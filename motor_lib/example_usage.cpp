@@ -21,10 +21,11 @@
 #include <unistd.h>
 #include "motor_controller.h"
 #include <time.h>
+#include "ZeroPointCalibration.h"
 // ── 硬件配置（请根据实际接线修改） ──────────────────────────────────────────
 constexpr int    GPIO_PIN[4]    = {63,39,35,133};              // GPIO1_D7 → sysfs gpio63
 constexpr const char* SERIAL_PORT[4] = {"/dev/ttyS4","/dev/ttyS6","/dev/ttyS7","/dev/ttyS0"}; // Orange Pi UART4
-constexpr unsigned short MOTOR_ID[4] = {0,0,0,0} ;
+constexpr unsigned short MOTOR_ID[4] = {0,4,8} ;
 const int text_number = 3; 
 
 // ── 全局运行标志，Ctrl+C 优雅退出 ───────────────────────────────────────────
@@ -156,16 +157,7 @@ void timeCalibration ()
 
 int main()
 {
-    MotorState s_text ;
-    MotorController motor(GPIO_PIN[text_number], SERIAL_PORT[text_number], MOTOR_ID[text_number]);
-    struct timespec t1,t2;
-    clock_gettime(CLOCK_MONOTONIC ,&t1);
-    motor.setdamping(-0.02);
-    s_text = motor.getState();
-    clock_gettime(CLOCK_MONOTONIC ,&t2);
-    long Count_ns = (t2.tv_sec - t1.tv_sec) * 1e9 + (t2.tv_nsec - t1.tv_nsec);
-    long Count_us = Count_ns/1000;
-    // std::cout << "spend"<< Count_us << "us\n" << std:: endl;    
-    std::cout << "position"<< s_text.q * 57.3 << "du" << std:: endl;   
+    LEG_MOTOR_INIT();
+    ZeroPointCalibration();
     return 0;
 }
