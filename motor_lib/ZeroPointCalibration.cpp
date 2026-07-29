@@ -144,7 +144,7 @@ void ZeroPointCalibration(void)
    {
       target_angle[Leg1_Motor.HIP_Motor] = ZERO_Position_MechLimitEnd[Leg1_Motor.HIP_Motor] - (i / 100.0f) * (Joint0_End - default_joint_pos[Leg1_Motor.HIP_Motor]);
       usleep(15000);
-      bus.setPosition(Leg1_Motor.HIP_Motor, target_angle[Leg1_Motor.HIP_Motor]  ,3, 0.25);
+      bus.setPosition(Leg1_Motor.HIP_Motor, target_angle[Leg1_Motor.HIP_Motor]  ,0.625, 0.0125);
       bus.sendRecv();
       // std::cout << "TRhip:"        << target_angle[Leg1_Motor.HIP_Motor]       << std::endl;
       // std::cout << "TRthigh:"      << target_angle[Leg1_Motor.thigh_Motor]     << std::endl;
@@ -155,8 +155,8 @@ void ZeroPointCalibration(void)
       target_angle[Leg1_Motor.thigh_Motor] = ZERO_Position_MechLimitEnd[Leg1_Motor.thigh_Motor] - (i / 100.0f) * (Joint4_End - default_joint_pos[Leg1_Motor.thigh_Motor]);
       target_angle[Leg1_Motor.lower_leg_Motor] = ZERO_Position_MechLimitStart[Leg1_Motor.lower_leg_Motor] + (i / 100.0f) * (default_joint_pos[Leg1_Motor.lower_leg_Motor] - Joint8_Begin);
       usleep(20000);
-      bus.setPosition(Leg1_Motor.thigh_Motor, target_angle[Leg1_Motor.thigh_Motor]  ,3, 0.25);
-      bus.setPosition(Leg1_Motor.lower_leg_Motor, target_angle[Leg1_Motor.lower_leg_Motor]  ,3, 0.25);
+      bus.setPosition(Leg1_Motor.thigh_Motor, target_angle[Leg1_Motor.thigh_Motor]  ,0.625, 0.0125);
+      bus.setPosition(Leg1_Motor.lower_leg_Motor, target_angle[Leg1_Motor.lower_leg_Motor]  ,0.625, 0.0125);
       bus.sendRecv();
    }
 
