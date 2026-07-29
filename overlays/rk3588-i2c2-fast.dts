@@ -1,0 +1,22 @@
+/**
+ * rk3588-i2c2-fast.dts — /dev/i2c-2 设为 400kHz Fast Mode
+ *
+ * Orange Pi 5 Pro 上 /dev/i2c-2 实际对应 I2C5 硬件控制器 (i2c@feaa0000)，
+ * 默认 100kHz。JY901S 最大支持 400kHz。
+ *
+ * 编译:
+ *   dtc -I dts -O dtb -o rk3588-i2c2-fast.dtbo rk3588-i2c2-fast.dts
+ *
+ * 安装:
+ *   sudo cp rk3588-i2c2-fast.dtbo /boot/dtb-6.1.43-rockchip-rk3588/rockchip/overlay/
+ *   在 /boot/orangepiEnv.txt 的 overlays= 行追加 "i2c2-fast"
+ *
+ * 注意: /dev/i2c-2 对应的是 I2C5 硬件控制器 (feaa0000)，用 &i2c5 符号引用。
+ */
+
+/dts-v1/;
+/plugin/;
+
+&i2c2 {
+    clock-frequency = <400000>;
+};

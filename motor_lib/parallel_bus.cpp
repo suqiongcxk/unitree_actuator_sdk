@@ -333,3 +333,12 @@ std::vector<ParallelBus*> MultiBusController::buses()
     for (auto& b : buses_) ptrs.push_back(b.get());
     return ptrs;
 }
+
+
+
+
+
+
+
+
+

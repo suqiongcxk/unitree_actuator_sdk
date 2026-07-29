@@ -425,7 +425,7 @@ MotorState MotorBus::getState(unsigned short motor_id) const
 
         constexpr bool TORQUE_IS_ROTOR = true;
 
-        s.q       = slot.data.q  / gear_ratio_ *57.3f;
+        s.q       = slot.data.q  / gear_ratio_ ;
         s.dq      = slot.data.dq / gear_ratio_;
         s.tau     = TORQUE_IS_ROTOR ? (slot.data.tau * gear_ratio_) : slot.data.tau;
         s.temp    = slot.data.temp;
