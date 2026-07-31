@@ -148,7 +148,7 @@ void ZeroPointCalibration(void)
       bus.sendRecv();
       // std::cout << "TRhip:"        << target_angle[Leg1_Motor.HIP_Motor]       << std::endl;
       // std::cout << "TRthigh:"      << target_angle[Leg1_Motor.thigh_Motor]     << std::endl;
-      // std::cout << "TRlower_leg:"<< target_angle[Leg1_Motor.lower_leg_Motor]   << std::endl;
+      // std::cout << "TRlower_leg:"<< target_angle[Leg1_Motor.lower_leg_Motor]   << std:end:l;
    }
       for (int i = 0; i <= 100; i++)
    {

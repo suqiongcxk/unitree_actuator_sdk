@@ -4,7 +4,7 @@ project(unitree_actuator_sdk)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
-include_directories(include motor_lib State_Estimation)
+include_directories(include motor_lib State_Estimation robot_control)
 link_directories(lib)
 
 if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "aarch64") 
@@ -62,3 +62,44 @@ add_library(jy901s State_Estimation/jy901s.cpp)
 
 add_executable(test_jy901s State_Estimation/test_jy901s.cpp)
 target_link_libraries(test_jy901s jy901s)
+
+# ── Robot Control System (multi-threaded, IMU + motors + estimation + NN) ──
+
+# ONNX Runtime (可选, 用于神经网络推理)
+set(ONNXRUNTIME_DIR "${CMAKE_SOURCE_DIR}/thirdparty/onnxruntime")
+if(EXISTS "${ONNXRUNTIME_DIR}/include/onnxruntime_cxx_api.h")
+    message(STATUS "Found ONNX Runtime at ${ONNXRUNTIME_DIR}")
+    set(ONNX_FOUND TRUE)
+else()
+    message(STATUS "ONNX Runtime not found — ONNXPolicy will be disabled")
+    set(ONNX_FOUND FALSE)
+endif()
+
+add_executable(robot_control
+    robot_control/robot_control_main.cpp
+    robot_control/robot_controller.cpp
+    robot_control/state_estimator.cpp
+    robot_control/nn_policy.cpp
+    robot_control/nn_validation.cpp
+)
+target_include_directories(robot_control PRIVATE robot_control)
+target_link_libraries(robot_control
+    parallel_bus
+    fast_gpio
+    motor_controller
+    jy901s
+    ${EXTRA_LIBS}
+    pthread
+)
+if(ONNX_FOUND)
+    target_include_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/include")
+    target_link_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/lib")
+    target_link_libraries(robot_control onnxruntime)
+    target_compile_definitions(robot_control PRIVATE ONNXRUNTIME_AVAILABLE)
+    # 设置 rpath 让可执行文件在运行时找到 .so
+    set_target_properties(robot_control PROPERTIES
+        INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"
+        BUILD_RPATH "${ONNXRUNTIME_DIR}/lib"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+endif()
