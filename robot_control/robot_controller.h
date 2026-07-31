@@ -8,6 +8,7 @@
 #include <atomic>
 #include "shared_data.h"
 #include "nn_validation.h"
+#include "../motor_lib/ZeroPointCalibration.h"
 
 // 前向声明 — 避免在此头文件中引入重型依赖
 class JY901S;
@@ -116,6 +117,20 @@ public:
     /// 获取默认的 4 腿 12 电机硬件配置
     static RobotControlConfig getDefaultConfig();
 
+    // ── 标定与启动状态 ─────────────────────────────────────────────────────
+
+    /// 获取当前启动阶段
+    StartupPhase getStartupPhase() const { return startup_phase_; }
+
+    /// 获取标定结果
+    const JointCalibResult* getCalibrationResults() const { return calib_results_; }
+
+    /// 标定是否已完成
+    bool isCalibrationComplete() const { return calibration_completed_; }
+
+    /// 标定成功关节数
+    int getCalibrationOKCount() const { return calibration_ok_count_; }
+
 private:
     RobotControlConfig config_;
 
@@ -142,6 +157,20 @@ private:
     // 4 路电机总线线程由 MultiBusController 内部管理
 
     std::atomic<bool> running_{false};
+
+    // ── 标定与启动 ───────────────────────────────────────────────────────
+
+    StartupPhase      startup_phase_ = StartupPhase::INIT_COMM;
+    JointCalibResult  calib_results_[12] = {};
+    float             post_calib_position_[12] = {};
+    bool              calibration_completed_ = false;
+    int               calibration_ok_count_ = 0;
+
+    /// 执行完整标定序列 (初始化阶段调用)
+    bool runCalibrationSequence();
+
+    /// 从标定位姿平滑过渡到站立姿态 (start 阶段调用)
+    void transitionToStandingInternal(float transition_time_sec = 2.0f);
 
     // ── 线程主循环 ───────────────────────────────────────────────────────
 

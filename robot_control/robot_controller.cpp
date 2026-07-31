@@ -3,6 +3,7 @@
 #include "nn_policy.h"
 #include "jy901s.h"
 #include "parallel_bus.h"
+#include "../motor_lib/motor_controller.h"
 
 #include <iostream>
 #include <iomanip>
@@ -10,6 +11,7 @@
 #include <ctime>
 #include <cstring>
 #include <chrono>
+#include <cmath>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  构造 / 析构
@@ -91,6 +93,14 @@ bool RobotController::initialize()
     std::cout << "[RobotController] 硬件初始化完成 — "
               << config_.buses.size() << " 路总线, "
               << "共 " << (config_.buses.size() * 3) << " 电机" << std::endl;
+
+    // ── 2.5. [新增] 上电标定序列 ──
+    startup_phase_ = StartupPhase::INIT_COMM;
+    if (!runCalibrationSequence()) {
+        std::cerr << "[RobotController] 错误: 标定失败, 禁止进入控制模式" << std::endl;
+        startup_phase_ = StartupPhase::FAULT;
+        return false;
+    }
 
     // ── 3. 构建 NN 策略链 ──
     //   StandingPolicy → (可选) ValidatingPolicy → (可选) ComparingPolicy
@@ -196,9 +206,22 @@ bool RobotController::start()
         std::cout << "  [OK] 电机总线就绪" << std::endl;
     }
 
+    // ── 3.5. [新增] 过渡到站立姿态 ──
+    if (calibration_completed_) {
+        startup_phase_ = StartupPhase::TRANSITION_STAND;
+        std::cout << "  [3.5/4] 过渡到站立姿态..." << std::endl;
+        transitionToStandingInternal(2.0f);
+
+        // ── 3.6. [新增] 站立稳定保持 ──
+        startup_phase_ = StartupPhase::HOLD_STANDING;
+        std::cout << "  [3.6/4] 站立稳定保持 (1s)..." << std::endl;
+        sleep(1);
+    }
+
     // ── 4. 启动 NN 推理线程 (最后启动，需要估计和电机都在运行) ──
     std::cout << "  [4/4] 启动 NN 推理线程 (" << config_.nn_hz << "Hz)..." << std::endl;
     nn_thread_ = std::thread(&RobotController::nnLoop, this);
+    startup_phase_ = StartupPhase::NN_ACTIVE;
 
     std::cout << "[RobotController] ✓ 全部 7 个线程已启动 ("
               << "1 IMU + 1 EST + " << config_.buses.size()
@@ -322,6 +345,136 @@ bool RobotController::waitForMotorReady(int timeout_ms)
         usleep(10000);  // 10ms
     }
     return false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  runCalibrationSequence — 完整上电标定序列
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+//  标定阶段使用 MotorBus（同步模式），与 ParallelBus 共享 GPIO/串口。
+//  MotorBus 实例在此函数内创建和销毁，ParallelBus 线程尚未启动 → 无冲突。
+//
+//  流程:
+//    1. calibrateAllJoints() — 12 关节机械限位标定
+//    2. validateCalibrationResults() — 实测行程 vs URDF 预期
+//    3. 计算从标定位姿到站立姿态的起始位置
+
+bool RobotController::runCalibrationSequence()
+{
+    std::cout << "\n╔══════════════════════════════════════════════╗" << std::endl;
+    std::cout <<   "║  机械限位标定 — 12 关节                       ║" << std::endl;
+    std::cout <<   "╚══════════════════════════════════════════════╝" << std::endl;
+
+    // ── 阶段 1: 12 关节标定 ──
+    startup_phase_ = StartupPhase::CALIBRATING;
+
+    int ok_count = calibrateAllJoints(calib_results_);
+    calibration_ok_count_ = ok_count;
+
+    if (ok_count < 8)
+    {
+        std::cerr << "[Calib] 致命错误: 标定成功数不足 ("
+                  << ok_count << "/12), 至少需要 8 个" << std::endl;
+        return false;
+    }
+
+    // ── 阶段 2: 验证标定结果 ──
+    startup_phase_ = StartupPhase::VERIFY_RESULTS;
+
+    const auto* configs = getCalibrationConfigs();
+    bool ranges_ok = validateCalibrationResults(calib_results_, configs);
+
+    if (!ranges_ok && ok_count < 12)
+    {
+        std::cerr << "[Calib] 错误: 标定行程验证失败, 禁止继续" << std::endl;
+        return false;
+    }
+    if (!ranges_ok)
+    {
+        std::cout << "[Calib] 警告: 部分关节行程偏差较大, 继续启动 ("
+                  << ok_count << "/12 标定成功)" << std::endl;
+    }
+
+    // ── 阶段 3: 记录标定后的当前位置 ──
+    //   hip/thigh: 停在 MechLimitEnd
+    //   calf:      停在 MechLimitStart
+    for (int i = 0; i < 12; i++)
+    {
+        if (calib_results_[i].success)
+        {
+            post_calib_position_[i] = configs[i].hit_upper_first
+                                    ? calib_results_[i].mech_limit_end
+                                    : calib_results_[i].mech_limit_start;
+        }
+        else
+        {
+            post_calib_position_[i] = 0.0f;  // 标定失败的关节将跳过过渡
+        }
+    }
+
+    calibration_completed_ = true;
+
+    std::cout << "\n[Calib] ✓ 标定序列完成 ("
+              << ok_count << "/12 关节 OK)" << std::endl;
+    return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  transitionToStandingInternal — 平滑过渡到站立姿态
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+//  在 ParallelBus 线程已启动后调用。
+//  q_cmd = q_start + smoothstep(α) * (q_stand - q_start)
+//
+//  过渡期间使用较低 KP/KD 确保平滑运动，到位后由 NN 策略接管使用正常增益。
+
+void RobotController::transitionToStandingInternal(float transition_time_sec)
+{
+    const int STEPS = 200;
+    const float dt = transition_time_sec / STEPS;
+    const float kp = 0.3f;   // 过渡阶段使用较低刚度
+    const float kd = 0.02f;
+
+    // 计算站立目标（URDF 关节角 → 电机输出端位置）
+    float stand_target[12] = {0};
+    for (int i = 0; i < 12; i++)
+    {
+        if (calibration_completed_ && calib_results_[i].success)
+        {
+            stand_target[i] = computeMotorTargetFromURDF(i, config_.default_standing_pose[i]);
+        }
+        else
+        {
+            // 未标定的关节直接使用默认姿态（适用于跳过标定的场景）
+            stand_target[i] = config_.default_standing_pose[i];
+        }
+    }
+
+    std::cout << "[Transition] " << transition_time_sec << "s, "
+              << STEPS << " steps (smoothstep)" << std::endl;
+
+    for (int step = 0; step <= STEPS; step++)
+    {
+        float alpha = static_cast<float>(step) / STEPS;
+        // smoothstep: f(t) = t²(3 - 2t), 缓入缓出
+        float smooth_alpha = alpha * alpha * (3.0f - 2.0f * alpha);
+
+        for (size_t b = 0; b < motor_ctrl_->busCount(); b++)
+        {
+            auto motor_ids = motor_ctrl_->bus(b).getMotorIds();
+            for (size_t m = 0; m < motor_ids.size(); m++)
+            {
+                int mid = motor_ids[m];
+                float q_cmd = post_calib_position_[mid]
+                            + smooth_alpha * (stand_target[mid] - post_calib_position_[mid]);
+                motor_ctrl_->bus(b).setPosition(mid, q_cmd, kp, kd);
+            }
+        }
+
+        usleep(static_cast<int>(dt * 1e6));
+    }
+
+    std::cout << "[Transition] ✓ 到达站立姿态" << std::endl;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

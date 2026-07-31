@@ -41,10 +41,10 @@ target_link_libraries(gpio_toggle_test fast_gpio)
 target_link_libraries(motor_test ${EXTRA_LIBS})
 
 # motor_lib — GO-M8010-6 motor control library
-add_library(motor_controller motor_lib/motor_controller.cpp)
+add_library(motor_controller motor_lib/motor_controller.cpp motor_lib/ZeroPointCalibration.cpp)
 target_link_libraries(motor_controller fast_gpio ${EXTRA_LIBS})
 
-add_executable(example_usage motor_lib/example_usage.cpp motor_lib/ZeroPointCalibration.cpp)
+add_executable(example_usage motor_lib/example_usage.cpp)
 target_link_libraries(example_usage motor_controller fast_gpio ${EXTRA_LIBS})
 
 # 多路并行总线（fast_gpio + parallel_bus）
