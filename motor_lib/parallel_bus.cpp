@@ -63,7 +63,9 @@ bool ParallelBus::removeMotor(unsigned short motor_id)
 
 void ParallelBus::setPosition(unsigned short motor_id, float q, float kp, float kd)
 {
+    if (emergency_latched_.load(std::memory_order_acquire)) return;
     std::lock_guard<std::mutex> lock(slots_mtx_);
+    if (emergency_latched_.load(std::memory_order_relaxed)) return;
     for (auto& s : slots_) {
         if (s.id != motor_id) continue;
         s.cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
@@ -78,7 +80,9 @@ void ParallelBus::setPosition(unsigned short motor_id, float q, float kp, float 
 
 void ParallelBus::setVelocity(unsigned short motor_id, float dq, float kd)
 {
+    if (emergency_latched_.load(std::memory_order_acquire)) return;
     std::lock_guard<std::mutex> lock(slots_mtx_);
+    if (emergency_latched_.load(std::memory_order_relaxed)) return;
     for (auto& s : slots_) {
         if (s.id != motor_id) continue;
         s.cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
@@ -93,7 +97,9 @@ void ParallelBus::setVelocity(unsigned short motor_id, float dq, float kd)
 
 void ParallelBus::setTorque(unsigned short motor_id, float tau)
 {
+    if (emergency_latched_.load(std::memory_order_acquire)) return;
     std::lock_guard<std::mutex> lock(slots_mtx_);
+    if (emergency_latched_.load(std::memory_order_relaxed)) return;
     for (auto& s : slots_) {
         if (s.id != motor_id) continue;
         s.cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
@@ -106,9 +112,44 @@ void ParallelBus::setTorque(unsigned short motor_id, float tau)
     }
 }
 
+void ParallelBus::setDamping(unsigned short motor_id, float kd)
+{
+    if (emergency_latched_.load(std::memory_order_acquire)) return;
+    std::lock_guard<std::mutex> lock(slots_mtx_);
+    if (emergency_latched_.load(std::memory_order_relaxed)) return;
+    for (auto& s : slots_) {
+        if (s.id != motor_id) continue;
+        s.cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
+        s.cmd.q = 0.0f;
+        s.cmd.kp = 0.0f;
+        s.cmd.kd = kd;
+        s.cmd.dq = 0.0f;
+        s.cmd.tau = 0.0f;
+        break;
+    }
+}
+
+void ParallelBus::enterEmergencyDamping(float kd)
+{
+    // 在同一临界区内先锁存再覆盖全部槽，杜绝旧控制指令重新写入。
+    std::lock_guard<std::mutex> lock(slots_mtx_);
+    emergency_kd_.store(kd, std::memory_order_relaxed);
+    emergency_latched_.store(true, std::memory_order_release);
+    for (auto& s : slots_) {
+        s.cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
+        s.cmd.q = 0.0f;
+        s.cmd.kp = 0.0f;
+        s.cmd.kd = kd;
+        s.cmd.dq = 0.0f;
+        s.cmd.tau = 0.0f;
+    }
+}
+
 void ParallelBus::brake(unsigned short motor_id)
 {
+    if (emergency_latched_.load(std::memory_order_acquire)) return;
     std::lock_guard<std::mutex> lock(slots_mtx_);
+    if (emergency_latched_.load(std::memory_order_relaxed)) return;
     for (auto& s : slots_) {
         if (s.id != motor_id) continue;
         s.cmd.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::BRAKE);
@@ -226,6 +267,15 @@ void ParallelBus::controlLoop()
         //   与 MotorController::sendRecv() 使用相同的硬件级 TX 完成检测
         std::vector<MotorData> recvVec(sendVec.size());
         for (size_t i = 0; i < sendVec.size(); ++i) {
+            if (emergency_latched_.load(std::memory_order_acquire)) {
+                // 即使本周期已取出旧指令，急停锁存后也在发送前强制改为阻尼。
+                sendVec[i].mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
+                sendVec[i].q = 0.0f;
+                sendVec[i].kp = 0.0f;
+                sendVec[i].kd = emergency_kd_.load(std::memory_order_relaxed);
+                sendVec[i].dq = 0.0f;
+                sendVec[i].tau = 0.0f;
+            }
             sendVec[i].modify_data(&sendVec[i]);
             uint8_t* sendData = sendVec[i].get_motor_send_data();
             int sendLen = sendVec[i].hex_len;
@@ -317,6 +367,13 @@ void MultiBusController::stopAll()
     }
 }
 
+void MultiBusController::enterEmergencyDampingAll(float kd)
+{
+    for (auto& b : buses_) {
+        b->enterEmergencyDamping(kd);
+    }
+}
+
 ParallelBus& MultiBusController::bus(size_t index)
 {
     return *buses_.at(index);
@@ -333,10 +390,6 @@ std::vector<ParallelBus*> MultiBusController::buses()
     for (auto& b : buses_) ptrs.push_back(b.get());
     return ptrs;
 }
-
-
-
-
 
 
 

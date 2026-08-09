@@ -4,6 +4,7 @@
 #include "jy901s.h"
 #include "parallel_bus.h"
 #include "../motor_lib/motor_controller.h"
+#include "emergency_stop.h"
 
 #include <iostream>
 #include <iomanip>
@@ -23,7 +24,7 @@ RobotController::RobotController(const RobotControlConfig& config)
 
 RobotController::~RobotController()
 {
-    stop();
+    safeShutdown();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -43,10 +44,10 @@ RobotControlConfig RobotController::getDefaultConfig()
 
     // 4 路 RS-485 总线, 每路 3 个电机 (hip / thigh / lower_leg)
     c.buses = {
-        {0, 133, "/dev/ttyS0", {0, 4, 8}},      // Leg1
-        {0, 39,  "/dev/ttyS6", {1, 5, 9}},      // Leg2
-        {0, 35,  "/dev/ttyS7", {2, 6, 10}},     // Leg3
-        {0, 63,  "/dev/ttyS4", {3, 7, 11}},     // Leg4
+        {4, 5,  "/dev/ttyS0", {0, 4, 8}},      // Leg1: global GPIO133
+        {1, 7,  "/dev/ttyS6", {1, 5, 9}},      // Leg2: global GPIO39
+        {1, 3,  "/dev/ttyS7", {2, 6, 10}},     // Leg3: global GPIO35
+        {1, 31, "/dev/ttyS4", {3, 7, 11}},     // Leg4: global GPIO63
     };
 
     return c;
@@ -60,6 +61,26 @@ bool RobotController::initialize()
 {
     std::cout << "[RobotController] 初始化硬件..." << std::endl;
 
+    // 关节状态和 NN 数组统一以 motor ID 为下标，启动前拒绝非法、重复或漏配 ID。
+    bool motor_id_seen[12] = {false};
+    int configured_motor_count = 0;
+    for (const auto& bus_cfg : config_.buses) {
+        for (unsigned short id : bus_cfg.motor_ids) {
+            if (id >= 12 || motor_id_seen[id]) {
+                std::cerr << "[RobotController] 错误: 非法或重复的电机 ID="
+                          << id << std::endl;
+                return false;
+            }
+            motor_id_seen[id] = true;
+            ++configured_motor_count;
+        }
+    }
+    if (configured_motor_count != 12) {
+        std::cerr << "[RobotController] 错误: 必须且只能配置 motor ID 0..11，当前数量="
+                  << configured_motor_count << std::endl;
+        return false;
+    }
+
     // ── 1. 初始化 IMU ──
     imu_ = std::make_unique<JY901S>(config_.imu_device);
     JY901S_Status imu_st = imu_->init(config_.imu_hz);
@@ -71,30 +92,8 @@ bool RobotController::initialize()
     std::cout << "[RobotController] JY901S IMU 初始化成功, "
               << config_.imu_hz << "Hz" << std::endl;
 
-    // ── 2. 创建 4 路并行总线 ──
-    motor_ctrl_ = std::make_unique<MultiBusController>();
-    for (const auto& bus_cfg : config_.buses) {
-        ParallelBus& bus = motor_ctrl_->addBus(
-            bus_cfg.gpio_chip,
-            bus_cfg.gpio_line,
-            bus_cfg.serial_port);
-        for (unsigned short id : bus_cfg.motor_ids) {
-            if (!bus.addMotor(id)) {
-                std::cerr << "[RobotController] 错误: 无法注册电机 ID="
-                          << id << " 到总线 " << bus_cfg.serial_port << std::endl;
-                return false;
-            }
-        }
-        std::cout << "[RobotController] 总线 " << bus_cfg.serial_port
-                  << " (GPIO" << bus_cfg.gpio_line << ") "
-                  << bus_cfg.motor_ids.size() << " 电机" << std::endl;
-    }
-
-    std::cout << "[RobotController] 硬件初始化完成 — "
-              << config_.buses.size() << " 路总线, "
-              << "共 " << (config_.buses.size() * 3) << " 电机" << std::endl;
-
-    // ── 2.5. [新增] 上电标定序列 ──
+    // ── 2. 上电标定序列 ──
+    // 标定使用同步 MotorBus；并行总线必须在标定结束后创建，避免重复占用串口/GPIO。
     startup_phase_ = StartupPhase::INIT_COMM;
     if (!runCalibrationSequence()) {
         std::cerr << "[RobotController] 错误: 标定失败, 禁止进入控制模式" << std::endl;
@@ -102,7 +101,22 @@ bool RobotController::initialize()
         return false;
     }
 
-    // ── 3. 构建 NN 策略链 ──
+    if (isEmergencyStopRequested()) return false;
+
+    // ── 3. 创建 4 路并行总线 ──
+    motor_ctrl_ = std::make_unique<MultiBusController>();
+    for (const auto& bus_cfg : config_.buses) {
+        ParallelBus& bus = motor_ctrl_->addBus(
+            bus_cfg.gpio_chip, bus_cfg.gpio_line, bus_cfg.serial_port);
+        for (unsigned short id : bus_cfg.motor_ids) {
+            if (!bus.addMotor(id)) return false;
+        }
+        std::cout << "[RobotController] 总线 " << bus_cfg.serial_port
+                  << " (GPIO" << bus_cfg.gpio_chip << ":" << bus_cfg.gpio_line << ") "
+                  << bus_cfg.motor_ids.size() << " 电机" << std::endl;
+    }
+
+    // ── 4. 构建 NN 策略链 ──
     //   StandingPolicy → (可选) ValidatingPolicy → (可选) ComparingPolicy
     {
         std::unique_ptr<NNPolicy> policy;
@@ -171,6 +185,7 @@ bool RobotController::initialize()
 
 bool RobotController::start()
 {
+    if (isEmergencyStopRequested()) return false;
     if (running_.load()) {
         std::cerr << "[RobotController] 已经在运行" << std::endl;
         return false;
@@ -211,14 +226,18 @@ bool RobotController::start()
         startup_phase_ = StartupPhase::TRANSITION_STAND;
         std::cout << "  [3.5/4] 过渡到站立姿态..." << std::endl;
         transitionToStandingInternal(2.0f);
+        if (isEmergencyStopRequested()) return false;
 
         // ── 3.6. [新增] 站立稳定保持 ──
         startup_phase_ = StartupPhase::HOLD_STANDING;
         std::cout << "  [3.6/4] 站立稳定保持 (1s)..." << std::endl;
-        sleep(1);
+        for (int i = 0; i < 20 && !isEmergencyStopRequested(); ++i) {
+            usleep(50000);
+        }
     }
 
     // ── 4. 启动 NN 推理线程 (最后启动，需要估计和电机都在运行) ──
+    if (isEmergencyStopRequested()) return false;
     std::cout << "  [4/4] 启动 NN 推理线程 (" << config_.nn_hz << "Hz)..." << std::endl;
     nn_thread_ = std::thread(&RobotController::nnLoop, this);
     startup_phase_ = StartupPhase::NN_ACTIVE;
@@ -235,52 +254,52 @@ bool RobotController::start()
 
 void RobotController::stop()
 {
-    if (!running_.load()) return;  // 已停止
+    safeShutdown();
+}
 
-    std::cout << "[RobotController] 正在关闭..." << std::endl;
+bool RobotController::isRunning() const
+{
+    return running_.load(std::memory_order_acquire)
+        && !isEmergencyStopRequested();
+}
 
-    // ── 1. 通知所有线程退出 ──
-    running_.store(false);
+void RobotController::requestEmergencyStop() noexcept
+{
+    ::requestEmergencyStop();
+    running_.store(false, std::memory_order_release);
+}
 
-    // ── 2. 先 Join NN 线程 (停止发送新指令) ──
-    std::cout << "  [1/4] 停止 NN 线程..." << std::endl;
-    if (nn_thread_.joinable()) {
-        nn_thread_.join();
-    }
+void RobotController::safeShutdown()
+{
+    if (shutdown_started_.exchange(true, std::memory_order_acq_rel)) return;
 
-    // ── 3. 刹车所有电机 ──
-    std::cout << "  [2/4] 刹车所有电机..." << std::endl;
-    for (size_t b = 0; b < motor_ctrl_->busCount(); ++b) {
-        auto motor_ids = motor_ctrl_->bus(b).getMotorIds();
-        for (unsigned short id : motor_ids) {
-            motor_ctrl_->bus(b).brake(id);
+    std::cout << "[RobotController] 正在安全关闭..." << std::endl;
+    requestEmergencyStop();
+
+    // 先结束所有可能继续产生位置/速度/力矩指令的线程。
+    if (nn_thread_.joinable()) nn_thread_.join();
+    if (est_thread_.joinable()) est_thread_.join();
+    if (imu_thread_.joinable()) imu_thread_.join();
+
+    if (motor_ctrl_ && motor_ctrl_->busCount() > 0) {
+        const bool all_buses_ready = motor_ctrl_->busCount() == config_.buses.size();
+        // 锁存阻尼后普通 setPosition/setVelocity/setTorque 将全部失效。
+        motor_ctrl_->enterEmergencyDampingAll(0.02f);
+        motor_ctrl_->startAll(100);
+        usleep(200000);  // 保持周期发送 200 ms，再回收总线线程。
+        motor_ctrl_->stopAll();
+        if (!all_buses_ready) {
+            // 初始化只完成部分总线时，释放占用后再覆盖全部 12 个电机。
+            motor_ctrl_.reset();
+            enterDampingModeForAllMotors(0.02f, 200);
         }
-    }
-    // 给总线线程一个周期执行刹车指令
-    usleep(100000);  // 100ms
-
-    // ── 4. 停止电机总线 (Join 4 路总线线程) ──
-    std::cout << "  [3/4] 停止电机总线..." << std::endl;
-    motor_ctrl_->stopAll();
-
-    // ── 5. Join 状态估计线程 ──
-    std::cout << "  [4/4] 停止状态估计线程..." << std::endl;
-    if (est_thread_.joinable()) {
-        est_thread_.join();
+    } else {
+        // 初始化/标定提前失败时，并行总线尚不存在，使用同步安全路径。
+        enterDampingModeForAllMotors(0.02f, 200);
     }
 
-    // ── 6. Join IMU 线程 ──
-    std::cout << "  [5/5] 停止 IMU 线程..." << std::endl;
-    if (imu_thread_.joinable()) {
-        imu_thread_.join();
-    }
-
-    // ── 7. 关闭 IMU 设备 ──
-    if (imu_) {
-        imu_->close();
-    }
-
-    std::cout << "[RobotController] ✓ 已关闭" << std::endl;
+    if (imu_) imu_->close();
+    std::cout << "[RobotController] ✓ 12 电机阻尼指令已发送，线程已回收" << std::endl;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -304,7 +323,7 @@ const EstimatedState* RobotController::getLatestEstimatedState()
 bool RobotController::waitForIMUData(int timeout_ms)
 {
     auto start = std::chrono::steady_clock::now();
-    while (running_.load()) {
+    while (running_.load() && !isEmergencyStopRequested()) {
         const IMURawData* data = imu_buffer_.tryAcquireRead();
         if (data && data->timestamp_ns > 0) {
             return true;
@@ -324,7 +343,7 @@ bool RobotController::waitForIMUData(int timeout_ms)
 bool RobotController::waitForMotorReady(int timeout_ms)
 {
     auto start = std::chrono::steady_clock::now();
-    while (running_.load()) {
+    while (running_.load() && !isEmergencyStopRequested()) {
         bool ready = true;
         for (size_t b = 0; b < motor_ctrl_->busCount(); ++b) {
             auto motor_ids = motor_ctrl_->bus(b).getMotorIds();
@@ -371,10 +390,15 @@ bool RobotController::runCalibrationSequence()
     int ok_count = calibrateAllJoints(calib_results_);
     calibration_ok_count_ = ok_count;
 
-    if (ok_count < 8)
+    if (isEmergencyStopRequested()) {
+        std::cerr << "[Calib] 急停请求，终止标定序列" << std::endl;
+        return false;
+    }
+
+    if (ok_count < 8)  // 至少 8/12 关节成功才允许继续
     {
         std::cerr << "[Calib] 致命错误: 标定成功数不足 ("
-                  << ok_count << "/12), 至少需要 8 个" << std::endl;
+                  << ok_count << "/12)" << std::endl;
         return false;
     }
 
@@ -402,9 +426,10 @@ bool RobotController::runCalibrationSequence()
     {
         if (calib_results_[i].success)
         {
-            post_calib_position_[i] = configs[i].hit_upper_first
-                                    ? calib_results_[i].mech_limit_end
-                                    : calib_results_[i].mech_limit_start;
+            // 校准后电机停在撞到的URDF限位处, 用转换函数得到准确的电机位置
+            float q_urdf_hit = configs[i].hit_upper_first
+                             ? configs[i].urdf_upper : configs[i].urdf_lower;
+            post_calib_position_[i] = urdfToMotorPosition(configs[i].motor_id, q_urdf_hit);
         }
         else
         {
@@ -432,8 +457,10 @@ void RobotController::transitionToStandingInternal(float transition_time_sec)
 {
     const int STEPS = 200;
     const float dt = transition_time_sec / STEPS;
-    const float kp = 0.3f;   // 过渡阶段使用较低刚度
-    const float kd = 0.02f;
+    const float KP_START = 0.02f;   // 起步极低刚度, 避免初始大误差造成冲击电流
+    const float KP_END   = 0.3f;    // 终点刚度
+    const float KD       = 0.01f;   // 阻尼
+    const float MAX_STEP_DELTA = 0.03f;  // 每步最大位置增量 (rad, ~1.7°)
 
     // 计算站立目标（URDF 关节角 → 电机输出端位置）
     float stand_target[12] = {0};
@@ -445,19 +472,27 @@ void RobotController::transitionToStandingInternal(float transition_time_sec)
         }
         else
         {
-            // 未标定的关节直接使用默认姿态（适用于跳过标定的场景）
             stand_target[i] = config_.default_standing_pose[i];
         }
     }
 
-    std::cout << "[Transition] " << transition_time_sec << "s, "
-              << STEPS << " steps (smoothstep)" << std::endl;
+    // 记录上一帧已输出的位置, 用于增量限制
+    float last_cmd[12];
+    for (int i = 0; i < 12; i++)
+        last_cmd[i] = post_calib_position_[i];
 
-    for (int step = 0; step <= STEPS; step++)
+    std::cout << "[Transition] " << transition_time_sec << "s, "
+              << STEPS << " steps (KP ramp " << KP_START
+              << "→" << KP_END << ", max Δ=" << MAX_STEP_DELTA << " rad/step)"
+              << std::endl;
+
+    for (int step = 0; step <= STEPS && !isEmergencyStopRequested(); step++)
     {
         float alpha = static_cast<float>(step) / STEPS;
-        // smoothstep: f(t) = t²(3 - 2t), 缓入缓出
         float smooth_alpha = alpha * alpha * (3.0f - 2.0f * alpha);
+
+        // KP 从极低逐步拉高
+        float kp = KP_START + smooth_alpha * (KP_END - KP_START);
 
         for (size_t b = 0; b < motor_ctrl_->busCount(); b++)
         {
@@ -465,9 +500,18 @@ void RobotController::transitionToStandingInternal(float transition_time_sec)
             for (size_t m = 0; m < motor_ids.size(); m++)
             {
                 int mid = motor_ids[m];
-                float q_cmd = post_calib_position_[mid]
-                            + smooth_alpha * (stand_target[mid] - post_calib_position_[mid]);
-                motor_ctrl_->bus(b).setPosition(mid, q_cmd, kp, kd);
+                // 目标位置 (smoothstep 插值)
+                float q_desired = post_calib_position_[mid]
+                                + smooth_alpha * (stand_target[mid] - post_calib_position_[mid]);
+
+                // 增量限制: 每步最多动 MAX_STEP_DELTA rad
+                float delta = q_desired - last_cmd[mid];
+                if (delta >  MAX_STEP_DELTA) delta =  MAX_STEP_DELTA;
+                if (delta < -MAX_STEP_DELTA) delta = -MAX_STEP_DELTA;
+                float q_cmd = last_cmd[mid] + delta;
+                last_cmd[mid] = q_cmd;
+
+                motor_ctrl_->bus(b).setPosition(mid, q_cmd, kp, KD);
             }
         }
 
@@ -493,7 +537,7 @@ void RobotController::imuLoop()
 
     std::cout << "[IMU Thread] 启动, 周期=" << (period_ns / 1000) << "us" << std::endl;
 
-    while (running_.load(std::memory_order_relaxed)) {
+    while (running_.load(std::memory_order_relaxed) && !isEmergencyStopRequested()) {
         // ── 获取写槽引用 ──
         IMURawData& data = imu_buffer_.acquireWriteSlot();
 
@@ -547,7 +591,7 @@ void RobotController::estimationLoop()
 
     std::cout << "[EST Thread] 启动, 周期=" << (period_ns / 1000000) << "ms" << std::endl;
 
-    while (running_.load(std::memory_order_relaxed)) {
+    while (running_.load(std::memory_order_relaxed) && !isEmergencyStopRequested()) {
         // ── 1. 读取最新 IMU 数据 (双缓冲指针, 不拷贝) ──
         const IMURawData* imu = imu_buffer_.tryAcquireRead();
         if (!imu) {
@@ -557,18 +601,21 @@ void RobotController::estimationLoop()
         }
 
         // ── 2. 读取 12 电机状态 (值拷贝, ParallelBus 内部 mutex 保护) ──
-        float joint_q[12], joint_dq[12], joint_tau[12];
-        int   joint_err[12];
-        int global_idx = 0;
+        // 数组下标严格等于 motor ID，与 EstimatedState 和 NN 输入输出一致。
+        float joint_q[12] = {0};
+        float joint_dq[12] = {0};
+        float joint_tau[12] = {0};
+        int   joint_err[12] = {0};
         for (int b = 0; b < bus_count; ++b) {
             auto motor_ids = motor_ctrl_->bus(b).getMotorIds();
             for (size_t m = 0; m < motor_ids.size(); ++m) {
                 MotorState s = motor_ctrl_->bus(b).getState(motor_ids[m]);
-                joint_q[global_idx]   = s.q;
-                joint_dq[global_idx]  = s.dq;
-                joint_tau[global_idx] = s.tau;
-                joint_err[global_idx] = s.merror;
-                ++global_idx;
+                // 电机坐标系 → URDF 坐标系
+                int mid = motor_ids[m];
+                joint_q[mid]   = motorToUrdfPosition(mid, s.q);
+                joint_dq[mid]  = motorToUrdfVelocity(mid, s.dq);
+                joint_tau[mid] = motor_direction_arr[mid] * s.tau;
+                joint_err[mid] = s.merror;
             }
         }
 
@@ -617,7 +664,7 @@ void RobotController::nnLoop()
               << (config_.nn_flags.validate ? " [VALIDATE]" : "")
               << std::endl;
 
-    while (running_.load(std::memory_order_relaxed)) {
+    while (running_.load(std::memory_order_relaxed) && !isEmergencyStopRequested()) {
         // ── 1. 读取估计状态 (双缓冲指针, 不拷贝) ──
         const EstimatedState* est = est_buffer_.tryAcquireRead();
         if (!est) {
@@ -650,9 +697,10 @@ void RobotController::nnLoop()
                         // 模型输出顺序: [0]=motor0(hip), [1]=motor1(hip), ...
                         //               [4]=motor4(thigh), ..., [8]=motor8(lower_leg)...
                         int mid = motor_ids[m];
+                        // URDF 目标 → 电机坐标系
+                        float q_motor = urdfToMotorPosition(mid, cmds.joint_position_target[mid]);
                         motor_ctrl_->bus(b).setPosition(
-                            mid,
-                            cmds.joint_position_target[mid],
+                            mid, q_motor,
                             cmds.kp[mid],
                             cmds.kd[mid]);
                     }

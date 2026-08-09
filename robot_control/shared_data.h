@@ -85,7 +85,8 @@ struct EstimatedState {
     float linear_velocity[3]  = {0};   // dx, dy, dz (m/s)
     float angular_velocity[3] = {0};   // body-frame (rad/s)
 
-    // ── 12 电机关节状态 (输出端量纲: rad, rad/s, N·m) ──
+    // ── 12 电机关节状态 (下标严格等于 motor ID: 0..11) ──
+    // 输出端量纲: rad, rad/s, N·m
     float joint_position[12]  = {0};
     float joint_velocity[12]  = {0};
     float joint_torque[12]    = {0};

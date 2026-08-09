@@ -55,7 +55,12 @@ public:
     void setPosition(unsigned short motor_id, float q, float kp, float kd);
     void setVelocity(unsigned short motor_id, float dq, float kd);
     void setTorque(unsigned short motor_id, float tau);
+    void setDamping(unsigned short motor_id, float kd);
     void brake(unsigned short motor_id);
+
+    /// 锁存急停阻尼；锁存后普通位置/速度/力矩指令均被拒绝。
+    void enterEmergencyDamping(float kd = 0.02f);
+    bool isEmergencyLatched() const { return emergency_latched_.load(); }
 
     // ── 状态读取（线程安全） ──
 
@@ -106,6 +111,8 @@ private:
     std::atomic<bool> running_{false};
     int target_hz_ = 500;
     std::atomic<float> actual_hz_{0.0f};
+    std::atomic<bool> emergency_latched_{false};
+    std::atomic<float> emergency_kd_{0.02f};
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -153,6 +160,9 @@ public:
 
     /// 停止所有总线线程
     void stopAll();
+
+    /// 所有总线锁存阻尼模式，后续普通控制指令不能覆盖。
+    void enterEmergencyDampingAll(float kd = 0.02f);
 
     /// 按索引访问某路总线
     ParallelBus& bus(size_t index);

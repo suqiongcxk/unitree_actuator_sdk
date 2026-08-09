@@ -101,7 +101,13 @@ public:
     /// 优雅关闭 (按依赖逆序)
     void stop();
 
-    bool isRunning() const { return running_.load(); }
+    /// 请求急停；只发布停止状态，不在调用线程中执行通信清理。
+    void requestEmergencyStop() noexcept;
+
+    /// 幂等安全退出：停止上层控制、全电机阻尼、回收所有线程。
+    void safeShutdown();
+
+    bool isRunning() const;
 
     // ── 监控接口 (线程安全) ──────────────────────────────────────────────
 
@@ -157,6 +163,7 @@ private:
     // 4 路电机总线线程由 MultiBusController 内部管理
 
     std::atomic<bool> running_{false};
+    std::atomic<bool> shutdown_started_{false};
 
     // ── 标定与启动 ───────────────────────────────────────────────────────
 

@@ -78,13 +78,14 @@ struct JointCalibConfig
 {
     unsigned short motor_id;        // 电机 ID (0-11)
     int    leg_index;               // 腿部索引 (0=FL, 1=FR, 2=RL, 3=RR)
-    float  calib_velocity;          // 标定运动速度 (rad/s, 输出端, 正/负决定方向)
+    float  calib_velocity;          // 标定运动速度 (rad/s, 电机输出端)
     float  calib_kd;                // 标定阻尼系数 (低刚度, 0.0-1.0)
     float  timeout_sec;             // 最大标定时间 (秒)
     float  urdf_lower;              // URDF 下限 (rad)
     float  urdf_upper;              // URDF 上限 (rad)
     float  urdf_range;              // URDF 行程 = upper - lower (rad)
-    bool   hit_upper_first;         // true=先撞上限(MechLimitEnd), false=先撞下限(MechLimitStart)
+    bool   hit_upper_first;         // true=撞URDF上限, false=撞URDF下限
+    int    motor_direction;         // +1=电机正方向与URDF相同, -1=相反
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -122,13 +123,34 @@ enum class StartupPhase
 //  全局标定数据 (12 电机)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-extern float ZERO_Position_MechLimitEnd[12];    // 机械上限 (rad, 输出端)
-extern float ZERO_Position_MechLimitStart[12];  // 机械下限 (rad, 输出端)
-extern float target_angle[12];                  // 过渡目标角度
-extern float URDF_Joint_zero_OFFSET[12];        // URDF 零点偏置
+extern float ZERO_Position_MechLimitEnd[12];    // 机械上限 (rad, 电机坐标系)
+extern float ZERO_Position_MechLimitStart[12];  // 机械下限 (rad, 电机坐标系)
+extern float motor_zero_offset[12];              // URDF零点对应的电机位置 (rad)
+extern int   motor_direction_arr[12];            // 电机→URDF方向系数 (+1或-1)
 
-/// 默认站立姿态 (Z 字排序: Hip[0-3], Thigh[4-7], Calf[8-11])
+/// 默认站立姿态 — URDF 关节角 (Z 字排序: Hip[0-3], Thigh[4-7], Calf[8-11])
 extern const float default_joint_pos[12];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  坐标转换函数 (inline, 依赖 motor_zero_offset 和 motor_direction_arr)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/// 电机位置 → URDF 关节角
+inline float motorToUrdfPosition(int motor_id, float q_motor) {
+    return motor_direction_arr[motor_id] * (q_motor - motor_zero_offset[motor_id]);
+}
+/// URDF 关节角 → 电机目标位置
+inline float urdfToMotorPosition(int motor_id, float q_urdf) {
+    return motor_zero_offset[motor_id] + motor_direction_arr[motor_id] * q_urdf;
+}
+/// 电机速度 → URDF 关节速度
+inline float motorToUrdfVelocity(int motor_id, float dq_motor) {
+    return motor_direction_arr[motor_id] * dq_motor;
+}
+/// URDF 关节速度 → 电机速度
+inline float urdfToMotorVelocity(int motor_id, float dq_urdf) {
+    return motor_direction_arr[motor_id] * dq_urdf;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MotorBus 前向声明
@@ -152,10 +174,11 @@ bool calibrateSingleJoint(MotorBus& bus,
                           const JointCalibConfig& cfg,
                           JointCalibResult& result);
 
-/// 12 关节完整标定（逐腿创建临时 MotorBus 实例）
-/// @param results  [out] 12 个关节的标定结果 (索引 = motor_id)
+/// 12 关节完整标定（左侧两腿并行，再进行右侧两腿并行）
+/// @param results  [out] 标定结果，索引与 getCalibrationConfigs() 配置表一致
+/// @param leg_mask 腿部选择位掩码 (bit0=Leg1, bit1=Leg2, bit2=Leg3, bit3=Leg4, 0x0F=全部)
 /// @return 成功标定的关节数量 (0-12)
-int calibrateAllJoints(JointCalibResult results[12]);
+int calibrateAllJoints(JointCalibResult results[12], uint8_t leg_mask = 0x0F);
 
 /// 验证标定结果：对比实测行程与 URDF 预期行程
 /// @param results          12 个标定结果
@@ -164,13 +187,18 @@ int calibrateAllJoints(JointCalibResult results[12]);
 /// @return true=全部通过验证
 bool validateCalibrationResults(const JointCalibResult results[12],
                                 const JointCalibConfig configs[12],
-                                float max_range_error = 0.15f);
+                                float max_range_error = 0.15f,
+                                uint8_t leg_mask = 0x0F);
 
 /// URDF 关节角 → 电机输出端位置的映射
 /// @param motor_id    电机 ID (0-11)
 /// @param urdf_target URDF 坐标系下的目标角度 (rad)
 /// @return 对应的电机输出端位置 (rad)
 float computeMotorTargetFromURDF(int motor_id, float urdf_target);
+
+/// 使用同步总线让全部 12 个电机持续进入阻尼模式。
+/// 仅可在 ParallelBus 未占用相同 GPIO/串口时调用。
+bool enterDampingModeForAllMotors(float kd = 0.02f, int hold_ms = 200);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  腿部初始化函数 (保持兼容)

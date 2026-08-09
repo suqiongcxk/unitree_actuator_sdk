@@ -25,8 +25,8 @@
 // ── 硬件配置（请根据实际接线修改） ──────────────────────────────────────────
 constexpr int    GPIO_PIN[4]    = {63,39,35,133};              // GPIO1_D7 → sysfs gpio63
 constexpr const char* SERIAL_PORT[4] = {"/dev/ttyS4","/dev/ttyS6","/dev/ttyS7","/dev/ttyS0"}; // Orange Pi UART4
-constexpr unsigned short MOTOR_ID[4] = {0,4,8} ;
-const int text_number = 3; 
+constexpr unsigned short MOTOR_ID[4] = {0,4,8,1} ;
+const int text_number = 0; 
 
 // ── 全局运行标志，Ctrl+C 优雅退出 ───────────────────────────────────────────
 static volatile bool g_running = true;
@@ -127,7 +127,7 @@ void demo_torque_control()
     // 施加小力矩斜坡，感受电机推力（请根据实际负载调整）
     const float tau_max = 0.3f;   // N·m
 
-    for (int i = 0; i < 60 && g_running; ++i) {
+    for (int i = 0; i < 60000 && g_running; ++i) {
 
         float tau;
         if (i < 20)       tau = tau_max * (i / 20.0f);
@@ -157,7 +157,10 @@ void timeCalibration ()
 
 int main()
 {
-    LEG_MOTOR_INIT();
+
+
+    // demo_torque_control();
     ZeroPointCalibration();
     return 0;
 }
+

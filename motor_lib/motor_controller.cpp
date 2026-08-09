@@ -1,4 +1,5 @@
 #include "motor_controller.h"
+#include "emergency_stop.h"
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
@@ -154,6 +155,7 @@ void MotorController::sendRecv()
 
 void MotorController::setPosition(float q, float kp, float kd)
 {
+    if (isEmergencyStopRequested()) return;
     cmd_.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
     cmd_.q    = q;       // 暂存输出端值
     cmd_.kp   = kp;
@@ -167,6 +169,7 @@ void MotorController::setPosition(float q, float kp, float kd)
 
 void MotorController::setVelocity(float dq, float kd)
 {
+    if (isEmergencyStopRequested()) return;
     cmd_.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
     cmd_.q    = 0.0f;
     cmd_.kp   = 0.0f;
@@ -194,6 +197,7 @@ void MotorController::setdamping(float kd)
 
 void MotorController::setTorque(float tau)
 {
+    if (isEmergencyStopRequested()) return;
     cmd_.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
     cmd_.q    = 0.0f;
     cmd_.kp   = 0.0f;
@@ -207,6 +211,7 @@ void MotorController::setTorque(float tau)
 
 void MotorController::brake()
 {
+    if (isEmergencyStopRequested()) return;
     cmd_.mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::BRAKE);
     cmd_.q    = 0.0f;
     cmd_.kp   = 0.0f;
@@ -306,6 +311,7 @@ void MotorBus::rx() { gpio_->set(0); }
 
 void MotorBus::setPosition(unsigned short motor_id, float q, float kp, float kd)
 {
+    if (isEmergencyStopRequested()) return;
     auto* s = findSlot(motor_id);
     if (!s) return;
 
@@ -319,6 +325,7 @@ void MotorBus::setPosition(unsigned short motor_id, float q, float kp, float kd)
 
 void MotorBus::setVelocity(unsigned short motor_id, float dq, float kd)
 {
+    if (isEmergencyStopRequested()) return;
     auto* s = findSlot(motor_id);
     if (!s) return;
 
@@ -345,6 +352,7 @@ void MotorBus::setDamping(unsigned short motor_id , float kd)
 
 void MotorBus::setTorque(unsigned short motor_id, float tau)
 {
+    if (isEmergencyStopRequested()) return;
     auto* s = findSlot(motor_id);
     if (!s) return;
 
@@ -359,6 +367,7 @@ void MotorBus::setTorque(unsigned short motor_id, float tau)
 
 void MotorBus::brake(unsigned short motor_id)
 {
+    if (isEmergencyStopRequested()) return;
     auto* s = findSlot(motor_id);
     if (!s) return;
 

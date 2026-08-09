@@ -29,22 +29,38 @@
  */
 
 #include "robot_controller.h"
+#include "emergency_stop.h"
 #include <iostream>
 #include <iomanip>
 #include <csignal>
 #include <unistd.h>
 #include <cstring>
-
-// ── 全局指针，用于 SIGINT 信号处理 ──────────────────────────────────────────
-static std::atomic<RobotController*> g_active_controller{nullptr};
+#include <thread>
+#include <atomic>
+#include <poll.h>
 
 static void sigint_handler(int sig)
 {
     (void)sig;
-    auto* ctrl = g_active_controller.load();
-    if (ctrl) {
-        std::cout << "\n[Main] 收到中断信号，正在关闭..." << std::endl;
-        ctrl->stop();
+    // 信号上下文只置位；通信、锁和线程回收由主流程执行。
+    requestEmergencyStop();
+}
+
+static void keyboardStopLoop(std::atomic<bool>& listener_running)
+{
+    while (listener_running.load(std::memory_order_acquire)
+           && !isEmergencyStopRequested()) {
+        pollfd pfd{STDIN_FILENO, POLLIN, 0};
+        int rc = poll(&pfd, 1, 100);
+        if (rc <= 0 || !(pfd.revents & POLLIN)) continue;
+
+        std::string line;
+        if (!std::getline(std::cin, line)) break;
+        if (line == "s" || line == "S") {
+            std::cout << "\n[Main] 收到键盘急停请求" << std::endl;
+            requestEmergencyStop();
+            break;
+        }
     }
 }
 
@@ -94,6 +110,7 @@ static void printHelp(const char* prog)
               << "  --motor-hz <hz>     电机总线频率 (默认: 500)\n"
               << "  --imu-hz <hz>       IMU 读取频率 (默认: 200)\n"
               << "  -h, --help          打印此帮助\n"
+              << "\n急停: 输入 s/S 后回车，或按 Ctrl+C\n"
               << "\n验证工作流:\n"
               << "  # 第1步: 干运行 ONNX 模型, 记录日志, 对比站立策略\n"
               << "  sudo " << prog << " --onnx model.onnx --dry-run --log --compare\n\n"
@@ -110,6 +127,7 @@ static void printHelp(const char* prog)
 
 int main(int argc, char* argv[])
 {
+    resetEmergencyStop();
     // ── 解析命令行参数 ──
     RobotControlConfig config = RobotController::getDefaultConfig();
 
@@ -181,37 +199,48 @@ int main(int argc, char* argv[])
         std::cout << "  日志文件: " << config.nn_flags.log_filepath << std::endl;
     }
 
-    // ── 创建控制器 ──
+    // ── 创建控制器和键盘监听 ──
     RobotController controller(config);
-    g_active_controller.store(&controller);
+    std::atomic<bool> listener_running{true};
+    std::thread keyboard_thread(keyboardStopLoop, std::ref(listener_running));
 
     // ── 初始化 + 启动 ──
-    if (!controller.initialize()) {
-        std::cerr << "[Main] 硬件初始化失败, 退出" << std::endl;
-        return 1;
-    }
-    if (!controller.start()) {
-        std::cerr << "[Main] 线程启动失败, 退出" << std::endl;
-        return 1;
+    int exit_code = 0;
+    try {
+        if (!controller.initialize()) {
+            std::cerr << "[Main] 硬件初始化失败, 退出" << std::endl;
+            exit_code = 1;
+        } else if (!controller.start()) {
+            std::cerr << "[Main] 线程启动失败, 退出" << std::endl;
+            exit_code = 1;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[Main] 未处理异常: " << e.what() << std::endl;
+        exit_code = 1;
+        requestEmergencyStop();
     }
 
-    std::cout << "\n[Main] ✓ 系统运行中 — 按 Ctrl+C 退出\n" << std::endl;
+    if (exit_code == 0) {
+        std::cout << "\n[Main] ✓ 系统运行中 — 输入 s/S 后回车或按 Ctrl+C 急停\n"
+                  << std::endl;
+    }
 
     // ── 主线程: 健康监控循环 ──
     int print_count = 0;
-    while (controller.isRunning()) {
-        sleep(1);
+    while (exit_code == 0 && controller.isRunning()) {
+        usleep(50000);
         print_count++;
 
-        if (print_count % 10 == 0) {
+        if (print_count % 200 == 0) {
             printStatus(controller);
         }
     }
 
-    // ── 清理 ──
-    g_active_controller.store(nullptr);
-    controller.stop();
+    // ── 统一安全清理 ──
+    controller.safeShutdown();
+    listener_running.store(false, std::memory_order_release);
+    if (keyboard_thread.joinable()) keyboard_thread.join();
 
     std::cout << "\n[Main] 程序退出" << std::endl;
-    return 0;
+    return exit_code;
 }
