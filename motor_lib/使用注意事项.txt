@@ -70,14 +70,14 @@
 四、四路总线引脚对应表
 ═══════════════════════════════════════════════════════════════════════════════
 
-  总线  串口设备      Overlay        TX 引脚        RX 引脚        DE/RE 引脚     chip:line    全局GPIO
-  ────  ────────────  ────────────   ────────────   ────────────   ────────────   ───────────   ────────
-   A     /dev/ttyS4    uart4-m2       GPIO1_B2       GPIO1_B3       GPIO1_D7       chip1:31      63        
-   B     /dev/ttyS6    uart6-m1       GPIO1_A0       GPIO1_A1       GPIO1_A7       chip1:7       39        
-   C     /dev/ttyS7    uart7-m2       GPIO1_B4       GPIO1_B5       GPIO1_A3       chip1:3       35        
-   D     /dev/ttyS0    uart0-m2       GPIO4_A4       GPIO4_A3       GPIO4_A5       chip4:5       133       
-  (GPIO0_B5, I2C2_SCL)  → JY901S SCL
-  (GPIO0_B6, I2C2_SDA)  → JY901S SDA
+  总线  对应腿       串口设备      Overlay        RX 引脚        TX 引脚        DE/RE 引脚     chip:line    全局GPIO
+  ────  ──────────  ────────────  ────────────   ────────────   ────────────   ────────────   ───────────   ────────
+   A    Leg2 (FR)   /dev/ttyS4    uart4-m2       GPIO1_B2       GPIO1_B3       GPIO1_D7       chip1:31      63
+   B    Leg1 (FL)   /dev/ttyS6    uart6-m1       GPIO1_A0       GPIO1_A1       GPIO1_A7       chip1:7       39
+   C    Leg3 (RL)   /dev/ttyS7    uart7-m2       GPIO1_B4       GPIO1_B5       GPIO1_A3       chip1:3       35
+   D    Leg4 (RR)   /dev/ttyS0    uart0-m2       GPIO4_A4       GPIO4_A3       GPIO4_A5       chip4:5       133
+  (GPIO1_D2, I2C1_SCL)  → JY901S SCL
+  (GPIO1_D3, I2C1_SDA)  → JY901S SDA
   (5V)                  → JY901S VCC
   (GND)                 → JY901S GND
 

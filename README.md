@@ -27,12 +27,12 @@ ls -l /dev/ttyS0 /dev/ttyS4 /dev/ttyS6 /dev/ttyS7
 
 ## 四路总线引脚
 
-| 总线 | 串口 | TX | RX | DE/RE | 全局GPIO |
-|---|---|---|---|---|---|
-| A | /dev/ttyS4 | GPIO1_B2 | GPIO1_B3 | GPIO1_D7 | 63 |
-| B | /dev/ttyS6 | GPIO1_A0 | GPIO1_A1 | GPIO1_A7 | 39 |
-| C | /dev/ttyS7 | GPIO1_B4 | GPIO1_B5 | GPIO1_A3 | 35 |
-| D | /dev/ttyS0 | GPIO4_A4 | GPIO4_A3 | GPIO4_A5 | 133 |
+| 总线 | 对应腿 | 串口 | TX | RX | DE/RE | 全局GPIO |
+|---|---|---|---|---|---|---|
+| A | Leg2 (FR) | /dev/ttyS4 | GPIO1_B2 | GPIO1_B3 | GPIO1_D7 | 63 |
+| B | Leg1 (FL) | /dev/ttyS6 | GPIO1_A0 | GPIO1_A1 | GPIO1_A7 | 39 |
+| C | Leg3 (RL) | /dev/ttyS7 | GPIO1_B4 | GPIO1_B5 | GPIO1_A3 | 35 |
+| D | Leg4 (RR) | /dev/ttyS0 | GPIO4_A4 | GPIO4_A3 | GPIO4_A5 | 133 |
 
 > 详细引脚图、GPIO 芯片映射见 [`motor_lib/使用注意事项.txt`](motor_lib/使用注意事项.txt)
 

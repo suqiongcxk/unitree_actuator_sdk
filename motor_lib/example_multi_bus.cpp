@@ -32,13 +32,14 @@ struct BusConfig {
     int gpio_chip;
     int gpio_line;
     const char* serial_port;
+    unsigned short motor_ids[3];
 };
 
 static const BusConfig BUS_CONFIGS[] = {
-    {0, 63,  "/dev/ttyS4"},   // 总线 A → 电机 0,1,2
-    {0, 120, "/dev/ttyS5"},   // 总线 B → 电机 3,4,5
-    {0, 121, "/dev/ttyS6"},   // 总线 C → 电机 6,7,8
-    {0, 122, "/dev/ttyS7"},   // 总线 D → 电机 9,10,11
+    {1, 7,  "/dev/ttyS6", {0, 4, 8}},    // Leg1 (FL)
+    {1, 31, "/dev/ttyS4", {1, 5, 9}},    // Leg2 (FR)
+    {1, 3,  "/dev/ttyS7", {2, 6, 10}},   // Leg3 (RL)
+    {4, 5,  "/dev/ttyS0", {3, 7, 11}},   // Leg4 (RR)
 };
 
 constexpr int MOTORS_PER_BUS = 3;
@@ -82,10 +83,10 @@ int main()
     // ── 2. 为每路总线注册电机 ──
     for (int b = 0; b < BUS_COUNT; ++b) {
         for (int m = 0; m < MOTORS_PER_BUS; ++m) {
-            int global_id = b * MOTORS_PER_BUS + m;
-            controller.bus(b).addMotor(m);   // 每路内部 ID 从 0 开始
-            std::cout << "  总线" << b << " 注册电机 id=" << m
-                      << " (全局编号 " << global_id << ")\n";
+            const unsigned short motor_id = BUS_CONFIGS[b].motor_ids[m];
+            controller.bus(b).addMotor(motor_id);
+            std::cout << "  Leg" << (b + 1) << " 总线注册电机 id="
+                      << motor_id << "\n";
         }
     }
 

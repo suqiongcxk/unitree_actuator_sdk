@@ -151,6 +151,14 @@ inline float motorToUrdfVelocity(int motor_id, float dq_motor) {
 inline float urdfToMotorVelocity(int motor_id, float dq_urdf) {
     return motor_direction_arr[motor_id] * dq_urdf;
 }
+/// 电机输出端力矩 → URDF 关节力矩（同一转轴变换，方向与速度一致）
+inline float motorToUrdfTorque(int motor_id, float tau_motor) {
+    return motor_direction_arr[motor_id] * tau_motor;
+}
+/// URDF 关节力矩 → 电机输出端力矩
+inline float urdfToMotorTorque(int motor_id, float tau_urdf) {
+    return motor_direction_arr[motor_id] * tau_urdf;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  MotorBus 前向声明

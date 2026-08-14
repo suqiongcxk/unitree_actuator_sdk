@@ -16,6 +16,7 @@ std::string ValidationResult::summary() const
 
     if (nan_count > 0)    oss << " | NaN:" << nan_count;
     if (inf_count > 0)    oss << " | Inf:" << inf_count;
+    if (gain_invalid_count > 0) oss << " | BAD_GAIN:" << gain_invalid_count;
     if (out_of_bounds_count > 0) {
         oss << " | OOB:" << out_of_bounds_count
             << " (joint[" << first_bad_joint << "]="
@@ -37,8 +38,8 @@ ValidationResult validateJointLimits(const float targets[12], float margin)
     ValidationResult r;
 
     for (int i = 0; i < 12; ++i) {
-        float lo = JOINT_LIMITS[i][0] - margin;
-        float hi = JOINT_LIMITS[i][1] + margin;
+        float lo = JOINT_LIMITS[i][0] + margin;
+        float hi = JOINT_LIMITS[i][1] - margin;
 
         if (targets[i] < lo || targets[i] > hi) {
             r.out_of_bounds_count++;
@@ -144,6 +145,31 @@ ValidationResult validateAll(const float targets[12],
         combined.first_bad_value    = r_smooth.first_bad_value;
     }
 
+    return combined;
+}
+
+ValidationResult validateCommandSet(const NNCommandSet& cmds,
+                                    const float previous[12],
+                                    float joint_margin,
+                                    float max_jump,
+                                    float max_kp,
+                                    float max_kd)
+{
+    ValidationResult combined = validateAll(
+        cmds.joint_position_target, previous, joint_margin, max_jump);
+
+    for (int i = 0; i < 12; ++i) {
+        bool kp_bad = !std::isfinite(cmds.kp[i]) || cmds.kp[i] < 0.0f || cmds.kp[i] > max_kp;
+        bool kd_bad = !std::isfinite(cmds.kd[i]) || cmds.kd[i] < 0.0f || cmds.kd[i] > max_kd;
+        if (kp_bad || kd_bad) {
+            ++combined.gain_invalid_count;
+            combined.passed = false;
+            if (combined.first_bad_joint < 0) {
+                combined.first_bad_joint = i;
+                combined.first_bad_value = kp_bad ? cmds.kp[i] : cmds.kd[i];
+            }
+        }
+    }
     return combined;
 }
 

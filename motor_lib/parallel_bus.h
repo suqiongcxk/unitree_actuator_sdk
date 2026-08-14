@@ -103,6 +103,8 @@ private:
         unsigned short id;
         MotorCmd cmd;
         MotorData data;
+        uint64_t feedback_timestamp_ns = 0;
+        uint32_t consecutive_failures = 0;
     };
     std::vector<MotorSlot> slots_;
     mutable std::mutex slots_mtx_;   // 保护 slots_ 的读写

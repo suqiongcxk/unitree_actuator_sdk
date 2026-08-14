@@ -32,7 +32,7 @@ struct BusConfig {
 
 struct RobotControlConfig {
     // ── IMU ──
-    std::string imu_device = "/dev/i2c-2";
+    std::string imu_device = "/dev/i2c-1";
     int imu_hz = 200;
 
     // ── 状态估计 ──
@@ -189,6 +189,9 @@ private:
 
     /// 启动时等待 IMU 产生初始数据
     bool waitForIMUData(int timeout_ms = 500);
+
+    /// 等待静止陀螺仪零偏校准完成；必须在电机总线启动前调用。
+    bool waitForEstimatorReady(int timeout_ms = 3000);
 
     /// 启动时等待电机总线就绪
     bool waitForMotorReady(int timeout_ms = 1000);

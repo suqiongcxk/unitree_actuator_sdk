@@ -167,17 +167,17 @@ MotorState ParallelBus::getState(unsigned short motor_id) const
     std::lock_guard<std::mutex> lock(slots_mtx_);
 
     MotorState s;
-    constexpr bool TORQUE_IS_ROTOR = true;
-
     for (const auto& slot : slots_) {
         if (slot.id != motor_id) continue;
         s.q       = slot.data.q  / gear_ratio_;
         s.dq      = slot.data.dq / gear_ratio_;
-        s.tau     = TORQUE_IS_ROTOR ? (slot.data.tau * gear_ratio_) : slot.data.tau;
+        s.tau     = slot.data.tau;  // 协议直接给出关节输出扭矩
         s.temp    = slot.data.temp;
         s.merror  = slot.data.merror;
         s.correct = slot.data.correct;
         s.mode    = slot.data.mode;
+        s.feedback_timestamp_ns = slot.feedback_timestamp_ns;
+        s.consecutive_failures = slot.consecutive_failures;
         break;
     }
     return s;
@@ -197,9 +197,6 @@ void ParallelBus::applyGearRatio(MotorCmd& cmd)
 {
     cmd.q  *= gear_ratio_;
     cmd.dq *= gear_ratio_;
-    if (cmd.tau != 0.0f) {
-        cmd.tau /= gear_ratio_;
-    }
 }
 
 // ── 控制线程 ──
@@ -313,6 +310,19 @@ void ParallelBus::controlLoop()
             std::lock_guard<std::mutex> lock(slots_mtx_);
             for (size_t i = 0; i < recvVec.size() && i < slots_.size(); ++i) {
                 slots_[i].data = recvVec[i];
+                const bool response_ok = recvVec[i].correct
+                                      && recvVec[i].motor_id == slots_[i].id;
+                if (response_ok) {
+                    struct timespec feedback_time;
+                    clock_gettime(CLOCK_MONOTONIC, &feedback_time);
+                    slots_[i].feedback_timestamp_ns =
+                        static_cast<uint64_t>(feedback_time.tv_sec) * 1'000'000'000ULL
+                      + static_cast<uint64_t>(feedback_time.tv_nsec);
+                    slots_[i].consecutive_failures = 0;
+                } else {
+                    ++slots_[i].consecutive_failures;
+                    slots_[i].data.correct = false;
+                }
             }
         }
 
@@ -390,8 +400,6 @@ std::vector<ParallelBus*> MultiBusController::buses()
     for (auto& b : buses_) ptrs.push_back(b.get());
     return ptrs;
 }
-
-
 
 
 

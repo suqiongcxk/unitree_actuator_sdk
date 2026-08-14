@@ -69,7 +69,8 @@ struct IMURawData {
     JY901S_ACCData      acc;            // x, y, z (m/s²)
     JY901S_GyroData     gyro;           // x, y, z (rad/s)
     JY901S_Quaternion   quat;           // w, x, y, z
-    uint64_t            timestamp_ns;   // CLOCK_MONOTONIC
+    uint64_t            timestamp_ns = 0; // CLOCK_MONOTONIC
+    bool                valid = false;  // 本周期所有必需 IMU 数据均读取成功
 };
 
 using IMUBuffer = DoubleBuffer<IMURawData>;
@@ -84,6 +85,7 @@ struct EstimatedState {
     float orientation[4]      = {0};   // quaternion w, x, y, z
     float linear_velocity[3]  = {0};   // dx, dy, dz (m/s)
     float angular_velocity[3] = {0};   // body-frame (rad/s)
+    float projected_gravity[3] = {0};  // 单位重力在机体坐标系中的方向
 
     // ── 12 电机关节状态 (下标严格等于 motor ID: 0..11) ──
     // 输出端量纲: rad, rad/s, N·m
@@ -91,9 +93,36 @@ struct EstimatedState {
     float joint_velocity[12]  = {0};
     float joint_torque[12]    = {0};
     int   joint_error[12]     = {0};
+    bool  joint_valid[12]     = {false}; // CRC 正确、反馈有限且 merror=0
+    bool  joint_feedback_valid = false;  // 12 个关节本周期全部有效
+    uint64_t joint_age_ns[12] = {0};     // 各关节最近成功反馈距本帧的年龄
+    uint32_t joint_failure_count[12] = {0}; // 各关节连续通信失败次数
+    uint64_t max_joint_age_ns = 0;
 
     // ── 接触状态 ──
     bool  contact[4]          = {false};
+    float contact_confidence[4] = {0};   // FL,FR,RL,RR，0..1
+    float foot_position[4][3] = {{0}};   // 相对 base，base frame，m
+    float foot_velocity[4][3] = {{0}};   // 关节运动造成的相对速度，m/s
+    float body_height         = 0.0f;    // 基于支撑足的机体高度，m
+    float linear_velocity_confidence = 0.0f;
+    bool  leg_odometry_valid = false;
+    bool  airborne           = true;
+    bool  slipping           = false;
+    bool  landing_impact     = false;
+
+    // Step 1: 姿态健康状态。无效状态不得进入 NN 控制。
+    bool     orientation_valid   = false;
+    bool     gyro_valid          = false;
+    bool     projected_gravity_valid = false;
+    bool     gyro_calibrated     = false;
+    bool     valid               = false;
+    float    quaternion_raw_norm = 0.0f;
+    float    gyro_bias[3]        = {0};
+    uint64_t imu_age_ns          = 0;
+    float    dt_sec              = 0.0f;
+    uint32_t consecutive_invalid_count = 0;
+    int      status_code         = 0;
 
     uint64_t timestamp_ns     = 0;
 };

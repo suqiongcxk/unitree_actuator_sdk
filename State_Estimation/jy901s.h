@@ -9,12 +9,12 @@
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 //  接线: Orange Pi 5 Pro 40-pin 排针
-//    pin 6  (GPIO0_B5) → JY901S SCL
-//    pin 8  (GPIO0_B6) → JY901S SDA
+//    pin 5  (GPIO1_D2, I2C1_M4_SCL) → JY901S SCL
+//    pin 3  (GPIO1_D3, I2C1_M4_SDA) → JY901S SDA
 //    pin 1  (3.3V)     → JY901S VCC
 //    pin 9  (GND)      → JY901S GND
 //
-//  设备节点: /dev/i2c-2
+//  设备节点: /dev/i2c-1（需启用 overlay: i2c1-m4）
 //  I2C 地址: 0x50
 
 // ── I2C 地址 ─────────────────────────────────────────────────────────────────
@@ -45,6 +45,9 @@
 
 // 四元数寄存器（每个分量 2 字节，共 8 字节）
 #define JY901S_REG_Q0           0x51
+
+// 四元数: 有符号 16-bit，实际值 = raw / 32768
+#define JY901S_QUAT_SCALE       (1.0f / 32768.0f)
 
 // ── 输出速率宏 ───────────────────────────────────────────────────────────────
 #define JY901S_RRATE_200HZ      0x0B
@@ -113,9 +116,9 @@ class JY901S {
 public:
     /**
      * @brief 构造函数
-     * @param i2c_device  I2C 设备路径，如 "/dev/i2c-2"
+     * @param i2c_device  I2C 设备路径，如 "/dev/i2c-1"
      */
-    explicit JY901S(const std::string& i2c_device = "/dev/i2c-2");
+    explicit JY901S(const std::string& i2c_device = "/dev/i2c-1");
     ~JY901S();
 
     // ── 生命周期 ─────────────────────────────────────────────────────────

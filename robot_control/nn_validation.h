@@ -15,22 +15,13 @@
 // ── 关节角度限制 (rad, 输出端) ──
 // 对应 ZeroPointCalibration.h 中的定义
 constexpr float JOINT_LIMITS[12][2] = {
-    // Leg1: hip=0, thigh=4, lower_leg=8
-    {-1.0472f,  1.0472f},   // Joint 0  (hip)
-    {-1.5708f,  3.4907f},   // Joint 4  (thigh)
-    {-2.7227f, -0.83776f},  // Joint 8  (lower_leg)
-    // Leg2: hip=1, thigh=5, lower_leg=9
-    {-1.0472f,  1.0472f},   // Joint 1  (hip)
-    {-1.5708f,  3.4907f},   // Joint 5  (thigh)
-    {-2.7227f, -0.83776f},  // Joint 9  (lower_leg)
-    // Leg3: hip=2, thigh=6, lower_leg=10
-    {-1.0472f,  1.0472f},   // Joint 2  (hip)
-    {-0.5236f,  4.5379f},   // Joint 6  (thigh)
-    {-2.7227f, -0.83776f},  // Joint 10 (lower_leg)
-    // Leg4: hip=3, thigh=7, lower_leg=11
-    {-1.0472f,  1.0472f},   // Joint 3  (hip)
-    {-0.5236f,  4.5379f},   // Joint 7  (thigh)
-    {-2.7227f, -0.83776f},  // Joint 11 (lower_leg)
+    // 下标严格等于 motor ID: Hip 0..3, Thigh 4..7, Calf 8..11
+    {-1.0472f,  1.0472f}, {-1.0472f,  1.0472f},
+    {-1.0472f,  1.0472f}, {-1.0472f,  1.0472f},
+    {-1.5708f,  3.4907f}, {-1.5708f,  3.4907f},
+    {-0.5236f,  4.5379f}, {-0.5236f,  4.5379f},
+    {-2.7227f, -0.83776f}, {-2.7227f, -0.83776f},
+    {-2.7227f, -0.83776f}, {-2.7227f, -0.83776f},
 };
 
 // ── 验证结果 ─────────────────────────────────────────────────────────────────
@@ -42,6 +33,7 @@ struct ValidationResult {
     int   out_of_bounds_count = 0;
     int   nan_count           = 0;
     int   inf_count           = 0;
+    int   gain_invalid_count  = 0;
 
     // 平滑度
     float max_jump_rad        = 0.0f;   // 相邻帧最大跳跃 (rad)
@@ -60,7 +52,7 @@ struct ValidationResult {
 
 /// 检查所有关节目标值是否在机械限位内
 /// @param targets  12 关节目标位置 (rad, 输出端)
-/// @param margin   允许超出限位的裕度 (rad)
+/// @param margin   距机械限位的最小安全余量 (rad，向行程内部收缩)
 /// @return         验证结果
 ValidationResult validateJointLimits(const float targets[12], float margin = 0.05f);
 
@@ -79,6 +71,14 @@ ValidationResult validateAll(const float targets[12],
                               const float previous[12],
                               float joint_margin     = 0.05f,
                               float max_jump         = 0.5f);
+
+/// 验证完整 NN 指令：位置、平滑度、KP/KD 有限值及范围。
+ValidationResult validateCommandSet(const NNCommandSet& cmds,
+                                    const float previous[12],
+                                    float joint_margin = 0.05f,
+                                    float max_jump = 0.10f,
+                                    float max_kp = 0.8f,
+                                    float max_kd = 0.1f);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  NNInferenceLogger — 记录每次推理的输入/输出到 CSV 文件

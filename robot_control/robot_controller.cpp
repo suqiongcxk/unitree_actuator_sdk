@@ -34,7 +34,7 @@ RobotController::~RobotController()
 RobotControlConfig RobotController::getDefaultConfig()
 {
     RobotControlConfig c;
-    c.imu_device    = "/dev/i2c-2";
+    c.imu_device    = "/dev/i2c-1";
     c.imu_hz        = 200;
     c.estimation_hz = 50;
     c.motor_hz      = 500;
@@ -44,10 +44,10 @@ RobotControlConfig RobotController::getDefaultConfig()
 
     // 4 路 RS-485 总线, 每路 3 个电机 (hip / thigh / lower_leg)
     c.buses = {
-        {4, 5,  "/dev/ttyS0", {0, 4, 8}},      // Leg1: global GPIO133
-        {1, 7,  "/dev/ttyS6", {1, 5, 9}},      // Leg2: global GPIO39
+        {1, 7,  "/dev/ttyS6", {0, 4, 8}},      // Leg1: global GPIO39
+        {1, 31, "/dev/ttyS4", {1, 5, 9}},      // Leg2: global GPIO63
         {1, 3,  "/dev/ttyS7", {2, 6, 10}},     // Leg3: global GPIO35
-        {1, 31, "/dev/ttyS4", {3, 7, 11}},     // Leg4: global GPIO63
+        {4, 5,  "/dev/ttyS0", {3, 7, 11}},     // Leg4: global GPIO133
     };
 
     return c;
@@ -209,6 +209,14 @@ bool RobotController::start()
     std::cout << "  [2/4] 启动状态估计线程 (" << config_.estimation_hz << "Hz)..." << std::endl;
     est_thread_ = std::thread(&RobotController::estimationLoop, this);
 
+    std::cout << "  [2.5/4] 保持机器人静止，校准陀螺仪残余零偏..." << std::endl;
+    if (!waitForEstimatorReady(3000)) {
+        std::cerr << "  [错误] 陀螺仪静止校准失败；请保持机器人静止后重试" << std::endl;
+        requestEmergencyStop();
+        return false;
+    }
+    std::cout << "  [OK] 陀螺仪零偏校准完成" << std::endl;
+
     // ── 3. 启动 4 路电机总线 (每个 bus 一个线程, 硬件并行) ──
     std::cout << "  [3/4] 启动 " << config_.buses.size() << " 路电机总线 ("
               << config_.motor_hz << "Hz)..." << std::endl;
@@ -325,13 +333,34 @@ bool RobotController::waitForIMUData(int timeout_ms)
     auto start = std::chrono::steady_clock::now();
     while (running_.load() && !isEmergencyStopRequested()) {
         const IMURawData* data = imu_buffer_.tryAcquireRead();
-        if (data && data->timestamp_ns > 0) {
+        if (data && data->valid && data->timestamp_ns > 0) {
             return true;
         }
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start).count();
         if (elapsed > timeout_ms) break;
         usleep(5000);  // 5ms
+    }
+    return false;
+}
+
+bool RobotController::waitForEstimatorReady(int timeout_ms)
+{
+    auto start = std::chrono::steady_clock::now();
+    while (running_.load() && !isEmergencyStopRequested()) {
+        const EstimatedState* state = est_buffer_.tryAcquireRead();
+        // 此时电机总线尚未启动，只等待 IMU 姿态和陀螺仪校准完成。
+        if (state && state->orientation_valid
+                  && state->gyro_valid && state->gyro_calibrated) {
+            std::cout << "  [Gyro] bias=(" << state->gyro_bias[0] << ", "
+                      << state->gyro_bias[1] << ", " << state->gyro_bias[2]
+                      << ") rad/s" << std::endl;
+            return true;
+        }
+        const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start).count();
+        if (elapsed > timeout_ms) break;
+        usleep(5000);
     }
     return false;
 }
@@ -542,23 +571,19 @@ void RobotController::imuLoop()
         IMURawData& data = imu_buffer_.acquireWriteSlot();
 
         // ── 读取 IMU ──
-        JY901S_Status st = imu_->readAll(data.angles, data.acc, data.gyro);
-        if (st == JY901S_Status::OK) {
-            // 记录时间戳
-            struct timespec ts;
-            clock_gettime(CLOCK_MONOTONIC, &ts);
-            data.timestamp_ns = static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL
-                              + static_cast<uint64_t>(ts.tv_nsec);
+        JY901S_Status data_st = imu_->readAll(data.angles, data.acc, data.gyro);
+        JY901S_Status quat_st = JY901S_Status::ERROR_I2C_READ;
+        if (data_st == JY901S_Status::OK)
+            quat_st = imu_->readQuaternion(data.quat);
 
-            // 额外读取四元数 (用于姿态估计)
-            imu_->readQuaternion(data.quat);
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        data.timestamp_ns = static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL
+                          + static_cast<uint64_t>(ts.tv_nsec);
+        data.valid = data_st == JY901S_Status::OK && quat_st == JY901S_Status::OK;
 
-            // ── 提交: 原子翻转双缓冲 ──
-            imu_buffer_.commitWrite();
-        } else {
-            // I2C 读取失败 — 不提交, 估计线程会检测到无新数据
-            // (错误率应该很低, 无需在热路径上打印)
-        }
+        // 成功与失败都提交，使估计线程能及时发现 IMU 断流，而不是沿用旧姿态。
+        imu_buffer_.commitWrite();
 
         // ── 绝对时间睡眠 (无累积漂移) ──
         next.tv_nsec += period_ns;
@@ -606,6 +631,16 @@ void RobotController::estimationLoop()
         float joint_dq[12] = {0};
         float joint_tau[12] = {0};
         int   joint_err[12] = {0};
+        bool  joint_valid[12] = {false};
+        uint64_t joint_age_ns[12];
+        uint32_t joint_failure_count[12] = {0};
+        for (uint64_t& age : joint_age_ns) age = UINT64_MAX;
+
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        uint64_t now_ns = static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL
+                         + static_cast<uint64_t>(ts.tv_nsec);
+
         for (int b = 0; b < bus_count; ++b) {
             auto motor_ids = motor_ctrl_->bus(b).getMotorIds();
             for (size_t m = 0; m < motor_ids.size(); ++m) {
@@ -614,19 +649,20 @@ void RobotController::estimationLoop()
                 int mid = motor_ids[m];
                 joint_q[mid]   = motorToUrdfPosition(mid, s.q);
                 joint_dq[mid]  = motorToUrdfVelocity(mid, s.dq);
-                joint_tau[mid] = motor_direction_arr[mid] * s.tau;
+                joint_tau[mid] = motorToUrdfTorque(mid, s.tau);
                 joint_err[mid] = s.merror;
+                joint_valid[mid] = s.correct && s.merror == 0;
+                joint_failure_count[mid] = s.consecutive_failures;
+                if (s.feedback_timestamp_ns > 0 && s.feedback_timestamp_ns <= now_ns)
+                    joint_age_ns[mid] = now_ns - s.feedback_timestamp_ns;
             }
         }
 
         // ── 3. 运行状态估计 ──
-        struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, &ts);
-        uint64_t now_ns = static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL
-                         + static_cast<uint64_t>(ts.tv_nsec);
-
         EstimatedState& est = est_buffer_.acquireWriteSlot();
-        est = estimator.update(*imu, joint_q, joint_dq, joint_tau, joint_err, now_ns);
+        est = estimator.update(
+            *imu, joint_q, joint_dq, joint_tau, joint_err, joint_valid,
+            joint_age_ns, joint_failure_count, now_ns);
         est_buffer_.commitWrite();
 
         // ── 绝对时间睡眠 ──
@@ -652,6 +688,8 @@ void RobotController::nnLoop()
 {
     const long period_ns = 1'000'000'000L / config_.nn_hz;
     const int bus_count = static_cast<int>(config_.buses.size());
+    int consecutive_invalid_states = 0;
+    auto last_estimate_received = std::chrono::steady_clock::now();
 
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
@@ -668,9 +706,31 @@ void RobotController::nnLoop()
         // ── 1. 读取估计状态 (双缓冲指针, 不拷贝) ──
         const EstimatedState* est = est_buffer_.tryAcquireRead();
         if (!est) {
+            const auto silence_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - last_estimate_received).count();
+            if (silence_ms > 100) {
+                std::cerr << "[NN Thread] 状态估计数据流超时 " << silence_ms
+                          << "ms, 请求安全停机" << std::endl;
+                requestEmergencyStop();
+            }
             usleep(1000);
             continue;
         }
+        last_estimate_received = std::chrono::steady_clock::now();
+
+        if (!est->valid || !est->orientation_valid || !est->gyro_valid
+                || !est->gyro_calibrated || !est->projected_gravity_valid
+                || !est->joint_feedback_valid) {
+            ++consecutive_invalid_states;
+            // 无效帧绝不执行推理或下发；连续异常才停机，容忍单次 I2C 瞬态抖动。
+            if (consecutive_invalid_states >= 3) {
+                std::cerr << "[NN Thread] 状态估计连续无效, status=" << est->status_code
+                          << ", 请求安全停机" << std::endl;
+                requestEmergencyStop();
+            }
+            continue;
+        }
+        consecutive_invalid_states = 0;
 
         // ── 2. 运行推理 (计时) ──
         auto t0 = std::chrono::high_resolution_clock::now();
@@ -686,6 +746,11 @@ void RobotController::nnLoop()
         if (nn_logger_ && nn_logger_->isEnabled()) {
             nn_logger_->log(*est, cmds, inference_ok, latency_us);
         }
+
+        // dry-run 也提交“最终被验证接受”的动作，用于离线时序一致性；
+        // 验证失败且没有安全回退命令时不更新动作历史。
+        if (inference_ok && cmds.valid)
+            nn_policy_->commitAcceptedCommand(cmds);
 
         // ── 4. 写入电机指令 (除非干运行模式) ──
         if (!config_.nn_flags.dry_run) {

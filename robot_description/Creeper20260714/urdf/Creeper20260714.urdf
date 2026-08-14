@@ -1,0 +1,938 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com)
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<!-- Manually refined for Isaac Sim RL training: joint limits, simplified collision geometry, foot/IMU links -->
+<robot
+  name="Creeper20260714">
+  <link
+    name="base">
+    <inertial>
+      <origin
+        xyz="0.00386499983177562 -2.03247211452134E-05 -1.80951555348724E-05"
+        rpy="0 0 0" />
+      <mass
+        value="3.74183134376699" />
+      <inertia
+        ixx="0.00953237368262341"
+        ixy="1.89363178280218E-11"
+        ixz="-1.01659953800154E-07"
+        iyy="0.0083275072712231"
+        iyz="-2.58537971389596E-12"
+        izz="0.0118622227773655" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/base.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <box
+          size="0.272 0.226 0.144" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="FL_hip">
+    <inertial>
+      <origin
+        xyz="0.0431603084579474 -0.00285111325644608 -0.000548881302929932"
+        rpy="0 0 0" />
+      <mass
+        value="0.320256693089227" />
+      <inertia
+        ixx="0.000202558487378132"
+        ixy="-2.52875164704917E-08"
+        ixz="-3.20671099086801E-06"
+        iyy="0.000338511851620636"
+        iyz="3.0639885191781E-08"
+        izz="0.000165734343548543" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/FL_hip.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.05825 0.0323 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <cylinder
+          radius="0.049"
+          length="0.111" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_hip_joint"
+    type="revolute">
+    <origin
+      xyz="0.1366 0.0650000000000001 0"
+      rpy="0 0 0" />
+    <parent
+      link="base" />
+    <child
+      link="FL_hip" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.0472"
+      upper="1.0472"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="FL_thigh">
+    <inertial>
+      <origin
+        xyz="-0.000489671141172848 0.033870013963175 -0.0348280717734466"
+        rpy="0 0 0" />
+      <mass
+        value="0.76538912651759" />
+      <inertia
+        ixx="0.00270283362642319"
+        ixy="-9.91541372042529E-07"
+        ixz="-5.66527374408905E-05"
+        iyy="0.0031617559141559"
+        iyz="8.39811249232385E-07"
+        izz="0.000482550188376098" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/FL_thigh.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.01 0.0557 -0.1"
+        rpy="0 1.5708 0" />
+      <geometry>
+        <box
+          size="0.1 0.026 0.04" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="0.0582500000000014 0.0186 0"
+      rpy="0 0 0" />
+    <parent
+      link="FL_hip" />
+    <child
+      link="FL_thigh" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.5708"
+      upper="3.4907"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="FL_calf">
+    <inertial>
+      <origin
+        xyz="0.00631299328437346 -2.44962006318572E-05 -0.0917686544938744"
+        rpy="0 0 0" />
+      <mass
+        value="0.247799276349931" />
+      <inertia
+        ixx="0.000559369450508884"
+        ixy="7.27767290770979E-09"
+        ixz="3.19275906514457E-05"
+        iyy="0.000579943419434484"
+        iyz="5.90377388399681E-08"
+        izz="2.49336124638641E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/FL_calf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.01 0 -0.07"
+        rpy="0 -0.2 0" />
+      <geometry>
+        <cylinder
+          radius="0.013"
+          length="0.12" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_calf_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.0571999999999998 -0.210000000000001"
+      rpy="0 0 0" />
+    <parent
+      link="FL_thigh" />
+    <child
+      link="FL_calf" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-2.7227"
+      upper="-0.83776"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="FL_foot">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1e-06"
+        ixy="0"
+        ixz="0"
+        iyy="1e-06"
+        iyz="0"
+        izz="1e-06" />
+    </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <sphere
+          radius="0.02" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_foot_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.208"
+      rpy="0 0 0" />
+    <parent
+      link="FL_calf" />
+    <child
+      link="FL_foot" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="FR_hip">
+    <inertial>
+      <origin
+        xyz="0.0488518947910704 -0.00192525478270265 -0.00015510327322886"
+        rpy="0 0 0" />
+      <mass
+        value="0.257407927514488" />
+      <inertia
+        ixx="0.000156846815669293"
+        ixy="5.06258230404034E-06"
+        ixz="-1.06041391708468E-06"
+        iyy="0.000275360062616544"
+        iyz="9.35203969424092E-07"
+        izz="0.00014033952573263" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/FR_hip.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.05825 -0.0323 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <cylinder
+          radius="0.049"
+          length="0.111" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_hip_joint"
+    type="revolute">
+    <origin
+      xyz="0.1366 -0.065 0"
+      rpy="0 0 0" />
+    <parent
+      link="base" />
+    <child
+      link="FR_hip" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.0472"
+      upper="1.0472"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="FR_thigh">
+    <inertial>
+      <origin
+        xyz="-0.00138356714240059 -0.0372521299929286 -0.0290600607162528"
+        rpy="0 0 0" />
+      <mass
+        value="0.589774741172531" />
+      <inertia
+        ixx="0.00178232184904083"
+        ixy="-7.78885731305333E-07"
+        ixz="-2.43318120038301E-05"
+        iyy="0.00212930364572145"
+        iyz="-6.58052186418647E-07"
+        izz="0.000367961460449924" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/FR_thigh.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.01 -0.0557 -0.1"
+        rpy="0 1.5708 0" />
+      <geometry>
+        <box
+          size="0.1 0.026 0.04" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="0.05825 -0.0185999999999999 0"
+      rpy="0 0 0" />
+    <parent
+      link="FR_hip" />
+    <child
+      link="FR_thigh" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-1.5708"
+      upper="3.4907"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="FR_calf">
+    <inertial>
+      <origin
+        xyz="0.00631299328437376 -2.82624520819563E-05 -0.0917686544938743"
+        rpy="0 0 0" />
+      <mass
+        value="0.247799276349931" />
+      <inertia
+        ixx="0.000559369450508884"
+        ixy="7.27767290771992E-09"
+        ixz="3.19275906514456E-05"
+        iyy="0.000579943419434487"
+        iyz="5.90377388401947E-08"
+        izz="2.4933612463867E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/FR_calf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.01 0 -0.07"
+        rpy="0 -0.2 0" />
+      <geometry>
+        <cylinder
+          radius="0.013"
+          length="0.12" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_calf_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.0571999999999967 -0.210000000000007"
+      rpy="0 0 0" />
+    <parent
+      link="FR_thigh" />
+    <child
+      link="FR_calf" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-2.7227"
+      upper="-0.83776"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="FR_foot">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1e-06"
+        ixy="0"
+        ixz="0"
+        iyy="1e-06"
+        iyz="0"
+        izz="1e-06" />
+    </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <sphere
+          radius="0.02" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_foot_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.208"
+      rpy="0 0 0" />
+    <parent
+      link="FR_calf" />
+    <child
+      link="FR_foot" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="RL_hip">
+    <inertial>
+      <origin
+        xyz="-0.0393361409595493 -0.0226400630712833 -0.00103913853424456"
+        rpy="0 0 0" />
+      <mass
+        value="0.383105458604425" />
+      <inertia
+        ixx="0.00024827015908543"
+        ixy="5.06258230369592E-06"
+        ixz="-1.78041535249447E-06"
+        iyy="0.000401663640603311"
+        iyz="-9.35203969371761E-07"
+        izz="0.000191129161344077" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/RL_hip.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.05825 0.0323 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <cylinder
+          radius="0.049"
+          length="0.111" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RL_hip_joint"
+    type="revolute">
+    <origin
+      xyz="-0.1366 0.0650000000000006 0"
+      rpy="0 0 0" />
+    <parent
+      link="base" />
+    <child
+      link="RL_hip" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.0472"
+      upper="1.0472"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="RL_thigh">
+    <inertial>
+      <origin
+        xyz="-0.000605616569703843 0.0337890578146834 -0.0346416552015531"
+        rpy="0 0 0" />
+      <mass
+        value="0.767995666671646" />
+      <inertia
+        ixx="0.00270351010113163"
+        ixy="-6.19424853514095E-07"
+        ixz="-5.56159167100681E-05"
+        iyy="0.00316653098039147"
+        iyz="7.2762594166608E-07"
+        izz="0.000486786032280311" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/RL_thigh.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.01 0.0557 -0.1"
+        rpy="0 1.5708 0" />
+      <geometry>
+        <box
+          size="0.1 0.026 0.04" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RL_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="-0.0582499999999999 0.0186000000000001 0"
+      rpy="0 0 0" />
+    <parent
+      link="RL_hip" />
+    <child
+      link="RL_thigh" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-0.5236"
+      upper="4.5379"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="RL_calf">
+    <inertial>
+      <origin
+        xyz="0.0063129932843731 -2.44962006353266E-05 -0.0917686544938742"
+        rpy="0 0 0" />
+      <mass
+        value="0.247799276349931" />
+      <inertia
+        ixx="0.000559369450508884"
+        ixy="7.27767290772805E-09"
+        ixz="3.19275906514457E-05"
+        iyy="0.000579943419434484"
+        iyz="5.90377388397106E-08"
+        izz="2.49336124638644E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/RL_calf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.01 0 -0.07"
+        rpy="0 -0.2 0" />
+      <geometry>
+        <cylinder
+          radius="0.013"
+          length="0.12" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RL_calf_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.0572 -0.21"
+      rpy="0 0 0" />
+    <parent
+      link="RL_thigh" />
+    <child
+      link="RL_calf" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-2.7227"
+      upper="-0.83776"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="RL_foot">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1e-06"
+        ixy="0"
+        ixz="0"
+        iyy="1e-06"
+        iyz="0"
+        izz="1e-06" />
+    </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <sphere
+          radius="0.02" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RL_foot_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.208"
+      rpy="0 0 0" />
+    <parent
+      link="RL_calf" />
+    <child
+      link="RL_foot" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="RR_hip">
+    <inertial>
+      <origin
+        xyz="-0.0353696037327936 -0.00354409252874778 -0.000548881303622295"
+        rpy="0 0 0" />
+      <mass
+        value="0.320256692950571" />
+      <inertia
+        ixx="0.000202558487377744"
+        ixy="-2.52875162990641E-08"
+        ixz="3.6588172013959E-07"
+        iyy="0.000338511851613556"
+        iyz="1.77848828298648E-06"
+        izz="0.00016573434354132" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/RR_hip.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.05825 -0.0323 0"
+        rpy="1.5708 0 0" />
+      <geometry>
+        <cylinder
+          radius="0.049"
+          length="0.111" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RR_hip_joint"
+    type="revolute">
+    <origin
+      xyz="-0.1366 -0.0649999999999998 0"
+      rpy="0 0 0" />
+    <parent
+      link="base" />
+    <child
+      link="RR_hip" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="-1.0472"
+      upper="1.0472"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="RR_thigh">
+    <inertial>
+      <origin
+        xyz="-0.00121942069173317 -0.0371322923229595 -0.0288437599147654"
+        rpy="0 0 0" />
+      <mass
+        value="0.592381281327927" />
+      <inertia
+        ixx="0.00178299830958067"
+        ixy="-4.31308344515693E-07"
+        ixz="-2.6476601642654E-05"
+        iyy="0.00213366592056727"
+        iyz="-5.45866721693916E-07"
+        izz="0.000371784527133022" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/RR_thigh.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.643137254901961 0.615686274509804 0.6 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="-0.01 -0.0557 -0.1"
+        rpy="0 1.5708 0" />
+      <geometry>
+        <box
+          size="0.1 0.026 0.04" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RR_thigh_joint"
+    type="revolute">
+    <origin
+      xyz="-0.0582499999999994 -0.0186 0"
+      rpy="0 0 0" />
+    <parent
+      link="RR_hip" />
+    <child
+      link="RR_thigh" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-0.5236"
+      upper="4.5379"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="RR_calf">
+    <inertial>
+      <origin
+        xyz="0.00631299328437376 -2.44962006321625E-05 -0.091768654493874"
+        rpy="0 0 0" />
+      <mass
+        value="0.24779927634993" />
+      <inertia
+        ixx="0.000559369450508883"
+        ixy="7.27767290770092E-09"
+        ixz="3.19275906514452E-05"
+        iyy="0.000579943419434486"
+        iyz="5.90377388400507E-08"
+        izz="2.49336124638669E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://Creeper20260714/meshes/RR_calf.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.898039215686275 0.917647058823529 0.929411764705882 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0.01 0 -0.07"
+        rpy="0 -0.2 0" />
+      <geometry>
+        <cylinder
+          radius="0.013"
+          length="0.12" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RR_calf_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.0572000000000006 -0.21"
+      rpy="0 0 0" />
+    <parent
+      link="RR_thigh" />
+    <child
+      link="RR_calf" />
+    <axis
+      xyz="0 1 0" />
+    <limit
+      lower="-2.7227"
+      upper="-0.83776"
+      effort="23.7"
+      velocity="30.1" />
+  </joint>
+  <link
+    name="RR_foot">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1e-06"
+        ixy="0"
+        ixz="0"
+        iyy="1e-06"
+        iyz="0"
+        izz="1e-06" />
+    </inertial>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <sphere
+          radius="0.02" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RR_foot_joint"
+    type="fixed">
+    <origin
+      xyz="0 0 -0.208"
+      rpy="0 0 0" />
+    <parent
+      link="RR_calf" />
+    <child
+      link="RR_foot" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="imu">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0.001" />
+      <inertia
+        ixx="1e-06"
+        ixy="0"
+        ixz="0"
+        iyy="1e-06"
+        iyz="0"
+        izz="1e-06" />
+    </inertial>
+  </link>
+  <joint
+    name="imu_joint"
+    type="fixed">
+    <origin
+      xyz="-0.02557 0 0.04232"
+      rpy="0 0 0" />
+    <parent
+      link="base" />
+    <child
+      link="imu" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>

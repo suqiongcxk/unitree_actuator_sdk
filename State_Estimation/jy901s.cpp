@@ -251,17 +251,15 @@ JY901S_Status JY901S::readGyro(JY901S_GyroData& gyro)
 JY901S_Status JY901S::readQuaternion(JY901S_Quaternion& quat)
 {
     // 从 0x51 连续读取 8 字节 (Q0_L/H ~ Q3_L/H)
-    // 注意: JY901S 四元数量程是 Q30 格式: 实际值 = raw / 2^30
+    // JY901S 的每个四元数分量均为有符号 16-bit，实际值 = raw / 32768。
     uint8_t buf[8] = {0};
     JY901S_Status st = i2cWriteThenRead(JY901S_REG_Q0, buf, 8);
     if (st != JY901S_Status::OK) return st;
 
-    constexpr float Q_SCALE = 1.0f / static_cast<float>(1 << 30);  // 1 / 2^30
-
-    quat.q0 = int16leToFloat(buf[0], buf[1], Q_SCALE);  // w
-    quat.q1 = int16leToFloat(buf[2], buf[3], Q_SCALE);  // x
-    quat.q2 = int16leToFloat(buf[4], buf[5], Q_SCALE);  // y
-    quat.q3 = int16leToFloat(buf[6], buf[7], Q_SCALE);  // z
+    quat.q0 = int16leToFloat(buf[0], buf[1], JY901S_QUAT_SCALE);  // w
+    quat.q1 = int16leToFloat(buf[2], buf[3], JY901S_QUAT_SCALE);  // x
+    quat.q2 = int16leToFloat(buf[4], buf[5], JY901S_QUAT_SCALE);  // y
+    quat.q3 = int16leToFloat(buf[6], buf[7], JY901S_QUAT_SCALE);  // z
 
     return JY901S_Status::OK;
 }

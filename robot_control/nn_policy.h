@@ -3,6 +3,7 @@
 
 #include "shared_data.h"
 #include "nn_validation.h"
+#include "policy_observation.h"
 #include <memory>
 #include <iostream>
 
@@ -16,6 +17,9 @@ public:
 
     virtual bool infer(const EstimatedState& est, NNCommandSet& cmds) = 0;
 
+    /// 控制器确认最终命令后调用；被验证拒绝的原始输出不得进入动作历史。
+    virtual void commitAcceptedCommand(const NNCommandSet&) {}
+
     /// 返回策略名称 (用于日志)
     virtual const char* name() const = 0;
 };
@@ -28,6 +32,7 @@ class StandingPolicy : public NNPolicy {
 public:
     StandingPolicy(const float* default_pose_12, float kp, float kd);
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
+    void commitAcceptedCommand(const NNCommandSet& cmds) override;
     const char* name() const override { return "StandingPolicy"; }
 
 private:
@@ -57,6 +62,7 @@ public:
                      FallbackMode mode = FallbackMode::PREV_FRAME);
 
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
+    void commitAcceptedCommand(const NNCommandSet& cmds) override;
     const char* name() const override { return inner_->name(); }
 
     /// 获取上一帧的验证结果
@@ -72,6 +78,7 @@ private:
     ValidationResult          last_result_;
     int                       total_count_ = 0;
     int                       fail_count_  = 0;
+    int                       consecutive_fail_count_ = 0;
     NNCommandSet              prev_cmds_;   // 上一帧有效指令
     bool                      has_prev_ = false;
 };
@@ -90,6 +97,7 @@ public:
                     std::unique_ptr<NNPolicy> baseline);
 
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
+    void commitAcceptedCommand(const NNCommandSet& cmds) override;
     const char* name() const override { return primary_->name(); }
 
     /// 获取上帧两个策略的最大输出差异 (rad)
@@ -130,6 +138,7 @@ public:
     bool initialize();
 
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
+    void commitAcceptedCommand(const NNCommandSet& cmds) override;
     const char* name() const override { return "ONNXPolicy"; }
 
     // ── 模型信息 (初始化后可用) ──
@@ -140,6 +149,11 @@ public:
     int inputCount()  const;
     int outputCount() const;
 
+    const std::array<float, PolicyObservationBuilder::kObservationSize>&
+    lastObservation() const { return observation_builder_.lastObservation(); }
+    const std::array<float, PolicyObservationBuilder::kActionSize>&
+    previousAction() const { return observation_builder_.previousAction(); }
+
     /// 打印模型输入/输出 tensor 信息
     void printModelInfo() const;
 
@@ -148,6 +162,7 @@ private:
     float default_pose_[12];
     float action_scale_;
     float kp_, kd_;
+    PolicyObservationBuilder observation_builder_;
 
     Ort::Env    env_{ORT_LOGGING_LEVEL_WARNING, "ONNXPolicy"};
     std::unique_ptr<Ort::Session> session_;

@@ -63,15 +63,12 @@ void MotorController::rx()
  * 减速器物理关系 (GR = 转子转速 / 输出转速):
  *   q_rotor  = q_output  * GR        (输出位置 × 减速比 = 转子位置)
  *   dq_rotor = dq_output * GR        (输出速度 × 减速比 = 转子速度)
- *   tau_rotor = tau_output / GR      (力矩被减速器放大，转子力矩 = 输出力矩 / 减速比)
+ * GO-M8010-6 协议中的 tau 已定义为关节输出扭矩，不进行减速比换算。
  */
 void MotorController::applyGearRatio()
 {
     cmd_.q   *= gear_ratio_;
     cmd_.dq  *= gear_ratio_;
-    if (cmd_.tau != 0.0f) {
-        cmd_.tau /= gear_ratio_;
-    }
 }
 
 // ── 公开 API ──
@@ -231,15 +228,9 @@ MotorState MotorController::getState() const
 
     // ── 转子端 → 输出端转换（applyGearRatio 的逆过程） ──
     //
-    // 注意: SDK 的 RIS_Fbk_t 结构体注释中 torque 写的是"关节输出扭矩(N·m)"，
-    // 如果固件确实上报的是输出端力矩，把 TORQUE_IS_ROTOR 改成 false 即可。
-    // 当前默认按转子端力矩处理，乘以减速比恢复输出端力矩。
-
-    constexpr bool TORQUE_IS_ROTOR = true;   // 若固件上报输出端力矩则改为 false
-
     s.q       = data_.q  / gear_ratio_;      // 转子位置 → 输出位置
     s.dq      = data_.dq / gear_ratio_;      // 转子速度 → 输出速度
-    s.tau     = TORQUE_IS_ROTOR ? (data_.tau * gear_ratio_) : data_.tau;
+    s.tau     = data_.tau;                    // 协议直接给出关节输出扭矩
     s.temp    = data_.temp;
     s.merror  = data_.merror;
     s.correct = data_.correct;
@@ -362,7 +353,7 @@ void MotorBus::setTorque(unsigned short motor_id, float tau)
     s->cmd.kd   = 0.0f;
     s->cmd.dq   = 0.0f;
     // 输出力矩 / 减速比 = 转子力矩
-    s->cmd.tau  = (tau != 0.0f) ? (tau / gear_ratio_) : 0.0f;
+    s->cmd.tau  = tau;  // GO-M8010-6 协议单位即关节输出 N·m
 }
 
 void MotorBus::brake(unsigned short motor_id)
@@ -432,11 +423,9 @@ MotorState MotorBus::getState(unsigned short motor_id) const
     for (const auto& slot : slots_) {
         if (slot.id != motor_id) continue;
 
-        constexpr bool TORQUE_IS_ROTOR = true;
-
         s.q       = slot.data.q  / gear_ratio_ ;
         s.dq      = slot.data.dq / gear_ratio_;
-        s.tau     = TORQUE_IS_ROTOR ? (slot.data.tau * gear_ratio_) : slot.data.tau;
+        s.tau     = slot.data.tau;
         s.temp    = slot.data.temp;
         s.merror  = slot.data.merror;
         s.correct = slot.data.correct;

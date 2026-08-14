@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <memory>
+#include <cstdint>
 #include "fast_gpio.h"
 #include "serialPort/SerialPort.h"
 #include "unitreeMotor/unitreeMotor.h"
@@ -22,13 +23,15 @@ struct MotorState {
     int   merror  = 0;      // 错误码: 0=正常 1=过热 2=过流 3=过压 4=编码器故障
     bool  correct = false;  // CRC 校验通过标志
     unsigned char mode = 0; // 当前工作模式: 0=锁定 1=FOC闭环 2=编码器校准
+    uint64_t feedback_timestamp_ns = 0; // 最近一次 CRC 正确反馈的 CLOCK_MONOTONIC 时间
+    uint32_t consecutive_failures = 0;  // 连续 CRC/ID/接收失败次数
 };
 
 /**
  * @brief 单电机控制器，封装 GPIO RS-485 方向切换 + Unitree SDK 指令/数据
  *
  * 对外接口全部使用输出端量纲（位置、速度、力矩），内部通过 queryGearRatio()
- * 自动完成转子端↔输出端转换。
+ * 自动完成位置/速度的转子端↔输出端转换；GO-M8010-6 力矩协议本身使用输出端 N·m。
  *
  * 独立使用示例:
  * @code

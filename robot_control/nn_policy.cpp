@@ -25,6 +25,9 @@ bool StandingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
     return cmds.valid;
 }
 
+void StandingPolicy::commitAcceptedCommand(const NNCommandSet&)
+{}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ValidatingPolicy — 包装实际策略，输出前验证
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -48,8 +51,12 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
     if (!raw_ok || !raw_cmds.valid) {
         std::cerr << "[ValidatingPolicy] 内部策略返回无效" << std::endl;
         fail_count_++;
+        consecutive_fail_count_++;
         // 回退
         if (fallback_ && mode_ == FallbackMode::STANDING) {
+            return fallback_->infer(est, cmds);
+        }
+        if (mode_ == FallbackMode::PREV_FRAME && consecutive_fail_count_ >= 3 && fallback_) {
             return fallback_->infer(est, cmds);
         }
         if (has_prev_ && mode_ == FallbackMode::PREV_FRAME) {
@@ -60,11 +67,13 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
     }
 
     // ── 2. 运行验证 ──
-    const float* prev = has_prev_ ? prev_cmds_.joint_position_target : raw_cmds.joint_position_target;
-    last_result_ = validateAll(raw_cmds.joint_position_target, prev);
+    // 首帧必须与当前真实关节位置比较，不能用本帧自身绕过跳变检查。
+    const float* prev = has_prev_ ? prev_cmds_.joint_position_target : est.joint_position;
+    last_result_ = validateCommandSet(raw_cmds, prev);
 
     if (!last_result_.passed) {
         fail_count_++;
+        consecutive_fail_count_++;
         std::cerr << "[ValidatingPolicy] " << last_result_.summary() << std::endl;
 
         switch (mode_) {
@@ -73,15 +82,19 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
                 std::cout << "  → 回退到 " << fallback_->name() << std::endl;
                 return fallback_->infer(est, cmds);
             }
-            break;
+            return false;
 
         case FallbackMode::PREV_FRAME:
+            if (consecutive_fail_count_ >= 3 && fallback_) {
+                std::cout << "  → 连续异常，回退到 " << fallback_->name() << std::endl;
+                return fallback_->infer(est, cmds);
+            }
             if (has_prev_) {
                 std::cout << "  → 维持上帧指令" << std::endl;
                 cmds = prev_cmds_;
                 return true;
             }
-            break;
+            return false;
 
         case FallbackMode::NONE:
             // 仍然使用 raw_cmds，但已打印警告
@@ -89,11 +102,17 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         }
     }
 
-    // ── 3. 更新上帧缓存 ──
-    prev_cmds_ = raw_cmds;
-    has_prev_ = true;
+    // 缓存只能在控制器确认最终命令后更新，不能在这里提前写入。
+    consecutive_fail_count_ = 0;
     cmds = raw_cmds;
     return true;
+}
+
+void ValidatingPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
+{
+    prev_cmds_ = cmds;
+    has_prev_ = true;
+    inner_->commitAcceptedCommand(cmds);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -136,6 +155,11 @@ bool ComparingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
     return ok;
 }
 
+void ComparingPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
+{
+    primary_->commitAcceptedCommand(cmds);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ONNXPolicy
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -148,6 +172,7 @@ ONNXPolicy::ONNXPolicy(const std::string& model_path,
     , action_scale_(action_scale)
     , kp_(kp)
     , kd_(kd)
+    , observation_builder_(default_pose_12, action_scale)
 {
     std::memcpy(default_pose_, default_pose_12, 12 * sizeof(float));
 }
@@ -186,6 +211,22 @@ bool ONNXPolicy::initialize()
         }
 
         printModelInfo();
+
+        if (!std::isfinite(action_scale_) || std::abs(action_scale_) < 1e-8f
+                || input_names_.size() != 1 || output_names_.size() != 1
+                || input_shape_.size() != 2 || output_shape_.size() != 2
+                || (input_shape_[0] != 1 && input_shape_[0] != -1)
+                || (output_shape_[0] != 1 && output_shape_[0] != -1)
+                || input_shape_[1] !=
+                    static_cast<int64_t>(PolicyObservationBuilder::kObservationSize)
+                || output_shape_[1] <
+                    static_cast<int64_t>(PolicyObservationBuilder::kActionSize)) {
+            std::cerr << "[ONNXPolicy] 不支持的配置：action_scale 必须非零，"
+                      << "模型要求单输入 [1/-1,48]、单输出 [1/-1,>=12]"
+                      << std::endl;
+            session_.reset();
+            return false;
+        }
         return true;
 
     } catch (const Ort::Exception& e) {
@@ -245,47 +286,12 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         //
         // 这里按通用格式填充 — 你需要根据训练代码确认实际顺序!
 
-        std::vector<float> obs(48, 0.0f);
-
-        // 角速度 (body frame, rad/s)
-        obs[0] = est.angular_velocity[0];
-        obs[1] = est.angular_velocity[1];
-        obs[2] = est.angular_velocity[2];
-
-        // 重力方向 / 姿态 (用四元数旋转重力向量)
-        // 简化: 直接用角速度近似 (真实项目应算重力方向)
-        float qw = est.orientation[0], qx = est.orientation[1];
-        float qy = est.orientation[2], qz = est.orientation[3];
-        obs[3] = 2.0f * (qx*qz - qw*qy);  // 重力方向 x
-        obs[4] = 2.0f * (qw*qx + qy*qz);  // 重力方向 y
-        obs[5] = qw*qw - qx*qx - qy*qy + qz*qz;  // 重力方向 z
-
-        // 命令速度 (从外部输入, 默认0站住)
-        obs[6] = 0.0f;  // vx
-        obs[7] = 0.0f;  // vy
-        obs[8] = 0.0f;  // vyaw
-
-        // 关节位置 (12) — 用 motor_id 对应的顺序 (0..11)
-        for (int i = 0; i < 12; ++i) {
-            obs[9 + i] = est.joint_position[i];
-        }
-
-        // 关节速度 (12)
-        for (int i = 0; i < 12; ++i) {
-            obs[21 + i] = est.joint_velocity[i];
-        }
-
-        // 上帧动作 (12) — 初始化为默认姿态 → 输出为 0
-        for (int i = 0; i < 12; ++i) {
-            obs[33 + i] = default_pose_[i];
-        }
-
-        // 剩余3维 (45..47) 保持 0
+        const auto& obs = observation_builder_.build(est);
 
         // ── 推理 ──
         std::vector<int64_t> input_shape_final = {1, 48};
         auto input_tensor = Ort::Value::CreateTensor<float>(
-            mem_info, obs.data(), obs.size(),
+            mem_info, const_cast<float*>(obs.data()), obs.size(),
             input_shape_final.data(), input_shape_final.size());
 
         auto output_tensors = session_->Run(
@@ -297,6 +303,11 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         //   target[i] = default_pose[i] + action_scale * model_output[i]
         float* raw_out = output_tensors[0].GetTensorMutableData<float>();
         size_t out_size = output_tensors[0].GetTensorTypeAndShapeInfo().GetElementCount();
+
+        if (out_size < 12) {
+            std::cerr << "[ONNXPolicy] 输出元素不足: " << out_size << " < 12" << std::endl;
+            return false;
+        }
 
         for (size_t i = 0; i < std::min<size_t>(out_size, 12); ++i) {
             cmds.joint_position_target[i] = default_pose_[i] + action_scale_ * raw_out[i];
@@ -312,5 +323,12 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
     } catch (const Ort::Exception& e) {
         std::cerr << "[ONNXPolicy] 推理错误: " << e.what() << std::endl;
         return false;
+    }
+}
+
+void ONNXPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
+{
+    if (!observation_builder_.commitAcceptedCommand(cmds)) {
+        std::cerr << "[ONNXPolicy] 拒绝提交无效的上一帧动作" << std::endl;
     }
 }

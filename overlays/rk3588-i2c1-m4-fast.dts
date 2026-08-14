@@ -1,0 +1,19 @@
+/**
+ * I2C1_M4 for Orange Pi 5 Pro, 400 kHz:
+ *   GPIO1_D2 (40-pin pin 5) -> SCL
+ *   GPIO1_D3 (40-pin pin 3) -> SDA
+ *   Linux adapter           -> /dev/i2c-1
+ *
+ * The stock overlay "i2c1-m4" is sufficient for initial testing. This custom
+ * overlay is only needed when an explicit 400 kHz clock is desired.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&i2c1 {
+    status = "okay";
+    pinctrl-names = "default";
+    pinctrl-0 = <&i2c1m4_xfer>;
+    clock-frequency = <400000>;
+};

@@ -23,8 +23,9 @@
 #include <time.h>
 #include "ZeroPointCalibration.h"
 // ── 硬件配置（请根据实际接线修改） ──────────────────────────────────────────
-constexpr int    GPIO_PIN[4]    = {63,39,35,133};              // GPIO1_D7 → sysfs gpio63
-constexpr const char* SERIAL_PORT[4] = {"/dev/ttyS4","/dev/ttyS6","/dev/ttyS7","/dev/ttyS0"}; // Orange Pi UART4
+// 按 Leg1..Leg4 排列：UART6、UART4、UART7、UART0。
+constexpr int    GPIO_PIN[4]    = {39,63,35,133};
+constexpr const char* SERIAL_PORT[4] = {"/dev/ttyS6","/dev/ttyS4","/dev/ttyS7","/dev/ttyS0"};
 constexpr unsigned short MOTOR_ID[4] = {0,4,8,1} ;
 const int text_number = 0; 
 
@@ -163,4 +164,3 @@ int main()
     ZeroPointCalibration();
     return 0;
 }
-

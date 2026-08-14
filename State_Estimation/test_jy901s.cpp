@@ -3,8 +3,8 @@
  * @brief JY901S IMU 传感器测试程序
  *
  * 接线: Orange Pi 5 Pro 40-pin 排针
- *   pin 6  (GPIO0_B5, SCL) → JY901S SCL
- *   pin 8  (GPIO0_B6, SDA) → JY901S SDA
+ *   pin 5  (GPIO1_D2, I2C1_M4_SCL) → JY901S SCL
+ *   pin 3  (GPIO1_D3, I2C1_M4_SDA) → JY901S SDA
  *   pin 1  (3.3V)          → JY901S VCC
  *   pin 9  (GND)           → JY901S GND
  *
@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 #include <csignal>
 #include <unistd.h>
 #include "jy901s.h"
@@ -33,7 +34,7 @@ int main()
     std::cout << "╚══════════════════════════════════════════════╝\n\n";
 
     // ── 1. 创建并初始化 ──
-    JY901S imu("/dev/i2c-2");
+    JY901S imu("/dev/i2c-1");
     JY901S_Status st = imu.init(200);  // 200 Hz
     if (st != JY901S_Status::OK) {
         std::cerr << "初始化失败! 错误码=" << static_cast<int>(st) << "\n";
@@ -92,10 +93,14 @@ int main()
             // 也读一下四元数（调试用）
             JY901S_Quaternion quat;
             if (imu.readQuaternion(quat) == JY901S_Status::OK) {
+                const float quat_norm = std::sqrt(
+                    quat.q0 * quat.q0 + quat.q1 * quat.q1 +
+                    quat.q2 * quat.q2 + quat.q3 * quat.q3);
                 std::cout << "  四元数: w=" << quat.q0
                           << "  x=" << quat.q1
                           << "  y=" << quat.q2
-                          << "  z=" << quat.q3 << "\n\n";
+                          << "  z=" << quat.q3
+                          << "  |q|=" << quat_norm << "\n\n";
             }
         }
 

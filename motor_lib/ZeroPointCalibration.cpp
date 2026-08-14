@@ -15,10 +15,10 @@
  *   Calf:    8(FL), 9(FR), 10(RL), 11(RR)
  *
  * 4 路 RS-485 总线:
- *   Leg1(FL): GPIO 133, /dev/ttyS0,  motors {0,  4,  8}
- *   Leg2(FR): GPIO  39, /dev/ttyS6,  motors {1,  5,  9}
+ *   Leg1(FL): GPIO  39, /dev/ttyS6,  motors {0,  4,  8}
+ *   Leg2(FR): GPIO  63, /dev/ttyS4,  motors {1,  5,  9}
  *   Leg3(RL): GPIO  35, /dev/ttyS7,  motors {2,  6, 10}
- *   Leg4(RR): GPIO  63, /dev/ttyS4,  motors {3,  7, 11}
+ *   Leg4(RR): GPIO 133, /dev/ttyS0,  motors {3,  7, 11}
  */
 
 #include <iostream>
@@ -76,10 +76,10 @@ SINGLE_LEG_MOtor_SET Leg4_Motor;
 
 void LEG_UART_INIT(void)
 {
-    Leg1_Uart = {133, "/dev/ttyS0"};
-    Leg2_Uart = {39,  "/dev/ttyS6"};
+    Leg1_Uart = {39,  "/dev/ttyS6"};
+    Leg2_Uart = {63,  "/dev/ttyS4"};
     Leg3_Uart = {35,  "/dev/ttyS7"};
-    Leg4_Uart = {63,  "/dev/ttyS4"};
+    Leg4_Uart = {133, "/dev/ttyS0"};
 }
 
 void LEG_MOTOR_INIT(void)
@@ -101,20 +101,23 @@ struct LegBusHardware {
 };
 
 static const LegBusHardware LEG_BUS_HW[4] = {
-    {133, "/dev/ttyS0"},   // Leg1 (FL)     D
-    {39,  "/dev/ttyS6"},   // Leg2 (FR)     B
+    {39,  "/dev/ttyS6"},   // Leg1 (FL)     B
+    {63,  "/dev/ttyS4"},   // Leg2 (FR)     A
     {35,  "/dev/ttyS7"},   // Leg3 (RL)     C
-    {63,  "/dev/ttyS4"},   // Leg4 (RR)     A
+    {133, "/dev/ttyS0"},   // Leg4 (RR)     D
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  标定配置表 (12 电机)
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-//  方向说明:
-//    - Hip: FL/RL 用 +1.0 (正向→URDF上限), FR/RR 用 -1.0 (镜像, 需实机验证)
-//    - Thigh: 全部 +1.0 (正向→URDF上限)
-//    - Calf: 全部 -1.0 (负向→URDF下限)
+//  坐标方向说明（已经实机标定和开环站立验证）:
+//    motor_direction 定义 q_urdf = motor_direction * (q_motor - zero_offset)。
+//    - Hip:   FL/FR 用 +1，RL/RR 用 -1
+//    - Thigh: FL/RL 用 +1，FR/RR 用 -1
+//    - Calf:  FL/RL 用 +1，FR/RR 用 -1
+//  calib_velocity 只表示标定时撞向指定机械限位的电机速度方向，
+//  与 motor_direction（电机坐标→URDF 坐标符号）不是同一概念。
 //
 //  hit_upper_first:
 //    - true  = 先撞上限, 记录 MechLimitEnd,  推导 MechLimitStart
@@ -126,12 +129,12 @@ static const LegBusHardware LEG_BUS_HW[4] = {
 const JointCalibConfig* getCalibrationConfigs()
 {
     static const JointCalibConfig configs[12] = {
-        // ═══ Leg1: FL (GPIO 133, /dev/ttyS0) ═══
+        // ═══ Leg1: FL (GPIO 39, /dev/ttyS6) ═══
         {0,  0,  1.5f, 0.08f, 8.0f, -1.0472f,  1.0472f,  2.0944f, true,   +1},  // Hip  FL
         {4,  0,  1.5f, 0.08f, 8.0f, -1.5708f,  3.4907f,  5.0615f, true,   +1},  // Thigh FL
         {8,  0, -1.5f, 0.06f, 8.0f, -2.7227f, -0.83776f, 1.885f,  false,  +1},  // Calf  FL
 
-        // ═══ Leg2: FR (GPIO 39, /dev/ttyS6) ═══
+        // ═══ Leg2: FR (GPIO 63, /dev/ttyS4) ═══
         // 注意: FR Hip 速度方向为负 (镜像), 实机测试时如方向错误请调整 calib_velocity 符号
         {1,  1, -1.5f, 0.08f, 8.0f, -1.0472f,  1.0472f,  2.0944f, false,  +1},  // Hip  FR
         {5,  1, -1.5f, 0.08f, 8.0f, -1.5708f,  3.4907f,  5.0615f, true,   -1},  // Thigh FR
@@ -142,7 +145,7 @@ const JointCalibConfig* getCalibrationConfigs()
         {6,  2,  1.5f, 0.08f, 8.0f, -0.5236f,  4.5379f,  5.0615f, true,   +1},  // Thigh RL
         {10, 2, -1.5f, 0.06f, 8.0f, -2.7227f, -0.83776f, 1.885f,  false,  +1},  // Calf  RL
 
-        // ═══ Leg4: RR (GPIO 63, /dev/ttyS4) ═══
+        // ═══ Leg4: RR (GPIO 133, /dev/ttyS0) ═══
         // 注意: RR Hip 速度方向为负 (镜像), 实机测试时如方向错误请调整 calib_velocity 符号
         {3,  3,  1.5f, 0.08f, 8.0f, -1.0472f,  1.0472f,  2.0944f, false,  -1},  // Hip  RR
         {7,  3, -1.5f, 0.08f, 8.0f, -0.5236f,  4.5379f,  5.0615f, true,   -1},  // Thigh RR

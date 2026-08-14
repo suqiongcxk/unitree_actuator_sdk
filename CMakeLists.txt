@@ -83,9 +83,52 @@ add_executable(robot_control
     robot_control/robot_control_main.cpp
     robot_control/robot_controller.cpp
     robot_control/state_estimator.cpp
+    robot_control/leg_kinematics.cpp
+    robot_control/legged_odometry.cpp
+    robot_control/policy_observation.cpp
     robot_control/nn_policy.cpp
     robot_control/nn_validation.cpp
 )
+
+# NN 安全验证纯软件测试（不访问 GPIO、串口或电机）
+add_executable(test_nn_validation
+    robot_control/test_nn_validation.cpp
+    robot_control/nn_validation.cpp
+)
+
+# 状态估计 Step 1 纯软件测试（不访问 IMU、GPIO、串口或电机）
+add_executable(test_state_estimator
+    robot_control/test_state_estimator.cpp
+    robot_control/state_estimator.cpp
+    robot_control/leg_kinematics.cpp
+    robot_control/legged_odometry.cpp
+)
+
+# Step 3 IMU 实机诊断（只访问 I2C，不访问 GPIO、串口或电机）
+add_executable(test_projected_gravity
+    robot_control/test_projected_gravity.cpp
+    robot_control/state_estimator.cpp
+    robot_control/leg_kinematics.cpp
+    robot_control/legged_odometry.cpp
+)
+
+# Step 7 腿部运动学、接触与速度估计纯软件测试
+add_executable(test_legged_odometry
+    robot_control/test_legged_odometry.cpp
+    robot_control/leg_kinematics.cpp
+    robot_control/legged_odometry.cpp
+)
+target_link_libraries(test_projected_gravity jy901s)
+
+# Step 6 观测布局与上一帧动作纯软件测试
+add_executable(test_policy_observation
+    robot_control/test_policy_observation.cpp
+    robot_control/policy_observation.cpp
+)
+
+# Step 4 关节 ID/URDF 映射纯软件测试（不打开任何硬件设备）
+add_executable(test_joint_mapping robot_control/test_joint_mapping.cpp)
+target_link_libraries(test_joint_mapping motor_controller fast_gpio ${EXTRA_LIBS} pthread)
 target_include_directories(robot_control PRIVATE robot_control)
 target_link_libraries(robot_control
     parallel_bus
