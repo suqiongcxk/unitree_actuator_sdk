@@ -1,5 +1,6 @@
 #include "robot_controller.h"
 #include "state_estimator.h"
+#include "linear_kf_state_estimator_adapter.h"
 #include "nn_policy.h"
 #include "jy901s.h"
 #include "parallel_bus.h"
@@ -20,6 +21,7 @@
 
 RobotController::RobotController(const RobotControlConfig& config)
     : config_(config)
+    , velocity_command_(config.velocity_command)
 {}
 
 RobotController::~RobotController()
@@ -60,6 +62,14 @@ RobotControlConfig RobotController::getDefaultConfig()
 bool RobotController::initialize()
 {
     std::cout << "[RobotController] 初始化硬件..." << std::endl;
+
+#ifndef LINEAR_KF_AVAILABLE
+    // 必须在 IMU/电机初始化和机械标定前拒绝，不得静默回退。
+    if (config_.estimator_backend == StateEstimatorBackend::LINEAR_KF) {
+        std::cerr << "[RobotController] 错误: 本次构建未启用 Eigen/Linear KF" << std::endl;
+        return false;
+    }
+#endif
 
     // 关节状态和 NN 数组统一以 motor ID 为下标，启动前拒绝非法、重复或漏配 ID。
     bool motor_id_seen[12] = {false};
@@ -271,6 +281,15 @@ bool RobotController::isRunning() const
         && !isEmergencyStopRequested();
 }
 
+bool RobotController::setVelocityCommand(float vx, float vy, float yaw_rate)
+{
+    if (!std::isfinite(vx) || !std::isfinite(vy) || !std::isfinite(yaw_rate))
+        return false;
+    std::lock_guard<std::mutex> lock(velocity_command_mutex_);
+    velocity_command_ = {{vx, vy, yaw_rate}};
+    return true;
+}
+
 void RobotController::requestEmergencyStop() noexcept
 {
     ::requestEmergencyStop();
@@ -424,7 +443,9 @@ bool RobotController::runCalibrationSequence()
         return false;
     }
 
-    if (ok_count < 8)  // 至少 8/12 关节成功才允许继续
+    // 站立和 NN 控制需要完整的 12 关节状态；任一关节未标定
+    // 都不允许用默认值冒险继续。
+    if (ok_count != 12)
     {
         std::cerr << "[Calib] 致命错误: 标定成功数不足 ("
                   << ok_count << "/12)" << std::endl;
@@ -437,32 +458,43 @@ bool RobotController::runCalibrationSequence()
     const auto* configs = getCalibrationConfigs();
     bool ranges_ok = validateCalibrationResults(calib_results_, configs);
 
-    if (!ranges_ok && ok_count < 12)
+    if (!ranges_ok)
     {
         std::cerr << "[Calib] 错误: 标定行程验证失败, 禁止继续" << std::endl;
         return false;
     }
-    if (!ranges_ok)
-    {
-        std::cout << "[Calib] 警告: 部分关节行程偏差较大, 继续启动 ("
-                  << ok_count << "/12 标定成功)" << std::endl;
-    }
 
     // ── 阶段 3: 记录标定后的当前位置 ──
-    //   hip/thigh: 停在 MechLimitEnd
-    //   calf:      停在 MechLimitStart
+    // configs/results 按腿排列，post_calib_position_ 按 motor ID 排列，
+    // 因此每次写入必须显式使用 configs[i].motor_id。
+    std::memset(calibrated_by_motor_id_, 0, sizeof(calibrated_by_motor_id_));
     for (int i = 0; i < 12; i++)
     {
+        const int mid = configs[i].motor_id;
+        if (mid < 0 || mid >= 12) {
+            std::cerr << "[Calib] 错误: 非法 motor ID=" << mid << std::endl;
+            return false;
+        }
         if (calib_results_[i].success)
         {
-            // 校准后电机停在撞到的URDF限位处, 用转换函数得到准确的电机位置
+            // calibrateAllJoints() 已将 Hip 移到默认站立角，并将后腿
+            // Thigh 从上限回退 80°；这里记录真实的流程结束姿态。
             float q_urdf_hit = configs[i].hit_upper_first
                              ? configs[i].urdf_upper : configs[i].urdf_lower;
-            post_calib_position_[i] = urdfToMotorPosition(configs[i].motor_id, q_urdf_hit);
+            if (mid >= 0 && mid <= 3) {
+                q_urdf_hit = config_.default_standing_pose[mid];
+            } else if ((configs[i].leg_index == 2 || configs[i].leg_index == 3)
+                       && mid >= 4 && mid <= 7 && configs[i].hit_upper_first) {
+                q_urdf_hit -= 1.3963f;  // calibrateAllJoints 中的后腿 80° 回退
+            }
+            post_calib_position_[mid] = urdfToMotorPosition(mid, q_urdf_hit);
+            calibrated_by_motor_id_[mid] = true;
         }
         else
         {
-            post_calib_position_[i] = 0.0f;  // 标定失败的关节将跳过过渡
+            // 理论上已被 12/12 检查拦截；保留显式防御。
+            calibrated_by_motor_id_[mid] = false;
+            return false;
         }
     }
 
@@ -495,7 +527,7 @@ void RobotController::transitionToStandingInternal(float transition_time_sec)
     float stand_target[12] = {0};
     for (int i = 0; i < 12; i++)
     {
-        if (calibration_completed_ && calib_results_[i].success)
+        if (calibration_completed_ && calibrated_by_motor_id_[i])
         {
             stand_target[i] = computeMotorTargetFromURDF(i, config_.default_standing_pose[i]);
         }
@@ -607,7 +639,18 @@ void RobotController::imuLoop()
 
 void RobotController::estimationLoop()
 {
-    PassthroughEstimator estimator;  // PLACEHOLDER — 替换为 Kalman/Complementary
+    std::unique_ptr<StateEstimator> estimator;
+    if (config_.estimator_backend == StateEstimatorBackend::LINEAR_KF) {
+#ifdef LINEAR_KF_AVAILABLE
+        estimator = std::make_unique<LinearKFStateEstimatorAdapter>();
+#else
+        std::cerr << "[EST Thread] Linear KF 不可用" << std::endl;
+        requestEmergencyStop();
+        return;
+#endif
+    } else {
+        estimator = std::make_unique<ComplementaryStateEstimator>();
+    }
     const long period_ns = 1'000'000'000L / config_.estimation_hz;
     const int bus_count = static_cast<int>(config_.buses.size());
 
@@ -660,7 +703,7 @@ void RobotController::estimationLoop()
 
         // ── 3. 运行状态估计 ──
         EstimatedState& est = est_buffer_.acquireWriteSlot();
-        est = estimator.update(
+        est = estimator->update(
             *imu, joint_q, joint_dq, joint_tau, joint_err, joint_valid,
             joint_age_ns, joint_failure_count, now_ns);
         est_buffer_.commitWrite();
@@ -732,6 +775,14 @@ void RobotController::nnLoop()
         }
         consecutive_invalid_states = 0;
 
+        // 命令独立于状态估计；只在本地栈上做一次快照，不持锁推理。
+        std::array<float, 3> command;
+        {
+            std::lock_guard<std::mutex> lock(velocity_command_mutex_);
+            command = velocity_command_;
+        }
+        nn_policy_->setVelocityCommand(command);
+
         // ── 2. 运行推理 (计时) ──
         auto t0 = std::chrono::high_resolution_clock::now();
 
@@ -747,8 +798,8 @@ void RobotController::nnLoop()
             nn_logger_->log(*est, cmds, inference_ok, latency_us);
         }
 
-        // dry-run 也提交“最终被验证接受”的动作，用于离线时序一致性；
-        // 验证失败且没有安全回退命令时不更新动作历史。
+        // 这里只提交安全层最终接受的电机命令历史；Actor 原始 action 历史
+        // 已由 ONNXPolicy::infer() 保存，二者不得互相覆盖。
         if (inference_ok && cmds.valid)
             nn_policy_->commitAcceptedCommand(cmds);
 

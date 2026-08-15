@@ -6,6 +6,7 @@
 #include "policy_observation.h"
 #include <memory>
 #include <iostream>
+#include <array>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  NNPolicy — 神经网络策略抽象接口
@@ -17,8 +18,9 @@ public:
 
     virtual bool infer(const EstimatedState& est, NNCommandSet& cmds) = 0;
 
-    /// 控制器确认最终命令后调用；被验证拒绝的原始输出不得进入动作历史。
+    /// 控制器确认最终命令后调用；仅用于安全层的 accepted-command 历史。
     virtual void commitAcceptedCommand(const NNCommandSet&) {}
+    virtual void setVelocityCommand(const std::array<float, 3>&) {}
 
     /// 返回策略名称 (用于日志)
     virtual const char* name() const = 0;
@@ -63,6 +65,7 @@ public:
 
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
     void commitAcceptedCommand(const NNCommandSet& cmds) override;
+    void setVelocityCommand(const std::array<float, 3>& command) override;
     const char* name() const override { return inner_->name(); }
 
     /// 获取上一帧的验证结果
@@ -79,7 +82,7 @@ private:
     int                       total_count_ = 0;
     int                       fail_count_  = 0;
     int                       consecutive_fail_count_ = 0;
-    NNCommandSet              prev_cmds_;   // 上一帧有效指令
+    NNCommandSet              previous_accepted_command_; // 安全层上一帧有效指令
     bool                      has_prev_ = false;
 };
 
@@ -98,6 +101,7 @@ public:
 
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
     void commitAcceptedCommand(const NNCommandSet& cmds) override;
+    void setVelocityCommand(const std::array<float, 3>& command) override;
     const char* name() const override { return primary_->name(); }
 
     /// 获取上帧两个策略的最大输出差异 (rad)
@@ -139,6 +143,7 @@ public:
 
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
     void commitAcceptedCommand(const NNCommandSet& cmds) override;
+    void setVelocityCommand(const std::array<float, 3>& command) override;
     const char* name() const override { return "ONNXPolicy"; }
 
     // ── 模型信息 (初始化后可用) ──

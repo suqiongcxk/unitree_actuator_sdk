@@ -60,7 +60,7 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
             return fallback_->infer(est, cmds);
         }
         if (has_prev_ && mode_ == FallbackMode::PREV_FRAME) {
-            cmds = prev_cmds_;
+            cmds = previous_accepted_command_;
             return true;
         }
         return false;
@@ -68,7 +68,9 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
 
     // ── 2. 运行验证 ──
     // 首帧必须与当前真实关节位置比较，不能用本帧自身绕过跳变检查。
-    const float* prev = has_prev_ ? prev_cmds_.joint_position_target : est.joint_position;
+    const float* prev = has_prev_
+                      ? previous_accepted_command_.joint_position_target
+                      : est.joint_position;
     last_result_ = validateCommandSet(raw_cmds, prev);
 
     if (!last_result_.passed) {
@@ -91,7 +93,7 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
             }
             if (has_prev_) {
                 std::cout << "  → 维持上帧指令" << std::endl;
-                cmds = prev_cmds_;
+                cmds = previous_accepted_command_;
                 return true;
             }
             return false;
@@ -110,9 +112,15 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
 
 void ValidatingPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
 {
-    prev_cmds_ = cmds;
+    previous_accepted_command_ = cmds;
     has_prev_ = true;
     inner_->commitAcceptedCommand(cmds);
+}
+
+void ValidatingPolicy::setVelocityCommand(const std::array<float, 3>& command)
+{
+    inner_->setVelocityCommand(command);
+    if (fallback_) fallback_->setVelocityCommand(command);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -160,6 +168,12 @@ void ComparingPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
     primary_->commitAcceptedCommand(cmds);
 }
 
+void ComparingPolicy::setVelocityCommand(const std::array<float, 3>& command)
+{
+    primary_->setVelocityCommand(command);
+    baseline_->setVelocityCommand(command);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ONNXPolicy
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -172,7 +186,7 @@ ONNXPolicy::ONNXPolicy(const std::string& model_path,
     , action_scale_(action_scale)
     , kp_(kp)
     , kd_(kd)
-    , observation_builder_(default_pose_12, action_scale)
+    , observation_builder_(default_pose_12)
 {
     std::memcpy(default_pose_, default_pose_12, 12 * sizeof(float));
 }
@@ -273,19 +287,7 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         Ort::MemoryInfo mem_info = Ort::MemoryInfo::CreateCpu(
             OrtArenaAllocator, OrtMemTypeDefault);
 
-        // ── 构建观测向量 (48维, 具体格式取决于训练时的obs定义) ──
-        //
-        // 常见的 48 维观测拆分 (请根据实际训练配置调整!):
-        //   [0..2]   机身角速度 gyro (3)
-        //   [3..5]   机身欧拉角 rpy (3)  或 重力方向 (3)
-        //   [6..8]   命令速度 vx,vy,vyaw (3)
-        //   [9..20]  关节位置 (12)
-        //   [21..32] 关节速度 (12)
-        //   [33..44] 上帧关节动作 (12)
-        //   [45..47] 或其它 (3)
-        //
-        // 这里按通用格式填充 — 你需要根据训练代码确认实际顺序!
-
+        // 与 Creeper model_1999 Actor 严格对齐的 48 维观测。
         const auto& obs = observation_builder_.build(est);
 
         // ── 推理 ──
@@ -309,6 +311,11 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
             return false;
         }
 
+        // 训练 last_action 是 Actor raw output；安全层是否改写目标不影响该历史。
+        if (!observation_builder_.commitRawAction(raw_out)) {
+            std::cerr << "[ONNXPolicy] 原始 action 包含 NaN/Inf" << std::endl;
+            return false;
+        }
         for (size_t i = 0; i < std::min<size_t>(out_size, 12); ++i) {
             cmds.joint_position_target[i] = default_pose_[i] + action_scale_ * raw_out[i];
         }
@@ -328,7 +335,11 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
 
 void ONNXPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
 {
-    if (!observation_builder_.commitAcceptedCommand(cmds)) {
-        std::cerr << "[ONNXPolicy] 拒绝提交无效的上一帧动作" << std::endl;
-    }
+    (void)cmds; // accepted command 由外层安全包装器单独保存。
+}
+
+void ONNXPolicy::setVelocityCommand(const std::array<float, 3>& command)
+{
+    if (!observation_builder_.setVelocityCommand(command))
+        std::cerr << "[ONNXPolicy] 拒绝 NaN/Inf 速度命令" << std::endl;
 }

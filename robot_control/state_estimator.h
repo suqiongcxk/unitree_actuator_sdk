@@ -19,6 +19,7 @@ enum class EstimateStatus {
     MOTOR_FEEDBACK_TIMEOUT,
     ESTIMATION_TIMESTAMP_INVALID,
     ESTIMATION_DT_INVALID,
+    LINEAR_KF_INVALID,
 };
 
 struct GyroEstimatorConfig {
@@ -113,5 +114,8 @@ private:
     uint32_t consecutive_invalid_count_ = 0;
     LeggedOdometry legged_odometry_;
 };
+
+// 当前 Step 1~7 的 IMU/腿运动学互补估计后端。
+using ComplementaryStateEstimator = PassthroughEstimator;
 
 #endif  // __ROBOT_CONTROL_STATE_ESTIMATOR_H

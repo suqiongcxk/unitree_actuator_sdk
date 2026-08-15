@@ -4,6 +4,42 @@ project(unitree_actuator_sdk)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
+# 独立 18 维 Linear KF 模块仅依赖 Eigen；缺少 Eigen 时不影响现有电机程序。
+find_package(Eigen3 QUIET NO_MODULE)
+if(NOT Eigen3_FOUND)
+    find_path(EIGEN3_INCLUDE_DIR Eigen/Core PATH_SUFFIXES eigen3)
+    if(EIGEN3_INCLUDE_DIR)
+        add_library(Eigen3::Eigen INTERFACE IMPORTED)
+        set_target_properties(Eigen3::Eigen PROPERTIES
+            INTERFACE_INCLUDE_DIRECTORIES "${EIGEN3_INCLUDE_DIR}")
+        set(Eigen3_FOUND TRUE)
+    endif()
+endif()
+if(Eigen3_FOUND)
+    add_library(linear_kf_position_velocity_estimator
+        robot_control/linear_kf_position_velocity_estimator.cpp)
+    target_link_libraries(linear_kf_position_velocity_estimator PUBLIC Eigen3::Eigen)
+    target_include_directories(linear_kf_position_velocity_estimator PUBLIC robot_control)
+    set_target_properties(linear_kf_position_velocity_estimator PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+    add_executable(test_linear_kf_estimator robot_control/test_linear_kf_estimator.cpp)
+    target_link_libraries(test_linear_kf_estimator linear_kf_position_velocity_estimator)
+    set_target_properties(test_linear_kf_estimator PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+    add_executable(test_linear_kf_adapter
+        robot_control/test_linear_kf_adapter.cpp
+        robot_control/linear_kf_state_estimator_adapter.cpp
+        robot_control/state_estimator.cpp
+        robot_control/leg_kinematics.cpp
+        robot_control/legged_odometry.cpp)
+    target_link_libraries(test_linear_kf_adapter linear_kf_position_velocity_estimator)
+    target_compile_definitions(test_linear_kf_adapter PRIVATE LINEAR_KF_AVAILABLE)
+    set_target_properties(test_linear_kf_adapter PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+else()
+    message(STATUS "Eigen3 not found — independent Linear KF target disabled")
+endif()
+
 include_directories(include motor_lib State_Estimation robot_control)
 link_directories(lib)
 
@@ -83,6 +119,7 @@ add_executable(robot_control
     robot_control/robot_control_main.cpp
     robot_control/robot_controller.cpp
     robot_control/state_estimator.cpp
+    robot_control/linear_kf_state_estimator_adapter.cpp
     robot_control/leg_kinematics.cpp
     robot_control/legged_odometry.cpp
     robot_control/policy_observation.cpp
@@ -126,6 +163,22 @@ add_executable(test_policy_observation
     robot_control/policy_observation.cpp
 )
 
+# 训练端黄金向量逐元素对拍（纯软件，不链接或访问任何硬件）
+if(ONNX_FOUND)
+    add_executable(test_policy_golden_vectors
+        robot_control/test_policy_golden_vectors.cpp
+        robot_control/policy_observation.cpp
+    )
+    target_include_directories(test_policy_golden_vectors PRIVATE
+        robot_control "${ONNXRUNTIME_DIR}/include")
+    target_link_directories(test_policy_golden_vectors PRIVATE "${ONNXRUNTIME_DIR}/lib")
+    target_link_libraries(test_policy_golden_vectors onnxruntime)
+    set_target_properties(test_policy_golden_vectors PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO
+        INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"
+        BUILD_RPATH "${ONNXRUNTIME_DIR}/lib")
+endif()
+
 # Step 4 关节 ID/URDF 映射纯软件测试（不打开任何硬件设备）
 add_executable(test_joint_mapping robot_control/test_joint_mapping.cpp)
 target_link_libraries(test_joint_mapping motor_controller fast_gpio ${EXTRA_LIBS} pthread)
@@ -138,6 +191,12 @@ target_link_libraries(robot_control
     ${EXTRA_LIBS}
     pthread
 )
+if(Eigen3_FOUND)
+    target_link_libraries(robot_control linear_kf_position_velocity_estimator)
+    target_compile_definitions(robot_control PRIVATE LINEAR_KF_AVAILABLE)
+    set_target_properties(robot_control PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+endif()
 if(ONNX_FOUND)
     target_include_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/include")
     target_link_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/lib")

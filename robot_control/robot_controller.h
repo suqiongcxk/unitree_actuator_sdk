@@ -6,6 +6,8 @@
 #include <memory>
 #include <thread>
 #include <atomic>
+#include <array>
+#include <mutex>
 #include "shared_data.h"
 #include "nn_validation.h"
 #include "../motor_lib/ZeroPointCalibration.h"
@@ -14,6 +16,11 @@
 class JY901S;
 class MultiBusController;
 class NNPolicy;
+
+enum class StateEstimatorBackend {
+    COMPLEMENTARY = 0,
+    LINEAR_KF = 1,
+};
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  BusConfig — 单路 RS-485 总线配置
@@ -37,6 +44,9 @@ struct RobotControlConfig {
 
     // ── 状态估计 ──
     int estimation_hz = 50;
+    StateEstimatorBackend estimator_backend = StateEstimatorBackend::COMPLEMENTARY;
+    // [vx, vy, yaw_rate]，base frame；默认无遥控命令。
+    std::array<float, 3> velocity_command{{0.0f, 0.0f, 0.0f}};
 
     // ── 电机总线 ──
     int motor_hz = 500;                     // 每路总线控制频率
@@ -108,6 +118,8 @@ public:
     void safeShutdown();
 
     bool isRunning() const;
+    /// 线程安全更新 NN 速度命令 [vx,vy,yaw_rate]。拒绝 NaN/Inf。
+    bool setVelocityCommand(float vx, float vy, float yaw_rate);
 
     // ── 监控接口 (线程安全) ──────────────────────────────────────────────
 
@@ -154,6 +166,8 @@ private:
 
     std::unique_ptr<NNPolicy> nn_policy_;
     std::unique_ptr<NNInferenceLogger> nn_logger_;
+    std::array<float, 3> velocity_command_{{0.0f, 0.0f, 0.0f}};
+    std::mutex velocity_command_mutex_;
 
     // ── 线程 ─────────────────────────────────────────────────────────────
 
@@ -170,6 +184,7 @@ private:
     StartupPhase      startup_phase_ = StartupPhase::INIT_COMM;
     JointCalibResult  calib_results_[12] = {};
     float             post_calib_position_[12] = {};
+    bool              calibrated_by_motor_id_[12] = {};
     bool              calibration_completed_ = false;
     int               calibration_ok_count_ = 0;
 

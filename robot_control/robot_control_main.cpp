@@ -15,6 +15,7 @@
  *   --compare          同时运行 StandingPolicy 对比输出差异
  *   --motor-hz <hz>    电机总线频率 (默认: 500)
  *   --imu-hz <hz>      IMU 读取频率 (默认: 200)
+ *   --estimator <name>  complementary (默认) 或 kalman
  *   -h, --help         打印帮助
  *
  * 验证工作流示例:
@@ -109,6 +110,7 @@ static void printHelp(const char* prog)
               << "  --compare           同时运行 StandingPolicy 对比输出差异\n"
               << "  --motor-hz <hz>     电机总线频率 (默认: 500)\n"
               << "  --imu-hz <hz>       IMU 读取频率 (默认: 200)\n"
+              << "  --estimator <name>  complementary 或 kalman\n"
               << "  -h, --help          打印此帮助\n"
               << "\n急停: 输入 s/S 后回车，或按 Ctrl+C\n"
               << "\n验证工作流:\n"
@@ -158,6 +160,18 @@ int main(int argc, char* argv[])
         else if (arg == "--imu-hz" && i + 1 < argc) {
             config.imu_hz = std::stoi(argv[++i]);
         }
+        else if (arg == "--estimator" && i + 1 < argc) {
+            const std::string name(argv[++i]);
+            if (name == "complementary") {
+                config.estimator_backend = StateEstimatorBackend::COMPLEMENTARY;
+            } else if (name == "kalman") {
+                config.estimator_backend = StateEstimatorBackend::LINEAR_KF;
+            } else {
+                std::cerr << "未知状态估计器: " << name
+                          << " (只支持 complementary/kalman)" << std::endl;
+                return 1;
+            }
+        }
         else if (arg == "-h" || arg == "--help") {
             printHelp(argv[0]);
             return 0;
@@ -179,7 +193,9 @@ int main(int argc, char* argv[])
     // ── 打印配置 ──
     std::cout << "\n配置:" << std::endl;
     std::cout << "  IMU:     " << config.imu_device << " @ " << config.imu_hz << "Hz" << std::endl;
-    std::cout << "  估计:    " << config.estimation_hz << "Hz" << std::endl;
+    std::cout << "  估计:    " << config.estimation_hz << "Hz, "
+              << (config.estimator_backend == StateEstimatorBackend::LINEAR_KF
+                    ? "LinearKF" : "Complementary") << std::endl;
     std::cout << "  电机:    " << config.buses.size() << " 路总线 @ " << config.motor_hz << "Hz" << std::endl;
     std::cout << "  NN:      " << config.nn_hz << "Hz";
     if (!config.onnx_model_path.empty()) {

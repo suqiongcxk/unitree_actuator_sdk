@@ -84,6 +84,7 @@ struct EstimatedState {
     float position[3]         = {0};   // x, y, z (m)
     float orientation[4]      = {0};   // quaternion w, x, y, z
     float linear_velocity[3]  = {0};   // dx, dy, dz (m/s)
+    float body_linear_velocity[3] = {0}; // body frame, m/s
     float angular_velocity[3] = {0};   // body-frame (rad/s)
     float projected_gravity[3] = {0};  // 单位重力在机体坐标系中的方向
 
@@ -110,6 +111,10 @@ struct EstimatedState {
     bool  airborne           = true;
     bool  slipping           = false;
     bool  landing_impact     = false;
+    // 仅 Linear KF 后端填充；排列为 [base p, base v, 4×foot p]。
+    float state_covariance[18][18] = {{0}};
+    bool  covariance_valid = false;
+    int   estimator_backend = 0;  // 0=Complementary, 1=LinearKF
 
     // Step 1: 姿态健康状态。无效状态不得进入 NN 控制。
     bool     orientation_valid   = false;

@@ -285,6 +285,19 @@ EstimatedState PassthroughEstimator::update(
                     sizeof(est.contact_confidence));
         std::memcpy(est.linear_velocity, leg.linear_velocity_world,
                     sizeof(est.linear_velocity));
+        // world→body，使用归一化后的 body→world 四元数旋转矩阵转置。
+        est.body_linear_velocity[0] =
+            (1.0f-2.0f*(qy*qy+qz*qz))*est.linear_velocity[0]
+          + 2.0f*(qx*qy+qw*qz)*est.linear_velocity[1]
+          + 2.0f*(qx*qz-qw*qy)*est.linear_velocity[2];
+        est.body_linear_velocity[1] =
+            2.0f*(qx*qy-qw*qz)*est.linear_velocity[0]
+          + (1.0f-2.0f*(qx*qx+qz*qz))*est.linear_velocity[1]
+          + 2.0f*(qy*qz+qw*qx)*est.linear_velocity[2];
+        est.body_linear_velocity[2] =
+            2.0f*(qx*qz+qw*qy)*est.linear_velocity[0]
+          + 2.0f*(qy*qz-qw*qx)*est.linear_velocity[1]
+          + (1.0f-2.0f*(qx*qx+qy*qy))*est.linear_velocity[2];
         est.body_height = leg.body_height;
         est.position[2] = leg.body_height;
         est.linear_velocity_confidence = leg.velocity_confidence;

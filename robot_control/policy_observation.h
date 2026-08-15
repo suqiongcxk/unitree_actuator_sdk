@@ -11,16 +11,17 @@ public:
     static constexpr std::size_t kObservationSize = 48;
     static constexpr std::size_t kActionSize = 12;
 
-    PolicyObservationBuilder(const float* default_pose_12, float action_scale);
+    explicit PolicyObservationBuilder(const float* default_pose_12);
 
     /// 按当前约定构建 48 维观测。首帧 previous_action 为全零。
     const std::array<float, kObservationSize>& build(const EstimatedState& est);
 
-    /// 仅提交最终通过验证、准备下发（或 dry-run 接受）的命令。
-    bool commitAcceptedCommand(const NNCommandSet& cmds);
+    /// 保存 Actor 本帧原始输出，与安全层最终接受命令完全分离。
+    bool commitRawAction(const float* raw_action_12);
+    bool setVelocityCommand(const std::array<float, 3>& command);
 
     const std::array<float, kActionSize>& previousAction() const {
-        return previous_action_;
+        return previous_raw_action_;
     }
     const std::array<float, kObservationSize>& lastObservation() const {
         return observation_;
@@ -28,9 +29,9 @@ public:
 
 private:
     std::array<float, kActionSize> default_pose_{};
-    std::array<float, kActionSize> previous_action_{};
+    std::array<float, kActionSize> previous_raw_action_{};
     std::array<float, kObservationSize> observation_{};
-    float action_scale_ = 0.0f;
+    std::array<float, 3> velocity_command_{};
 };
 
 #endif
