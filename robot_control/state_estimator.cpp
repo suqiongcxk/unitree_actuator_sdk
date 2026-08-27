@@ -44,6 +44,10 @@ EstimatedState PassthroughEstimator::update(
     EstimatedState est;
 
     est.timestamp_ns = now_ns;
+    // 即使本帧 IMU 读取失败，也保留估计器已有的校准状态供诊断；
+    // valid/status_code 仍决定该帧绝不能进入控制链路。
+    est.gyro_calibrated = gyro_calibrated_;
+    std::memcpy(est.gyro_bias, gyro_bias_, sizeof(gyro_bias_));
 
     // 即使姿态无效，仍复制关节反馈供诊断使用，但禁止状态进入 NN。
     std::memcpy(est.joint_position, joint_position, 12 * sizeof(float));

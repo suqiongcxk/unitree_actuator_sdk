@@ -22,6 +22,11 @@ public:
     virtual void commitAcceptedCommand(const NNCommandSet&) {}
     virtual void setVelocityCommand(const std::array<float, 3>&) {}
 
+    /// 获取最近一次真正送入 Actor 的 observation 和 Actor 原始输出。
+    /// 非 Actor 策略返回 false；仅供日志/验收，不参与控制计算。
+    virtual bool getLastActorIO(std::array<float, 48>&,
+                                std::array<float, 12>&) const { return false; }
+
     /// 返回策略名称 (用于日志)
     virtual const char* name() const = 0;
 };
@@ -66,6 +71,8 @@ public:
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
     void commitAcceptedCommand(const NNCommandSet& cmds) override;
     void setVelocityCommand(const std::array<float, 3>& command) override;
+    bool getLastActorIO(std::array<float, 48>& observation,
+                        std::array<float, 12>& raw_action) const override;
     const char* name() const override { return inner_->name(); }
 
     /// 获取上一帧的验证结果
@@ -102,6 +109,8 @@ public:
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
     void commitAcceptedCommand(const NNCommandSet& cmds) override;
     void setVelocityCommand(const std::array<float, 3>& command) override;
+    bool getLastActorIO(std::array<float, 48>& observation,
+                        std::array<float, 12>& raw_action) const override;
     const char* name() const override { return primary_->name(); }
 
     /// 获取上帧两个策略的最大输出差异 (rad)
@@ -111,6 +120,37 @@ private:
     std::unique_ptr<NNPolicy> primary_;
     std::unique_ptr<NNPolicy> baseline_;
     float last_max_diff_ = 0.0f;
+};
+
+// 从已锁存的站立指令平滑过渡到 Actor 目标。Actor 仍使用原始
+// action 历史；本层只改写候选电机命令，且输出仍需通过外层安全验证。
+class SmoothTakeoverPolicy : public NNPolicy {
+public:
+    SmoothTakeoverPolicy(std::unique_ptr<NNPolicy> inner,
+                         const NNCommandSet& initial_command,
+                         int blend_frames);
+
+    bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
+    void commitAcceptedCommand(const NNCommandSet& cmds) override;
+    void setVelocityCommand(const std::array<float, 3>& command) override;
+    bool getLastActorIO(std::array<float, 48>& observation,
+                        std::array<float, 12>& raw_action) const override;
+    const char* name() const override { return inner_->name(); }
+
+    int blendFrames() const { return blend_frames_; }
+    int acceptedBlendFrames() const { return accepted_blend_frames_; }
+    bool takeoverComplete() const { return accepted_blend_frames_ >= blend_frames_; }
+
+private:
+    static bool sameCommand(const NNCommandSet& lhs, const NNCommandSet& rhs);
+
+    std::unique_ptr<NNPolicy> inner_;
+    NNCommandSet initial_command_;
+    NNCommandSet pending_command_;
+    int blend_frames_ = 1;
+    int accepted_blend_frames_ = 0;
+    bool pending_valid_ = false;
+    bool completion_announced_ = false;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -144,6 +184,8 @@ public:
     bool infer(const EstimatedState& est, NNCommandSet& cmds) override;
     void commitAcceptedCommand(const NNCommandSet& cmds) override;
     void setVelocityCommand(const std::array<float, 3>& command) override;
+    bool getLastActorIO(std::array<float, 48>& observation,
+                        std::array<float, 12>& raw_action) const override;
     const char* name() const override { return "ONNXPolicy"; }
 
     // ── 模型信息 (初始化后可用) ──
@@ -168,6 +210,7 @@ private:
     float action_scale_;
     float kp_, kd_;
     PolicyObservationBuilder observation_builder_;
+    bool last_actor_io_valid_ = false;
 
     Ort::Env    env_{ORT_LOGGING_LEVEL_WARNING, "ONNXPolicy"};
     std::unique_ptr<Ort::Session> session_;

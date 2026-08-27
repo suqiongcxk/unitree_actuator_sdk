@@ -4,6 +4,7 @@
 #include <chrono>
 #include <ctime>
 #include <iostream>
+#include <limits>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ValidationResult::summary()
@@ -203,10 +204,14 @@ void NNInferenceLogger::writeHeader()
     // 输入: 机体状态
     file_ << ",pos_x,pos_y,pos_z,ori_w,ori_x,ori_y,ori_z";
     file_ << ",lv_x,lv_y,lv_z,av_x,av_y,av_z";
+    file_ << ",body_lv_x,body_lv_y,body_lv_z,pg_x,pg_y,pg_z";
     // 输入: 12 关节
     for (int i = 0; i < 12; ++i) {
         file_ << ",j" << i << "_pos,j" << i << "_vel,j" << i << "_tau";
     }
+    // Actor 的真实输入和未经安全层改写的原始输出。
+    for (int i = 0; i < 48; ++i) file_ << ",obs" << i;
+    for (int i = 0; i < 12; ++i) file_ << ",raw_action" << i;
     // 输出: 12 关节目标
     for (int i = 0; i < 12; ++i) {
         file_ << ",tgt" << i;
@@ -216,7 +221,9 @@ void NNInferenceLogger::writeHeader()
 
 void NNInferenceLogger::log(const EstimatedState& input_state,
                              const NNCommandSet& output_cmds,
-                             bool valid, int latency_us)
+                             bool valid, int latency_us,
+                             const std::array<float, 48>* observation,
+                             const std::array<float, 12>* raw_action)
 {
     if (!enabled_ || !file_.is_open()) return;
 
@@ -228,7 +235,8 @@ void NNInferenceLogger::log(const EstimatedState& input_state,
         line_count_ = 0;
     }
 
-    file_ << input_state.timestamp_ns << ","
+    file_ << std::setprecision(9)
+          << input_state.timestamp_ns << ","
           << line_count_ << ","
           << (valid ? 1 : 0) << ","
           << latency_us;
@@ -238,12 +246,25 @@ void NNInferenceLogger::log(const EstimatedState& input_state,
     for (int i = 0; i < 4; ++i)  file_ << "," << input_state.orientation[i];
     for (int i = 0; i < 3; ++i)  file_ << "," << input_state.linear_velocity[i];
     for (int i = 0; i < 3; ++i)  file_ << "," << input_state.angular_velocity[i];
+    for (int i = 0; i < 3; ++i)  file_ << "," << input_state.body_linear_velocity[i];
+    for (int i = 0; i < 3; ++i)  file_ << "," << input_state.projected_gravity[i];
 
     // 12 关节输入
     for (int i = 0; i < 12; ++i) {
         file_ << "," << input_state.joint_position[i]
               << "," << input_state.joint_velocity[i]
               << "," << input_state.joint_torque[i];
+    }
+
+
+    // 保持 CSV 列数固定；StandingPolicy 等非 Actor 策略写 NaN。
+    for (int i = 0; i < 48; ++i) {
+        file_ << "," << (observation ? (*observation)[i]
+                                      : std::numeric_limits<float>::quiet_NaN());
+    }
+    for (int i = 0; i < 12; ++i) {
+        file_ << "," << (raw_action ? (*raw_action)[i]
+                                     : std::numeric_limits<float>::quiet_NaN());
     }
 
     // 12 关节输出目标

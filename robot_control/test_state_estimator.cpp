@@ -100,6 +100,8 @@ int main()
     ok &= expect(!read_failure.valid &&
                  read_failure.status_code == static_cast<int>(EstimateStatus::IMU_READ_FAILED),
                  "I2C 读取失败必须传播到估计状态");
+    ok &= expect(read_failure.gyro_calibrated,
+                 "读取失败帧应保留此前已完成的陀螺仪校准诊断状态");
 
     constexpr float sqrt_half = 0.70710678118f;
     PassthroughEstimator gravity_estimator(100'000'000ULL, no_calibration);

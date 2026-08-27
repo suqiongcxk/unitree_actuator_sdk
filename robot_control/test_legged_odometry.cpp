@@ -40,6 +40,27 @@ int main(){
         "静止站立速度应接近零");
     ok&=expect(standing.body_height>0.1f&&standing.body_height<0.6f,"站立高度应处于合理范围");
 
+    // body_height 的语义是 base 原点到足底接触平面，而不是到足球心。
+    float center_height=0.0f;
+    for(int leg=0;leg<4;++leg)center_height+=-standing.foot_position[leg][2]/4.0f;
+    ok&=expect(std::abs(standing.body_height-(center_height+cfg.foot_radius))<1e-6f,
+        "站立高度必须包含 URDF 足球半径");
+
+    // 足球半径只修正高度语义，不得改变接触、足端位置或速度估计。
+    LeggedOdometryConfig zero_radius_cfg=cfg;zero_radius_cfg.foot_radius=0.0f;
+    LeggedOdometry zero_radius_odom(zero_radius_cfg);
+    auto zero_radius=zero_radius_odom.update(q,dq,tau,quat,omega,acc,0.02f);
+    ok&=expect(std::abs(standing.body_height-zero_radius.body_height-cfg.foot_radius)<1e-6f,
+        "足球半径应只给 body_height 增加 0.02 m");
+    for(int leg=0;leg<4;++leg){
+        ok&=expect(standing.contact[leg]==zero_radius.contact[leg],
+            "足球半径不得改变接触状态");
+        ok&=expect(distance3(standing.foot_position[leg],zero_radius.foot_position[leg])<1e-7f,
+            "足球半径不得改变足端运动学位置");
+    }
+    ok&=expect(distance3(standing.linear_velocity_world,zero_radius.linear_velocity_world)<1e-7f,
+        "足球半径不得改变速度估计");
+
     // 崎岖地面：一只脚明显高于最低脚时，持续承载不得被高度硬门槛否决。
     float rough_q[12];for(int i=0;i<12;++i)rough_q[i]=q[i];rough_q[4]=0.15f;
     LeggedOdometry rough_odom(cfg);
@@ -58,9 +79,50 @@ int main(){
         "支撑足约束应正确反推 +X 机体速度");
     ok&=expect(!moving.slipping&&moving.velocity_confidence>0.9f,"一致的多足约束应为高置信度");
 
+    // 仅 FL 给出与其他三足显著不一致的速度约束，必须判定打滑并降低置信度。
+    {
+        auto k=kin.compute(0,q,dq);float rhs[3]={-1.0f,0,0},sol[3];
+        ok&=expect(solve3(k.jacobian,rhs,sol),"FL 打滑测试姿态雅可比不应奇异");
+        dq[0]=sol[0];dq[4]=sol[1];dq[8]=sol[2];
+    }
+    auto slipping=odom.update(q,dq,tau,quat,omega,acc,0.02f);
+    ok&=expect(slipping.slipping,"单腿速度约束与其他支撑腿显著不一致时应判定打滑");
+    ok&=expect(slipping.velocity_confidence>0.19f&&slipping.velocity_confidence<0.21f,
+        "打滑时速度置信度应降为 0.2");
+
     // 失去所有力矩支撑证据时必须标记腾空，速度置信度归零。
     for(float& t:tau)t=0;auto airborne=odom.update(q,dq,tau,quat,omega,acc,0.02f);
     ok&=expect(airborne.airborne&&airborne.velocity_confidence==0.0f,"无支撑证据时应降为腾空/低置信度");
+
+    // 实机低载荷回归：承载约 0.55 N·m、离地约 0.17 N·m。
+    // 必须能够触地→离地→重新触地，避免高 on 门限把状态锁死在 AIR。
+    LeggedOdometry hysteresis_odom;
+    float loaded_tau[12], unloaded_tau[12];
+    for(int i=0;i<12;++i){loaded_tau[i]=0.32f;unloaded_tau[i]=0.10f;}
+    LeggedOdometryOutput hysteresis_state;
+    for(int frame=0;frame<3;++frame)
+        hysteresis_state=hysteresis_odom.update(q,dq,loaded_tau,quat,omega,acc,0.02f);
+    ok&=expect(!hysteresis_state.airborne&&hysteresis_state.contact[0]
+        &&hysteresis_state.contact[1]&&hysteresis_state.contact[2]&&hysteresis_state.contact[3],
+        "低载荷持续三帧后四足必须判定触地");
+
+    // 已触地后即使承载降到约 0.26 N·m，也应保持接触，覆盖不平地面轻载腿。
+    float light_contact_tau[12];
+    for(float& value:light_contact_tau)value=0.15f; // 三轴范数约 0.26 N·m
+    for(int frame=0;frame<10;++frame)
+        hysteresis_state=hysteresis_odom.update(q,dq,light_contact_tau,quat,omega,acc,0.02f);
+    ok&=expect(!hysteresis_state.airborne&&hysteresis_state.contact[0]
+        &&hysteresis_state.contact[1]&&hysteresis_state.contact[2]&&hysteresis_state.contact[3],
+        "不平地面轻载支撑足不得被长期误判离地");
+
+    for(int frame=0;frame<2;++frame)
+        hysteresis_state=hysteresis_odom.update(q,dq,unloaded_tau,quat,omega,acc,0.02f);
+    ok&=expect(hysteresis_state.airborne,"低力矩持续两帧后必须判定完全离地");
+    for(int frame=0;frame<3;++frame)
+        hysteresis_state=hysteresis_odom.update(q,dq,loaded_tau,quat,omega,acc,0.02f);
+    ok&=expect(!hysteresis_state.airborne&&hysteresis_state.contact[0]
+        &&hysteresis_state.contact[1]&&hysteresis_state.contact[2]&&hysteresis_state.contact[3],
+        "重新承载三帧后四足必须恢复触地");
 
     if(!ok)return 1;std::cout<<"[PASS] Step 7 leg kinematics and odometry tests"<<std::endl;return 0;
 }

@@ -102,7 +102,9 @@ LeggedOdometryOutput LeggedOdometry::update(const float q[12], const float dq[12
         float height_sum=0; int height_count=0;
         for(int leg=0;leg<4;++leg)if(out.contact[leg]){
             float pw[3];rotateBodyToWorld(quat,out.foot_position[leg],pw);
-            height_sum+=-pw[2];++height_count;
+            // foot_position 是 URDF 足球心；地面接触点还要沿世界 Z
+            // 向下一个球半径，故 base 原点高度需要加 foot_radius。
+            height_sum+=-pw[2]+config_.foot_radius;++height_count;
         }
         out.body_height=height_count?height_sum/height_count:0.0f;
     } else {

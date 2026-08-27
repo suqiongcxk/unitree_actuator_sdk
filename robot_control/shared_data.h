@@ -94,7 +94,7 @@ struct EstimatedState {
     float joint_velocity[12]  = {0};
     float joint_torque[12]    = {0};
     int   joint_error[12]     = {0};
-    bool  joint_valid[12]     = {false}; // CRC 正确、反馈有限且 merror=0
+    bool  joint_valid[12]     = {false}; // 最近成功反馈未超时、数值有限且 merror=0
     bool  joint_feedback_valid = false;  // 12 个关节本周期全部有效
     uint64_t joint_age_ns[12] = {0};     // 各关节最近成功反馈距本帧的年龄
     uint32_t joint_failure_count[12] = {0}; // 各关节连续通信失败次数
@@ -105,7 +105,7 @@ struct EstimatedState {
     float contact_confidence[4] = {0};   // FL,FR,RL,RR，0..1
     float foot_position[4][3] = {{0}};   // 相对 base，base frame，m
     float foot_velocity[4][3] = {{0}};   // 关节运动造成的相对速度，m/s
-    float body_height         = 0.0f;    // 基于支撑足的机体高度，m
+    float body_height         = 0.0f;    // base 原点到足底接触平面的高度，m
     float linear_velocity_confidence = 0.0f;
     bool  leg_odometry_valid = false;
     bool  airborne           = true;

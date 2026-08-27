@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iomanip>
 #include <chrono>
+#include <algorithm>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  StandingPolicy
@@ -123,6 +124,12 @@ void ValidatingPolicy::setVelocityCommand(const std::array<float, 3>& command)
     if (fallback_) fallback_->setVelocityCommand(command);
 }
 
+bool ValidatingPolicy::getLastActorIO(std::array<float, 48>& observation,
+                                      std::array<float, 12>& raw_action) const
+{
+    return inner_->getLastActorIO(observation, raw_action);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  ComparingPolicy — 对比两个策略
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -172,6 +179,101 @@ void ComparingPolicy::setVelocityCommand(const std::array<float, 3>& command)
 {
     primary_->setVelocityCommand(command);
     baseline_->setVelocityCommand(command);
+}
+
+
+bool ComparingPolicy::getLastActorIO(std::array<float, 48>& observation,
+                                     std::array<float, 12>& raw_action) const
+{
+    return primary_->getLastActorIO(observation, raw_action);
+}
+
+SmoothTakeoverPolicy::SmoothTakeoverPolicy(
+    std::unique_ptr<NNPolicy> inner,
+    const NNCommandSet& initial_command,
+    int blend_frames)
+    : inner_(std::move(inner))
+    , initial_command_(initial_command)
+    , blend_frames_(std::max(1, blend_frames))
+{}
+
+bool SmoothTakeoverPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
+{
+    NNCommandSet actor_command;
+    if (!inner_->infer(est, actor_command) || !actor_command.valid) {
+        pending_valid_ = false;
+        return false;
+    }
+
+    // smoothstep(0..1) 使接管开始和结束时的目标速度都接近零。
+    const float progress = std::min(
+        1.0f,
+        static_cast<float>(accepted_blend_frames_ + 1)
+            / static_cast<float>(blend_frames_));
+    const float alpha = progress * progress * (3.0f - 2.0f * progress);
+
+    cmds = actor_command;
+    for (int i = 0; i < 12; ++i) {
+        cmds.joint_position_target[i] =
+            initial_command_.joint_position_target[i]
+          + alpha * (actor_command.joint_position_target[i]
+                   - initial_command_.joint_position_target[i]);
+        cmds.kp[i] = initial_command_.kp[i]
+                   + alpha * (actor_command.kp[i] - initial_command_.kp[i]);
+        cmds.kd[i] = initial_command_.kd[i]
+                   + alpha * (actor_command.kd[i] - initial_command_.kd[i]);
+    }
+    cmds.valid = true;
+    pending_command_ = cmds;
+    pending_valid_ = true;
+    return true;
+}
+
+bool SmoothTakeoverPolicy::sameCommand(
+    const NNCommandSet& lhs, const NNCommandSet& rhs)
+{
+    if (lhs.valid != rhs.valid) return false;
+    constexpr float tolerance = 1.0e-6f;
+    for (int i = 0; i < 12; ++i) {
+        if (std::abs(lhs.joint_position_target[i] - rhs.joint_position_target[i]) > tolerance
+                || std::abs(lhs.kp[i] - rhs.kp[i]) > tolerance
+                || std::abs(lhs.kd[i] - rhs.kd[i]) > tolerance) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void SmoothTakeoverPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
+{
+    // 只有外层安全验证真正接受本层候选指令时才推进混合进度。
+    // 回退或维持旧指令都不会跳过过渡帧。
+    if (pending_valid_ && sameCommand(cmds, pending_command_)
+            && accepted_blend_frames_ < blend_frames_) {
+        ++accepted_blend_frames_;
+        if (accepted_blend_frames_ == blend_frames_ && !completion_announced_) {
+            std::cout << "[SmoothTakeover] ✓ NN 平滑接管完成，共 "
+                      << blend_frames_ << " 帧" << std::endl;
+            completion_announced_ = true;
+        }
+    }
+    pending_valid_ = false;
+    // ONNXPolicy 的 raw-action 历史在 infer() 内独立更新；不用
+    // 平滑后的 accepted command 反算或覆盖训练语义。
+    inner_->commitAcceptedCommand(cmds);
+}
+
+void SmoothTakeoverPolicy::setVelocityCommand(
+    const std::array<float, 3>& command)
+{
+    inner_->setVelocityCommand(command);
+}
+
+bool SmoothTakeoverPolicy::getLastActorIO(
+    std::array<float, 48>& observation,
+    std::array<float, 12>& raw_action) const
+{
+    return inner_->getLastActorIO(observation, raw_action);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -281,6 +383,7 @@ int ONNXPolicy::outputCount() const { return static_cast<int>(output_names_.size
 
 bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
 {
+    last_actor_io_valid_ = false;
     if (!session_) return false;
 
     try {
@@ -324,6 +427,7 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
             cmds.kd[i] = kd_;
         }
         cmds.valid = true;
+        last_actor_io_valid_ = true;
 
         return true;
 
@@ -331,6 +435,15 @@ bool ONNXPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         std::cerr << "[ONNXPolicy] 推理错误: " << e.what() << std::endl;
         return false;
     }
+}
+
+bool ONNXPolicy::getLastActorIO(std::array<float, 48>& observation,
+                                std::array<float, 12>& raw_action) const
+{
+    if (!last_actor_io_valid_) return false;
+    observation = observation_builder_.lastObservation();
+    raw_action = observation_builder_.previousAction();
+    return true;
 }
 
 void ONNXPolicy::commitAcceptedCommand(const NNCommandSet& cmds)

@@ -4,9 +4,12 @@
 #include "leg_kinematics.h"
 
 struct LeggedOdometryConfig {
-    float contact_torque_on = 1.0f;       // N·m，待实机标定
-    float contact_torque_off = 0.6f;      // 迟滞下限
+    // 2026-08-27 二次实机标定：完全离地稳定值约 0.09~0.18 N·m、
+    // 运动瞬态最高约 0.23 N·m；不平地面轻载支撑足最低约 0.25 N·m。
+    float contact_torque_on = 0.28f;      // N·m，连续满足后判定触地
+    float contact_torque_off = 0.20f;     // N·m，连续低于后判定离地
     float contact_height_band = 0.035f;   // 仅用于高度置信度，不否决高低地形接触
+    float foot_radius = 0.020f;            // URDF 足球碰撞球半径，m
     float max_contact_foot_speed = 2.0f;  // 相对机体，m/s
     float slip_residual_threshold = 0.35f;// 支撑腿速度约束不一致，m/s
     int contact_on_frames = 3;
@@ -21,7 +24,7 @@ struct LeggedOdometryOutput {
     bool contact[4] = {false};
     float contact_confidence[4] = {0};
     float linear_velocity_world[3] = {0};
-    float body_height = 0.0f;
+    float body_height = 0.0f;             // base 原点到足底接触平面的高度，m
     float velocity_confidence = 0.0f;
     bool slipping = false;
     bool airborne = true;

@@ -51,6 +51,17 @@ struct RobotControlConfig {
     // ── 电机总线 ──
     int motor_hz = 500;                     // 每路总线控制频率
     std::vector<BusConfig> buses;
+    // Step 5 实机安全诊断：跳过机械标定/站立，电机始终只发送阻尼。
+    bool monitor_only = false;
+    // Step 7 实机诊断：正常执行机械标定/缓慢站立，但禁止 NN 下发并输出详细里程计。
+    bool step7_diagnostics = false;
+    // 仅 Step 7 诊断：延迟后只在估计器输入副本中注入单腿异常速度。
+    int simulated_leg_slip = -1;             // -1=关闭，0..3=FL/FR/RL/RR
+    int simulated_leg_slip_delay_ms = 8000;  // 留出站立过渡和稳定时间
+    // 仅 monitor_only：启动估计线程 3 秒后模拟指定电机反馈停止刷新。
+    int simulated_motor_timeout_id = -1;
+    int simulated_fault_delay_ms = 3000;
+    bool simulated_imu_stream_loss = false;
 
     // ── 神经网络 ──
     int nn_hz = 50;
@@ -61,12 +72,19 @@ struct RobotControlConfig {
     /// ONNX 模型输出缩放因子 (训练时使用的 action_scale)
     float action_scale = 0.25f;
 
+    /// 开环站立指令平滑过渡到 ONNX 指令的时间；仅正常 ONNX 模式启用。
+    float nn_takeover_duration_sec = 2.0f;
+
     // ── NN 验证控制 ──
     NNControlFlags nn_flags;  // 干运行 / 记录 / 验证 / 对比
 
     // ── 默认 PD 增益 ──
     float default_kp = 0.625f;
     float default_kd = 0.0125f;
+
+    // ── 安全退出阻尼 ──
+    // 仅用于急停/正常退出后的 12 电机阻尼锁存，不改变正常控制 PD 增益。
+    float emergency_damping_kd = 0.136f;  // 当前 0.068 的 2 倍
 
     // ── 默认站立姿态 (12 关节, 输出端 rad, Z字排序) ──
     // [0..3] = hip(4条腿), [4..7] = thigh(4条腿), [8..11] = lower_leg(4条腿)
@@ -123,8 +141,8 @@ public:
 
     // ── 监控接口 (线程安全) ──────────────────────────────────────────────
 
-    const IMURawData*    getLatestIMUData();
-    const EstimatedState* getLatestEstimatedState();
+    bool getLatestIMUData(IMURawData& out) const;
+    bool getLatestEstimatedState(EstimatedState& out) const;
     int getIMUHz()       const { return config_.imu_hz; }
     int getEstimationHz() const { return config_.estimation_hz; }
     int getMotorHz()     const { return config_.motor_hz; }
@@ -162,6 +180,14 @@ private:
     IMUBuffer            imu_buffer_;
     EstimatedStateBuffer est_buffer_;
 
+    // 终端监控使用独立值快照，避免成为无锁双缓冲的第二个消费者。
+    mutable std::mutex monitor_imu_mutex_;
+    mutable std::mutex monitor_est_mutex_;
+    IMURawData monitor_imu_snapshot_{};
+    EstimatedState monitor_est_snapshot_{};
+    bool monitor_imu_available_ = false;
+    bool monitor_est_available_ = false;
+
     // ── NN 推理与验证 ────────────────────────────────────────────────────
 
     std::unique_ptr<NNPolicy> nn_policy_;
@@ -191,8 +217,11 @@ private:
     /// 执行完整标定序列 (初始化阶段调用)
     bool runCalibrationSequence();
 
+    /// 复用已实机验证的站立前大腿安全预定位。
+    bool prepositionThighsForStanding();
+
     /// 从标定位姿平滑过渡到站立姿态 (start 阶段调用)
-    void transitionToStandingInternal(float transition_time_sec = 2.0f);
+    bool transitionToStandingInternal(float transition_time_sec = 3.0f);
 
     // ── 线程主循环 ───────────────────────────────────────────────────────
 

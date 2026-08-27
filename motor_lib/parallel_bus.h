@@ -12,6 +12,17 @@
 #include "unitreeMotor/unitreeMotor.h"
 #include "motor_controller.h"   // 复用 MotorState
 
+// 单路总线线程的只读时序快照。所有时间均基于 CLOCK_MONOTONIC。
+struct BusTimingStats {
+    uint64_t loop_count = 0;
+    uint64_t max_loop_gap_ns = 0;        // 相邻两次控制循环开始时间的最大间隔
+    uint64_t max_cycle_duration_ns = 0;  // 单次完整收发循环的最大执行时间
+    uint64_t gap_over_2ms = 0;
+    uint64_t gap_over_10ms = 0;
+    uint64_t gap_over_50ms = 0;
+    uint64_t gap_over_100ms = 0;
+};
+
 /**
  * @brief 单路 RS-485 并行总线（独立线程驱动）
  *
@@ -84,6 +95,7 @@ public:
     float getGearRatio() const { return gear_ratio_; }
     int getTargetHz() const { return target_hz_; }
     float getActualHz() const { return actual_hz_.load(); }
+    BusTimingStats getTimingStats() const;
 
 private:
     void controlLoop();   // 线程主循环
@@ -105,6 +117,10 @@ private:
         MotorData data;
         uint64_t feedback_timestamp_ns = 0;
         uint32_t consecutive_failures = 0;
+        uint64_t transaction_count = 0;
+        uint64_t success_count = 0;
+        uint64_t short_frame_count = 0;
+        uint64_t protocol_failure_count = 0;
     };
     std::vector<MotorSlot> slots_;
     mutable std::mutex slots_mtx_;   // 保护 slots_ 的读写
@@ -115,6 +131,16 @@ private:
     std::atomic<float> actual_hz_{0.0f};
     std::atomic<bool> emergency_latched_{false};
     std::atomic<float> emergency_kd_{0.02f};
+
+    // 诊断统计只由总线线程写入，其他线程通过原子快照读取，不进入 slots_mtx_。
+    std::atomic<uint64_t> previous_loop_start_ns_{0};
+    std::atomic<uint64_t> loop_count_{0};
+    std::atomic<uint64_t> max_loop_gap_ns_{0};
+    std::atomic<uint64_t> max_cycle_duration_ns_{0};
+    std::atomic<uint64_t> gap_over_2ms_{0};
+    std::atomic<uint64_t> gap_over_10ms_{0};
+    std::atomic<uint64_t> gap_over_50ms_{0};
+    std::atomic<uint64_t> gap_over_100ms_{0};
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

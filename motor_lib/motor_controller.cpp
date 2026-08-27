@@ -1,4 +1,5 @@
 #include "motor_controller.h"
+#include "quiet_serial_recv.h"
 #include "emergency_stop.h"
 #include <iostream>
 #include <stdexcept>
@@ -136,8 +137,14 @@ void MotorController::sendRecv()
     rx();
     clock_gettime(CLOCK_MONOTONIC, &t4);
 
-    serial_.recv(recvData);
-    data_.extract_data(&data_);  // 解包 raw bytes → 公有字段 + CRC 校验
+    constexpr size_t kGoM8010RecvLength = 16;
+    const size_t recv_length = motor_io::quietSerialRecv(
+        serial_.fd(), recvData, kGoM8010RecvLength);
+    if (motor_io::hasValidGoM8010Crc(recvData, recv_length)) {
+        data_.extract_data(&data_);  // 解包 raw bytes → 公有字段
+    } else {
+        data_.correct = false;
+    }
 
     long tx_us    = (t1.tv_sec - t0.tv_sec) * 1000000L + (t1.tv_nsec - t0.tv_nsec) / 1000;
     long send_us  = (t2.tv_sec - t1.tv_sec) * 1000000L + (t2.tv_nsec - t1.tv_nsec) / 1000;
@@ -411,8 +418,14 @@ void MotorBus::sendRecv()
         // RX 模式
         gpio_->set(0);
 
-        serial_.recv(recvData);
-        slot.data.extract_data(&slot.data);
+        constexpr size_t kGoM8010RecvLength = 16;
+        const size_t recv_length = motor_io::quietSerialRecv(
+            serial_.fd(), recvData, kGoM8010RecvLength);
+        if (motor_io::hasValidGoM8010Crc(recvData, recv_length)) {
+            slot.data.extract_data(&slot.data);
+        } else {
+            slot.data.correct = false;
+        }
     }
 }
 

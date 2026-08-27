@@ -25,6 +25,10 @@ struct MotorState {
     unsigned char mode = 0; // 当前工作模式: 0=锁定 1=FOC闭环 2=编码器校准
     uint64_t feedback_timestamp_ns = 0; // 最近一次 CRC 正确反馈的 CLOCK_MONOTONIC 时间
     uint32_t consecutive_failures = 0;  // 连续 CRC/ID/接收失败次数
+    uint64_t transaction_count = 0;     // 累计反馈事务数
+    uint64_t success_count = 0;         // 累计完整且 CRC/ID 正确数
+    uint64_t short_frame_count = 0;     // 累计非16字节反馈数
+    uint64_t protocol_failure_count = 0;// 完整帧但 CRC/ID 错误数
 };
 
 /**

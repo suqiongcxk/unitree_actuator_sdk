@@ -4,6 +4,27 @@
 #include <ctime>
 #include <cstring>
 #include <sys/ioctl.h>
+#include "quiet_serial_recv.h"
+
+namespace {
+uint64_t monotonicNowNs()
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return static_cast<uint64_t>(ts.tv_sec) * 1'000'000'000ULL
+         + static_cast<uint64_t>(ts.tv_nsec);
+}
+
+void updateAtomicMax(std::atomic<uint64_t>& target, uint64_t value)
+{
+    uint64_t current = target.load(std::memory_order_relaxed);
+    while (current < value
+           && !target.compare_exchange_weak(current, value,
+                                            std::memory_order_relaxed,
+                                            std::memory_order_relaxed)) {
+    }
+}
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ParallelBus 实现
@@ -169,15 +190,23 @@ MotorState ParallelBus::getState(unsigned short motor_id) const
     MotorState s;
     for (const auto& slot : slots_) {
         if (slot.id != motor_id) continue;
-        s.q       = slot.data.q  / gear_ratio_;
-        s.dq      = slot.data.dq / gear_ratio_;
-        s.tau     = slot.data.tau;  // 协议直接给出关节输出扭矩
-        s.temp    = slot.data.temp;
-        s.merror  = slot.data.merror;
-        s.correct = slot.data.correct;
-        s.mode    = slot.data.mode;
+        // 第一帧有效反馈到达前 MotorData 由厂商 SDK 持有，
+        // 其数值字段未保证已初始化；此时只返回零值无效状态。
+        if (slot.feedback_timestamp_ns != 0) {
+            s.q       = slot.data.q  / gear_ratio_;
+            s.dq      = slot.data.dq / gear_ratio_;
+            s.tau     = slot.data.tau;  // 协议直接给出关节输出扭矩
+            s.temp    = slot.data.temp;
+            s.merror  = slot.data.merror;
+            s.correct = slot.data.correct;
+            s.mode    = slot.data.mode;
+        }
         s.feedback_timestamp_ns = slot.feedback_timestamp_ns;
         s.consecutive_failures = slot.consecutive_failures;
+        s.transaction_count = slot.transaction_count;
+        s.success_count = slot.success_count;
+        s.short_frame_count = slot.short_frame_count;
+        s.protocol_failure_count = slot.protocol_failure_count;
         break;
     }
     return s;
@@ -189,6 +218,20 @@ std::vector<unsigned short> ParallelBus::getMotorIds() const
     std::vector<unsigned short> ids;
     for (const auto& s : slots_) ids.push_back(s.id);
     return ids;
+}
+
+BusTimingStats ParallelBus::getTimingStats() const
+{
+    BusTimingStats stats;
+    stats.loop_count = loop_count_.load(std::memory_order_relaxed);
+    stats.max_loop_gap_ns = max_loop_gap_ns_.load(std::memory_order_relaxed);
+    stats.max_cycle_duration_ns =
+        max_cycle_duration_ns_.load(std::memory_order_relaxed);
+    stats.gap_over_2ms = gap_over_2ms_.load(std::memory_order_relaxed);
+    stats.gap_over_10ms = gap_over_10ms_.load(std::memory_order_relaxed);
+    stats.gap_over_50ms = gap_over_50ms_.load(std::memory_order_relaxed);
+    stats.gap_over_100ms = gap_over_100ms_.load(std::memory_order_relaxed);
+    return stats;
 }
 
 // ── 减速比转换 ──
@@ -211,6 +254,14 @@ void ParallelBus::start(int hz)
     }
 
     target_hz_ = hz;
+    previous_loop_start_ns_.store(0, std::memory_order_relaxed);
+    loop_count_.store(0, std::memory_order_relaxed);
+    max_loop_gap_ns_.store(0, std::memory_order_relaxed);
+    max_cycle_duration_ns_.store(0, std::memory_order_relaxed);
+    gap_over_2ms_.store(0, std::memory_order_relaxed);
+    gap_over_10ms_.store(0, std::memory_order_relaxed);
+    gap_over_50ms_.store(0, std::memory_order_relaxed);
+    gap_over_100ms_.store(0, std::memory_order_relaxed);
     running_.store(true);
     thread_ = std::thread(&ParallelBus::controlLoop, this);
 }
@@ -233,8 +284,27 @@ void ParallelBus::controlLoop()
     clock_gettime(CLOCK_MONOTONIC, &next);
 
     long long cycle_count = 0;
+    long long last_frequency_ns = 0;
 
     while (running_.load()) {
+        const uint64_t cycle_start_ns = monotonicNowNs();
+        const uint64_t previous_start_ns =
+            previous_loop_start_ns_.exchange(cycle_start_ns,
+                                             std::memory_order_relaxed);
+        loop_count_.fetch_add(1, std::memory_order_relaxed);
+        if (previous_start_ns > 0 && cycle_start_ns >= previous_start_ns) {
+            const uint64_t gap_ns = cycle_start_ns - previous_start_ns;
+            updateAtomicMax(max_loop_gap_ns_, gap_ns);
+            if (gap_ns > 2'000'000ULL)
+                gap_over_2ms_.fetch_add(1, std::memory_order_relaxed);
+            if (gap_ns > 10'000'000ULL)
+                gap_over_10ms_.fetch_add(1, std::memory_order_relaxed);
+            if (gap_ns > 50'000'000ULL)
+                gap_over_50ms_.fetch_add(1, std::memory_order_relaxed);
+            if (gap_ns > 100'000'000ULL)
+                gap_over_100ms_.fetch_add(1, std::memory_order_relaxed);
+        }
+
         // ── 计算下一次唤醒时间 ──
         next.tv_nsec += period_ns;
         while (next.tv_nsec >= 1'000'000'000L) {
@@ -263,6 +333,13 @@ void ParallelBus::controlLoop()
         //   每台电机: tx→send→等待TX完成→rx→recv
         //   与 MotorController::sendRecv() 使用相同的硬件级 TX 完成检测
         std::vector<MotorData> recvVec(sendVec.size());
+        // MotorData 默认构造函数不会初始化 motorType；必须在调用
+        // get_motor_recv_data()/extract_data() 前明确指定协议类型，否则会
+        // 选择未定义的接收缓冲区并造成短帧、CRC 错误。
+        for (auto& data : recvVec) {
+            data.motorType = MotorType::GO_M8010_6;
+        }
+        std::vector<size_t> recv_lengths(sendVec.size(), 0);
         for (size_t i = 0; i < sendVec.size(); ++i) {
             if (emergency_latched_.load(std::memory_order_acquire)) {
                 // 即使本周期已取出旧指令，急停锁存后也在发送前强制改为阻尼。
@@ -301,43 +378,62 @@ void ParallelBus::controlLoop()
 
             gpio_->set(0);   // RX 模式
 
-            serial_->recv(recvData);
-            recvVec[i].extract_data(&recvVec[i]);
+            constexpr size_t kGoM8010RecvLength = 16;
+            recv_lengths[i] = motor_io::quietSerialRecv(
+                serial_->fd(), recvData, kGoM8010RecvLength);
+            // 短帧禁止解包，也不能用未初始化字段覆盖上一帧有效状态。
+            if (motor_io::hasValidGoM8010Crc(recvData, recv_lengths[i])) {
+                recvVec[i].extract_data(&recvVec[i]);
+            } else {
+                recvVec[i].correct = false;
+            }
         }
 
         // ── 第四步: 将接收数据写回 slots_ ──
         {
             std::lock_guard<std::mutex> lock(slots_mtx_);
             for (size_t i = 0; i < recvVec.size() && i < slots_.size(); ++i) {
-                slots_[i].data = recvVec[i];
-                const bool response_ok = recvVec[i].correct
+                ++slots_[i].transaction_count;
+                const bool full_frame = recv_lengths[i] == 16;
+                const bool response_ok = full_frame && recvVec[i].correct
                                       && recvVec[i].motor_id == slots_[i].id;
                 if (response_ok) {
+                    slots_[i].data = recvVec[i];
                     struct timespec feedback_time;
                     clock_gettime(CLOCK_MONOTONIC, &feedback_time);
                     slots_[i].feedback_timestamp_ns =
                         static_cast<uint64_t>(feedback_time.tv_sec) * 1'000'000'000ULL
                       + static_cast<uint64_t>(feedback_time.tv_nsec);
                     slots_[i].consecutive_failures = 0;
+                    ++slots_[i].success_count;
                 } else {
                     ++slots_[i].consecutive_failures;
+                    if (!full_frame) ++slots_[i].short_frame_count;
+                    else ++slots_[i].protocol_failure_count;
+                    // 保留最近一次有效数值和时间戳，但标记本帧无效。
                     slots_[i].data.correct = false;
                 }
             }
         }
 
+        // 包含指令快照、三台电机逐一收发以及反馈写回，用于区分
+        // “通信/I/O耗时过长”和“线程未被调度”。
+        const uint64_t cycle_end_ns = monotonicNowNs();
+        if (cycle_end_ns >= cycle_start_ns) {
+            updateAtomicMax(max_cycle_duration_ns_, cycle_end_ns - cycle_start_ns);
+        }
+
         // ── 统计实际频率（每秒更新一次） ──
         cycle_count++;
         if (cycle_count % target_hz_ == 0) {
-            static long long last = 0;
             struct timespec now;
             clock_gettime(CLOCK_MONOTONIC, &now);
             long long now_ns = now.tv_sec * 1'000'000'000LL + now.tv_nsec;
-            if (last != 0) {
-                float period = (now_ns - last) / 1e9f;
+            if (last_frequency_ns != 0) {
+                float period = (now_ns - last_frequency_ns) / 1e9f;
                 actual_hz_.store(target_hz_ / period);
             }
-            last = now_ns;
+            last_frequency_ns = now_ns;
         }
 
         // ── 精准睡眠到下一次周期 ──
@@ -400,6 +496,3 @@ std::vector<ParallelBus*> MultiBusController::buses()
     for (auto& b : buses_) ptrs.push_back(b.get());
     return ptrs;
 }
-
-
-

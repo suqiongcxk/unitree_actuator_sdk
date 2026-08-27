@@ -73,6 +73,19 @@ int main()
     ok &= expect(after_bad_command[10] == command[1],
                  "拒绝速度命令后必须保留上一帧有效命令");
 
+    // body_height/position 不属于训练端的 48 维 Actor observation。
+    const auto observation_before_height_change = builder.build(est);
+    est.body_height += 0.02f;
+    est.position[2] += 0.02f;
+    const auto observation_after_height_change = builder.build(est);
+    bool height_isolation_ok = true;
+    for (int i = 0; i < 48; ++i) {
+        height_isolation_ok = height_isolation_ok
+            && observation_before_height_change[i] == observation_after_height_change[i];
+    }
+    ok &= expect(height_isolation_ok,
+                 "高度定义修正不得改变 48 维 Actor observation");
+
     if (!ok) return 1;
     std::cout << "[PASS] Policy observation and previous-action tests" << std::endl;
     return 0;

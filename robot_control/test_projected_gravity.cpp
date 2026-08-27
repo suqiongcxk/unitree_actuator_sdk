@@ -62,10 +62,15 @@ int main()
             joint_age_ns, joint_failure_count, raw.timestamp_ns);
 
         if (++print_divider % 5 == 0) {
-            if (!state.gyro_calibrated) {
+            // 读取失败必须优先报告，不能被默认的“未校准”字段掩盖。
+            if (!state.valid &&
+                    state.status_code != static_cast<int>(EstimateStatus::GYRO_CALIBRATING)) {
+                std::cout << "\r状态无效，status=" << state.status_code
+                          << "                    " << std::flush;
+            } else if (!state.gyro_calibrated) {
                 std::cout << "\r正在静止校准陀螺仪，status=" << state.status_code
                           << "                    " << std::flush;
-            } else if (!state.valid || !state.projected_gravity_valid) {
+            } else if (!state.projected_gravity_valid) {
                 std::cout << "\r状态无效，status=" << state.status_code
                           << "                    " << std::flush;
             } else {

@@ -149,6 +149,14 @@ add_executable(test_projected_gravity
     robot_control/legged_odometry.cpp
 )
 
+# Step 2 陀螺仪零偏/低通实机诊断（只访问 I2C，不访问电机）
+add_executable(test_gyro_calibration
+    robot_control/test_gyro_calibration.cpp
+    robot_control/state_estimator.cpp
+    robot_control/leg_kinematics.cpp
+    robot_control/legged_odometry.cpp
+)
+
 # Step 7 腿部运动学、接触与速度估计纯软件测试
 add_executable(test_legged_odometry
     robot_control/test_legged_odometry.cpp
@@ -156,6 +164,7 @@ add_executable(test_legged_odometry
     robot_control/legged_odometry.cpp
 )
 target_link_libraries(test_projected_gravity jy901s)
+target_link_libraries(test_gyro_calibration jy901s)
 
 # Step 6 观测布局与上一帧动作纯软件测试
 add_executable(test_policy_observation
@@ -177,11 +186,42 @@ if(ONNX_FOUND)
         CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO
         INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"
         BUILD_RPATH "${ONNXRUNTIME_DIR}/lib")
+
+    # ONNX 接管平滑与外层安全验证纯软件测试（不访问任何硬件）
+    add_executable(test_smooth_takeover
+        robot_control/test_smooth_takeover.cpp
+        robot_control/nn_policy.cpp
+        robot_control/nn_validation.cpp
+        robot_control/policy_observation.cpp
+    )
+    target_include_directories(test_smooth_takeover PRIVATE
+        robot_control "${ONNXRUNTIME_DIR}/include")
+    target_link_directories(test_smooth_takeover PRIVATE "${ONNXRUNTIME_DIR}/lib")
+    target_link_libraries(test_smooth_takeover onnxruntime)
+    set_target_properties(test_smooth_takeover PROPERTIES
+        CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO
+        INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"
+        BUILD_RPATH "${ONNXRUNTIME_DIR}/lib")
 endif()
 
 # Step 4 关节 ID/URDF 映射纯软件测试（不打开任何硬件设备）
 add_executable(test_joint_mapping robot_control/test_joint_mapping.cpp)
 target_link_libraries(test_joint_mapping motor_controller fast_gpio ${EXTRA_LIBS} pthread)
+
+# Step 4 实机反馈诊断：仅发送低阻尼零速度报文以取得反馈，不发送位置目标。
+add_executable(test_joint_feedback robot_control/test_joint_feedback.cpp)
+target_link_libraries(test_joint_feedback
+    parallel_bus fast_gpio motor_controller ${EXTRA_LIBS} pthread)
+
+# Step 4 同步 MotorBus 对照诊断：复用机械标定已验证的收发路径。
+add_executable(test_joint_feedback_sync robot_control/test_joint_feedback_sync.cpp)
+target_link_libraries(test_joint_feedback_sync
+    motor_controller fast_gpio ${EXTRA_LIBS} pthread)
+
+# 四路总线500 Hz阻尼通信丢包率实机测试。
+add_executable(test_damping_packet_loss robot_control/test_damping_packet_loss.cpp)
+target_link_libraries(test_damping_packet_loss
+    parallel_bus fast_gpio motor_controller ${EXTRA_LIBS} pthread)
 target_include_directories(robot_control PRIVATE robot_control)
 target_link_libraries(robot_control
     parallel_bus

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <cmath>
 #include <algorithm>
+#include <array>
 
 // ═══════════════════════════════════════════════════════════════════════════════
 //  NN 验证 — 确保神经网络输出在物理合理范围内
@@ -98,7 +99,9 @@ public:
     /// @param latency_us   推理耗时 (微秒)
     void log(const EstimatedState& input_state,
              const NNCommandSet& output_cmds,
-             bool valid, int latency_us);
+             bool valid, int latency_us,
+             const std::array<float, 48>* observation = nullptr,
+             const std::array<float, 12>* raw_action = nullptr);
 
     /// 是否正在记录
     bool isEnabled() const { return enabled_; }
