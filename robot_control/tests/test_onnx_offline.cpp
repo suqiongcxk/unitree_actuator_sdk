@@ -25,7 +25,7 @@
  *
  * 编译:
  *   g++ -std=c++14 -O2 -I thirdparty/onnxruntime/include \
- *       robot_control/test_onnx_offline.cpp \
+ *       robot_control/tests/test_onnx_offline.cpp \
  *       -L thirdparty/onnxruntime/lib -lonnxruntime \
  *       -Wl,-rpath,thirdparty/onnxruntime/lib \
  *       -o test_onnx_offline

@@ -31,6 +31,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include <array>
 #include <thread>
 #include <atomic>
 #include <cctype>
@@ -731,10 +732,19 @@ void ZeroPointCalibration(void)
             {6, -0.698f},  // RL Thigh: -40°
             {7, -0.698f},  // RR Thigh: -40°
         };
-        std::cout << "\n[PrePos] 大腿预定位 (URDF 减小方向)..." << std::endl;
+        struct PreparedMove {
+            bool active = false;
+            int motor_id = -1;
+            int leg = -1;
+            float current_motor = 0.0f;
+            float target_motor = 0.0f;
+        };
+        std::array<PreparedMove, 4> moves{};
+        std::cout << "\n[PrePos] 四条大腿并行预定位 (URDF 减小方向)..."
+                  << std::endl;
 
-        for (int p = 0; p < 4; p++)
-        {
+        // 先完成目标计算，再同时启动四路独立UART。
+        for (int p = 0; p < 4; ++p) {
             if (isEmergencyStopRequested()) break;
             int mid = pre[p].motor_id;
 
@@ -776,20 +786,59 @@ void ZeroPointCalibration(void)
                       << " (Δ" << pre[p].urdf_delta << " rad, "
                       << travel << " rad motor)" << std::endl;
 
-            // 慢速位置过渡 (0.8s, 低刚度)
-            MotorBus bus(LEG_BUS_HW[leg].gpio_pin, LEG_BUS_HW[leg].serial_port);
-            bus.addMotor(mid);
-            const int   STEPS = 60;
-            const float TIME  = 0.8f;
-            for (int s = 0; s <= STEPS && !isEmergencyStopRequested(); s++) {
-                float a = static_cast<float>(s) / STEPS;
-                float sa = a * a * (3.0f - 2.0f * a);
-                float q = cur_motor + sa * (tgt_motor - cur_motor);
-                bus.setPosition(mid, q, 0.15f, 0.01f);
-                bus.sendRecv();
-                usleep(static_cast<int>(TIME / STEPS * 1e6));
+            moves[p] = {true, mid, leg, cur_motor, tgt_motor};
+        }
+
+        const int steps = 60;
+        const float duration_sec = 0.8f;
+        std::array<bool, 4> move_ok{{false, false, false, false}};
+        std::vector<std::thread> workers;
+        for (int p = 0; p < 4; ++p) {
+            if (!moves[p].active) continue;
+            workers.emplace_back([&, p]() {
+                const auto& move = moves[p];
+                try {
+                    MotorBus bus(LEG_BUS_HW[move.leg].gpio_pin,
+                                 LEG_BUS_HW[move.leg].serial_port);
+                    if (!bus.addMotor(move.motor_id)) {
+                        ::requestEmergencyStop();
+                        return;
+                    }
+                    for (int step = 0;
+                         step <= steps && !isEmergencyStopRequested(); ++step) {
+                        const float alpha = static_cast<float>(step) / steps;
+                        const float smooth = alpha * alpha * (3.0f - 2.0f * alpha);
+                        const float command = move.current_motor
+                                            + smooth * (move.target_motor
+                                                      - move.current_motor);
+                        bus.setPosition(move.motor_id, command, 0.15f, 0.01f);
+                        bus.sendRecv();
+                        usleep(static_cast<int>(duration_sec / steps * 1.0e6f));
+                    }
+                    move_ok[p] = !isEmergencyStopRequested();
+                } catch (const std::exception& error) {
+                    std::cerr << "[PrePos] Thigh " << move.motor_id
+                              << " 并行预定位异常: " << error.what()
+                              << std::endl;
+                    ::requestEmergencyStop();
+                }
+            });
+        }
+        for (auto& worker : workers) worker.join();
+
+        bool all_moves_ok = !isEmergencyStopRequested();
+        for (int p = 0; p < 4; ++p) {
+            if (!moves[p].active) continue;
+            if (!move_ok[p]) {
+                all_moves_ok = false;
+                continue;
             }
-            if (!isEmergencyStopRequested()) expected_position[mid] = tgt_motor;
+            expected_position[moves[p].motor_id] = moves[p].target_motor;
+        }
+        if (!all_moves_ok) {
+            std::cerr << "[PrePos] 大腿并行预定位未完成，终止站立过渡"
+                      << std::endl;
+            return;
         }
         std::cout << "[PrePos] 大腿预定位完成" << std::endl;
     }

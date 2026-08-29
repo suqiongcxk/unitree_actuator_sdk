@@ -11,6 +11,12 @@
 
 namespace motor_io {
 
+// 丢弃已经失去事务归属的输入字节。只清理RX，绝不影响待发送数据。
+inline void discardStaleSerialInput(int fd)
+{
+    if (fd >= 0) ::tcflush(fd, TCIFLUSH);
+}
+
 // 厂商 SDK 的 extract_data() 会为每个坏 CRC 向 stderr 打印一行警告。
 // 在进入 SDK 前做完全相同的 CRC-CCITT 校验，坏帧仍由调用方计数。
 inline bool hasValidGoM8010Crc(const uint8_t* frame, size_t length)
@@ -43,7 +49,7 @@ inline size_t quietSerialRecv(int fd, uint8_t* buffer, size_t expected_length)
         }
 
         if (ready <= 0) {
-            ::tcflush(fd, TCIOFLUSH);
+            discardStaleSerialInput(fd);
             return 0;
         }
 
@@ -52,7 +58,7 @@ inline size_t quietSerialRecv(int fd, uint8_t* buffer, size_t expected_length)
             received = ::read(fd, destination, length);
         } while (received < 0 && errno == EINTR);
         if (received <= 0) {
-            ::tcflush(fd, TCIOFLUSH);
+            discardStaleSerialInput(fd);
             return 0;
         }
         return static_cast<size_t>(received);
@@ -63,7 +69,7 @@ inline size_t quietSerialRecv(int fd, uint8_t* buffer, size_t expected_length)
 
     const size_t second = readOnce(buffer + first, expected_length - first);
     const size_t total = first + second;
-    if (total != expected_length) ::tcflush(fd, TCIOFLUSH);
+    if (total != expected_length) discardStaleSerialInput(fd);
     return total;
 }
 

@@ -28,9 +28,11 @@ LeggedOdometryOutput LeggedOdometry::update(const float q[12], const float dq[12
     if (!q||!dq||!tau||!quat||!omega||!acc_body || !std::isfinite(dt)
         || dt<0.001f || dt>0.1f || !finite3(omega) || !finite3(acc_body)) return out;
     float min_z=1e9f;
+    CreeperLegKinematics::Result leg_kinematics[4];
     for (int leg=0;leg<4;++leg) {
         const auto k=kinematics_.compute(leg,q,dq);
         if (!k.valid) return out;
+        leg_kinematics[leg]=k;
         for(int a=0;a<3;++a){out.foot_position[leg][a]=k.foot_position[a];out.foot_velocity[leg][a]=k.foot_velocity[a];}
         min_z=std::min(min_z,k.foot_position[2]);
     }
@@ -40,10 +42,28 @@ LeggedOdometryOutput LeggedOdometry::update(const float q[12], const float dq[12
         float torque_sq=0;
         for(int j=0;j<3;++j){if(!std::isfinite(tau[ids[j]]))return out; torque_sq+=tau[ids[j]]*tau[ids[j]];}
         const float torque=std::sqrt(torque_sq);
+        const float leg_torque[3] = {
+            tau[ids[0]]*config_.feedback_torque_to_joint,
+            tau[ids[1]]*config_.feedback_torque_to_joint,
+            tau[ids[2]]*config_.feedback_torque_to_joint};
+        const auto force = force_estimator_.estimate(
+            leg_kinematics[leg].jacobian, leg_torque);
+        for (int axis=0;axis<3;++axis)
+            out.foot_force_body[leg][axis]=force.force_body[axis];
+        out.normal_force[leg]=force.normal_force;
+        out.force_residual[leg]=force.torque_residual;
+        out.foot_force_valid[leg]=force.valid;
+        out.contact_used_force[leg]=force.valid;
+
         const float speed=norm3(out.foot_velocity[leg]);
-        const bool touchdown_evidence=torque>=config_.contact_torque_on
+        const float contact_value=force.valid?force.normal_force:torque;
+        const float contact_on=force.valid?config_.contact_normal_force_on
+                                           :config_.contact_torque_on;
+        const float contact_off=force.valid?config_.contact_normal_force_off
+                                            :config_.contact_torque_off;
+        const bool touchdown_evidence=contact_value>=contact_on
             && speed<=config_.max_contact_foot_speed;
-        const bool liftoff_evidence=torque<config_.contact_torque_off;
+        const bool liftoff_evidence=contact_value<contact_off;
 
         // 每只脚独立的接触状态机。足端高度不是硬门槛：高台/石块上的
         // 支撑足只要有持续承载证据，仍可进入 STANCE。
@@ -69,12 +89,13 @@ LeggedOdometryOutput LeggedOdometry::update(const float q[12], const float dq[12
             contact_phase_[leg]=ContactPhase::STANCE;
         const bool in_contact=contact_phase_[leg]==ContactPhase::STANCE;
         out.contact[leg]=in_contact;
-        const float torque_span=std::max(0.01f,config_.contact_torque_on-config_.contact_torque_off);
-        const float torque_conf=std::max(0.0f,std::min(1.0f,(torque-config_.contact_torque_off)/torque_span));
+        const float evidence_span=std::max(0.01f,contact_on-contact_off);
+        const float load_conf=std::max(0.0f,std::min(1.0f,
+            (contact_value-contact_off)/evidence_span));
         // 高度只占较小权重：地形越高置信度可略降，但不会被误判为离地。
         const float excess_height=std::max(0.0f,out.foot_position[leg][2]-min_z);
         const float height_conf=std::max(0.0f,1.0f-excess_height/std::max(0.001f,4.0f*config_.contact_height_band));
-        out.contact_confidence[leg]=in_contact?(0.8f*torque_conf+0.2f*height_conf):0.0f;
+        out.contact_confidence[leg]=in_contact?(0.8f*load_conf+0.2f*height_conf):0.0f;
     }
 
     // JY901S 加速度是比力：世界系线加速度 = R*a_body + [0,0,-g]。

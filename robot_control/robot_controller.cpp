@@ -15,8 +15,28 @@
 #include <chrono>
 #include <cmath>
 #include <algorithm>
+#include <array>
+#include <ostream>
+#include <string>
+#include <stdexcept>
+#include <thread>
 
 namespace {
+uint64_t monotonicNowNs()
+{
+    struct timespec now;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    return static_cast<uint64_t>(now.tv_sec) * 1'000'000'000ULL
+         + static_cast<uint64_t>(now.tv_nsec);
+}
+
+void updateAtomicMax(std::atomic<uint64_t>& target, uint64_t value)
+{
+    uint64_t current = target.load(std::memory_order_relaxed);
+    while (current < value && !target.compare_exchange_weak(
+               current, value, std::memory_order_relaxed)) {}
+}
+
 void printBusTimingSnapshot(const MultiBusController& controller,
                             const char* prefix,
                             std::ostream& out)
@@ -42,6 +62,51 @@ void printBusTimingSnapshot(const MultiBusController& controller,
             << std::defaultfloat << std::endl;
     }
 }
+
+void printAllMotorErrorsSnapshot(const MultiBusController& controller,
+                                 const char* prefix,
+                                 std::ostream& out)
+{
+    int errors[12] = {0};
+    int temperatures[12] = {0};
+    bool present[12] = {false};
+    for (size_t bus_index = 0; bus_index < controller.busCount(); ++bus_index) {
+        const ParallelBus& bus = controller.bus(bus_index);
+        for (unsigned short id : bus.getMotorIds()) {
+            if (id >= 12) continue;
+            const MotorState state = bus.getState(id);
+            errors[id] = state.merror;
+            temperatures[id] = state.temp;
+            present[id] = true;
+        }
+    }
+    out << prefix;
+    for (int id = 0; id < 12; ++id) {
+        out << " id" << id << "=";
+        if (present[id]) out << errors[id] << "(temp=" << temperatures[id] << "C)";
+        else out << "NA";
+    }
+    out << std::endl;
+}
+
+RuntimeSafetyFault motionViolationToRuntimeFault(
+    MotionSafetyViolation violation)
+{
+    switch (violation) {
+    case MotionSafetyViolation::TARGET_VELOCITY:
+        return RuntimeSafetyFault::JOINT_TARGET_RATE_EXCEEDED;
+    case MotionSafetyViolation::FEEDBACK_VELOCITY:
+        return RuntimeSafetyFault::JOINT_FEEDBACK_VELOCITY_EXCEEDED;
+    case MotionSafetyViolation::SIMULTANEOUS_TARGET_CHANGE:
+    case MotionSafetyViolation::AGGREGATE_TARGET_CHANGE:
+        return RuntimeSafetyFault::MULTI_JOINT_TARGET_CHANGE;
+    case MotionSafetyViolation::INVALID_INPUT:
+        return RuntimeSafetyFault::NN_COMMAND_INVALID;
+    case MotionSafetyViolation::NONE:
+        return RuntimeSafetyFault::NONE;
+    }
+    return RuntimeSafetyFault::NN_COMMAND_INVALID;
+}
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -50,8 +115,16 @@ void printBusTimingSnapshot(const MultiBusController& controller,
 
 RobotController::RobotController(const RobotControlConfig& config)
     : config_(config)
-    , velocity_command_(config.velocity_command)
-{}
+    , velocity_command_manager_(config.velocity_command_config)
+{
+    if (!isMotionSafetyConfigValid(config_.motion_safety)) {
+        throw std::invalid_argument("invalid motion safety config");
+    }
+    // 保留既有配置入口，但非零初值同样受看门狗约束。
+    if (config.velocity_command != std::array<float, 3>{{0.0f, 0.0f, 0.0f}}) {
+        velocity_command_manager_.submit(config.velocity_command, monotonicNowNs());
+    }
+}
 
 RobotController::~RobotController()
 {
@@ -252,12 +325,11 @@ bool RobotController::initialize()
 
         // 3c. 验证包装
         if (config_.nn_flags.validate) {
-            auto fallback = std::make_unique<StandingPolicy>(
-                config_.default_standing_pose, config_.default_kp, config_.default_kd);
             policy = std::make_unique<ValidatingPolicy>(
-                std::move(policy), std::move(fallback),
+                std::move(policy), nullptr,
                 ValidatingPolicy::FallbackMode::PREV_FRAME);
-            std::cout << "[RobotController] NN 验证模式已启用 (越界→维持上帧)" << std::endl;
+            std::cout << "[RobotController] NN 验证模式已启用 "
+                      << "(异常→保持上帧并阻尼停机)" << std::endl;
         }
 
         nn_policy_ = std::move(policy);
@@ -313,7 +385,7 @@ bool RobotController::start()
     std::cout << "  [2.5/4] 保持机器人静止，校准陀螺仪残余零偏..." << std::endl;
     if (!waitForEstimatorReady(3000)) {
         std::cerr << "  [错误] 陀螺仪静止校准失败；请保持机器人静止后重试" << std::endl;
-        requestEmergencyStop();
+        latchRuntimeSafetyFault(RuntimeSafetyFault::STATE_INVALID);
         return false;
     }
     std::cout << "  [OK] 陀螺仪零偏校准完成" << std::endl;
@@ -373,11 +445,22 @@ bool RobotController::isRunning() const
 
 bool RobotController::setVelocityCommand(float vx, float vy, float yaw_rate)
 {
-    if (!std::isfinite(vx) || !std::isfinite(vy) || !std::isfinite(yaw_rate))
-        return false;
-    std::lock_guard<std::mutex> lock(velocity_command_mutex_);
-    velocity_command_ = {{vx, vy, yaw_rate}};
-    return true;
+    return submitVelocityCommand(vx, vy, yaw_rate)
+        != VelocityCommandSubmitResult::INVALID;
+}
+
+VelocityCommandSubmitResult RobotController::submitVelocityCommand(
+    float vx, float vy, float yaw_rate, int hold_ms)
+{
+    const uint64_t hold_ns = hold_ms > 0
+        ? static_cast<uint64_t>(hold_ms) * 1'000'000ULL : 0;
+    return velocity_command_manager_.submit(
+        {{vx, vy, yaw_rate}}, monotonicNowNs(), hold_ns);
+}
+
+VelocityCommandStatus RobotController::getVelocityCommandStatus() const
+{
+    return velocity_command_manager_.status(monotonicNowNs());
 }
 
 void RobotController::requestEmergencyStop() noexcept
@@ -402,6 +485,13 @@ void RobotController::safeShutdown()
     if (nn_thread_.joinable()) nn_thread_.join();
     if (est_thread_.joinable()) est_thread_.join();
     if (imu_thread_.joinable()) imu_thread_.join();
+    printThreadTimingSnapshot(std::cout);
+    const RuntimeSafetyStatus safety = getRuntimeSafetyStatus();
+    if (safety.latched()) {
+        std::cout << "[Safety@shutdown] fault="
+                  << RuntimeSafetySupervisor::name(safety.fault)
+                  << " detail=" << safety.detail << std::endl;
+    }
 
     if (motor_ctrl_ && motor_ctrl_->busCount() > 0) {
         const bool all_buses_ready = motor_ctrl_->busCount() == config_.buses.size();
@@ -412,6 +502,12 @@ void RobotController::safeShutdown()
         motor_ctrl_->stopAll();
         // 停止后快照不再变化，可用于判断通信阻塞还是线程调度停顿。
         printBusTimingSnapshot(*motor_ctrl_, "[BusTiming@shutdown]", std::cout);
+        if (safety.latched()) {
+            // 任何锁存故障都打印12台最终快照，捕获阻尼切换期间
+            // 才报码的电机，也确认NN故障时电机是否仍为零错误。
+            printAllMotorErrorsSnapshot(
+                *motor_ctrl_, "[MotorErrors@shutdown]", std::cout);
+        }
         if (!all_buses_ready) {
             // 初始化只完成部分总线时，释放占用后再覆盖全部 12 个电机。
             motor_ctrl_.reset();
@@ -446,6 +542,116 @@ bool RobotController::getLatestEstimatedState(EstimatedState& out) const
     return true;
 }
 
+ControlThreadTimingStats RobotController::getThreadTimingStats(
+    ControlThreadKind kind) const
+{
+    ControlThreadTimingStats result;
+    const size_t index = static_cast<size_t>(kind);
+    if (index >= thread_timing_.size()) return result;
+    const auto& source = thread_timing_[index];
+    result.loop_count = source.loop_count.load(std::memory_order_relaxed);
+    result.max_start_gap_ns = source.max_start_gap_ns.load(std::memory_order_relaxed);
+    result.max_execution_ns = source.max_execution_ns.load(std::memory_order_relaxed);
+    result.start_deadline_misses =
+        source.start_deadline_misses.load(std::memory_order_relaxed);
+    result.execution_overruns =
+        source.execution_overruns.load(std::memory_order_relaxed);
+    result.last_start_ns = source.previous_start_ns.load(std::memory_order_relaxed);
+    return result;
+}
+
+RuntimeSafetyStatus RobotController::getRuntimeSafetyStatus() const
+{
+    return safety_supervisor_.status();
+}
+
+void RobotController::latchRuntimeSafetyFault(RuntimeSafetyFault fault, int detail)
+{
+    const uint64_t now_ns = monotonicNowNs();
+    if (safety_supervisor_.latch(fault, now_ns, detail)) {
+        std::cerr << "[Safety] 锁存故障="
+                  << RuntimeSafetySupervisor::name(fault)
+                  << " detail=" << detail << "，请求安全停机"
+                  << std::endl;
+    }
+    requestEmergencyStop();
+}
+
+bool RobotController::checkRuntimeSafety()
+{
+    if (!running_.load(std::memory_order_acquire)
+            || isEmergencyStopRequested()) {
+        return !safety_supervisor_.status().latched();
+    }
+
+    const uint64_t now_ns = monotonicNowNs();
+    const uint64_t timeout_ns = static_cast<uint64_t>(
+        std::max(1, config_.runtime_thread_timeout_ms)) * 1'000'000ULL;
+    static const RuntimeSafetyFault stale_faults[3] = {
+        RuntimeSafetyFault::IMU_THREAD_STALE,
+        RuntimeSafetyFault::ESTIMATION_THREAD_STALE,
+        RuntimeSafetyFault::NN_THREAD_STALE,
+    };
+    for (size_t index = 0; index < thread_timing_.size(); ++index) {
+        const uint64_t last_ns = thread_timing_[index].previous_start_ns.load(
+            std::memory_order_relaxed);
+        // last_ns==0只可能出现在线程刚创建的极短窗口，由下一轮复查。
+        if (RuntimeSafetySupervisor::heartbeatStale(
+                now_ns, last_ns, timeout_ns)) {
+            latchRuntimeSafetyFault(stale_faults[index], static_cast<int>(index));
+            return false;
+        }
+    }
+    return !safety_supervisor_.status().latched();
+}
+
+uint64_t RobotController::recordThreadStart(ControlThreadKind kind,
+                                             uint64_t period_ns)
+{
+    auto& timing = thread_timing_[static_cast<size_t>(kind)];
+    const uint64_t start_ns = monotonicNowNs();
+    const uint64_t previous = timing.previous_start_ns.exchange(
+        start_ns, std::memory_order_relaxed);
+    timing.loop_count.fetch_add(1, std::memory_order_relaxed);
+    if (previous > 0 && start_ns >= previous) {
+        const uint64_t gap_ns = start_ns - previous;
+        updateAtomicMax(timing.max_start_gap_ns, gap_ns);
+        if (gap_ns > period_ns + period_ns / 2)
+            timing.start_deadline_misses.fetch_add(1, std::memory_order_relaxed);
+    }
+    return start_ns;
+}
+
+void RobotController::recordThreadEnd(ControlThreadKind kind,
+                                      uint64_t start_ns, uint64_t period_ns)
+{
+    const uint64_t end_ns = monotonicNowNs();
+    if (end_ns < start_ns) return;
+    auto& timing = thread_timing_[static_cast<size_t>(kind)];
+    const uint64_t execution_ns = end_ns - start_ns;
+    updateAtomicMax(timing.max_execution_ns, execution_ns);
+    if (execution_ns > period_ns)
+        timing.execution_overruns.fetch_add(1, std::memory_order_relaxed);
+}
+
+void RobotController::printThreadTimingSnapshot(std::ostream& out) const
+{
+    static const char* names[3] = {"IMU", "EST", "NN"};
+    for (size_t index = 0; index < 3; ++index) {
+        const auto stats = getThreadTimingStats(
+            static_cast<ControlThreadKind>(index));
+        out << "[ThreadTiming@shutdown] thread=" << names[index]
+            << " loops=" << stats.loop_count
+            << " max_gap=" << std::fixed << std::setprecision(2)
+            << static_cast<double>(stats.max_start_gap_ns) / 1.0e6 << "ms"
+            << " max_exec="
+            << static_cast<double>(stats.max_execution_ns) / 1.0e6 << "ms"
+            << " deadline_miss=" << stats.start_deadline_misses
+            << " exec_overrun=" << stats.execution_overruns
+            << std::defaultfloat << std::endl;
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 //  启动辅助 — 等待 IMU 数据
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -453,9 +659,11 @@ bool RobotController::getLatestEstimatedState(EstimatedState& out) const
 bool RobotController::waitForIMUData(int timeout_ms)
 {
     auto start = std::chrono::steady_clock::now();
+    IMUBuffer::Sequence reader_sequence = 0;
+    IMURawData data{};
     while (running_.load() && !isEmergencyStopRequested()) {
-        const IMURawData* data = imu_buffer_.tryAcquireRead();
-        if (data && data->valid && data->timestamp_ns > 0) {
+        if (imu_buffer_.tryRead(data, reader_sequence)
+                && data.valid && data.timestamp_ns > 0) {
             return true;
         }
         auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -469,13 +677,15 @@ bool RobotController::waitForIMUData(int timeout_ms)
 bool RobotController::waitForEstimatorReady(int timeout_ms)
 {
     auto start = std::chrono::steady_clock::now();
+    EstimatedStateBuffer::Sequence reader_sequence = 0;
+    EstimatedState state{};
     while (running_.load() && !isEmergencyStopRequested()) {
-        const EstimatedState* state = est_buffer_.tryAcquireRead();
+        const bool has_state = est_buffer_.tryRead(state, reader_sequence);
         // 此时电机总线尚未启动，只等待 IMU 姿态和陀螺仪校准完成。
-        if (state && state->orientation_valid
-                  && state->gyro_valid && state->gyro_calibrated) {
-            std::cout << "  [Gyro] bias=(" << state->gyro_bias[0] << ", "
-                      << state->gyro_bias[1] << ", " << state->gyro_bias[2]
+        if (has_state && state.orientation_valid
+                  && state.gyro_valid && state.gyro_calibrated) {
+            std::cout << "  [Gyro] bias=(" << state.gyro_bias[0] << ", "
+                      << state.gyro_bias[1] << ", " << state.gyro_bias[2]
                       << ") rad/s" << std::endl;
             return true;
         }
@@ -627,9 +837,21 @@ bool RobotController::prepositionThighsForStanding()
     };
     const auto* configs = getCalibrationConfigs();
 
-    std::cout << "\n[PrePos] 大腿安全预定位（与 example_usage 一致）..."
+    struct PreparedMove {
+        int motor_id = -1;
+        int global_gpio = -1;
+        std::string serial_port;
+        float current_motor = 0.0f;
+        float target_motor = 0.0f;
+    };
+    std::array<PreparedMove, 4> moves{};
+
+    std::cout << "\n[PrePos] 四条大腿并行安全预定位"
+              << "（与 example_usage 一致）..."
               << std::endl;
-    for (const auto& pre : prepositions) {
+    // 先在单线程中完成映射与限幅校验，避免启动部分线程后才发现配置错误。
+    for (std::size_t move_index = 0; move_index < moves.size(); ++move_index) {
+        const auto& pre = prepositions[move_index];
         if (isEmergencyStopRequested()) return false;
 
         int config_index = -1;
@@ -667,22 +889,53 @@ bool RobotController::prepositionThighsForStanding()
 
         std::cout << "  Thigh " << pre.motor_id << ": URDF "
                   << current_urdf << " → " << target_urdf << std::endl;
-        const int steps = 60;
-        const float duration_sec = 0.8f;
         const int global_gpio = bus_config->gpio_chip * 32 + bus_config->gpio_line;
-        MotorBus bus(global_gpio, bus_config->serial_port);
-        if (!bus.addMotor(static_cast<unsigned short>(pre.motor_id))) return false;
-        for (int step = 0; step <= steps && !isEmergencyStopRequested(); ++step) {
-            const float alpha = static_cast<float>(step) / steps;
-            const float smooth = alpha * alpha * (3.0f - 2.0f * alpha);
-            const float command = current_motor
-                                + smooth * (target_motor - current_motor);
-            bus.setPosition(pre.motor_id, command, 0.15f, 0.01f);
-            bus.sendRecv();
-            usleep(static_cast<int>(duration_sec / steps * 1.0e6f));
-        }
-        if (isEmergencyStopRequested()) return false;
-        post_calib_position_[pre.motor_id] = target_motor;
+        moves[move_index] = {
+            pre.motor_id, global_gpio, bus_config->serial_port,
+            current_motor, target_motor};
+    }
+
+    const int steps = 60;
+    const float duration_sec = 0.8f;
+    std::array<bool, 4> move_ok{{false, false, false, false}};
+    std::vector<std::thread> workers;
+    workers.reserve(moves.size());
+    for (std::size_t move_index = 0; move_index < moves.size(); ++move_index) {
+        workers.emplace_back([this, &moves, &move_ok, move_index,
+                              steps, duration_sec]() {
+            const auto& move = moves[move_index];
+            try {
+                // 每条大腿独占一路UART/GPIO，四路可安全并行。
+                MotorBus bus(move.global_gpio, move.serial_port);
+                if (!bus.addMotor(static_cast<unsigned short>(move.motor_id))) {
+                    this->requestEmergencyStop();
+                    return;
+                }
+                for (int step = 0;
+                     step <= steps && !isEmergencyStopRequested(); ++step) {
+                    const float alpha = static_cast<float>(step) / steps;
+                    const float smooth = alpha * alpha * (3.0f - 2.0f * alpha);
+                    const float command = move.current_motor
+                                        + smooth * (move.target_motor
+                                                  - move.current_motor);
+                    bus.setPosition(move.motor_id, command, 0.15f, 0.01f);
+                    bus.sendRecv();
+                    usleep(static_cast<int>(duration_sec / steps * 1.0e6f));
+                }
+                move_ok[move_index] = !isEmergencyStopRequested();
+            } catch (const std::exception& error) {
+                std::cerr << "[PrePos] Thigh " << move.motor_id
+                          << " 并行预定位异常: " << error.what() << std::endl;
+                this->requestEmergencyStop();
+            }
+        });
+    }
+    for (auto& worker : workers) worker.join();
+
+    for (std::size_t move_index = 0; move_index < moves.size(); ++move_index) {
+        if (!move_ok[move_index]) return false;
+        post_calib_position_[moves[move_index].motor_id]
+            = moves[move_index].target_motor;
     }
     std::cout << "[PrePos] 大腿安全预定位完成" << std::endl;
     return true;
@@ -730,7 +983,8 @@ bool RobotController::transitionToStandingInternal(float transition_time_sec)
                     || !std::isfinite(state.q)) {
                 std::cerr << "[Transition] Motor " << mid
                           << " 无有效起始反馈, 禁止站立" << std::endl;
-                requestEmergencyStop();
+                latchRuntimeSafetyFault(
+                    RuntimeSafetyFault::MOTOR_FEEDBACK_INVALID, mid);
                 return false;
             }
             stand_start[mid] = state.q;
@@ -784,7 +1038,7 @@ bool RobotController::transitionToStandingInternal(float transition_time_sec)
 //  IMU 读取线程 — 200Hz
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-//  读取 JY901S IMU 数据并写入 imu_buffer_ 双缓冲。
+//  读取 JY901S IMU 数据并发布到 imu_buffer_ 值快照。
 //  使用 clock_nanosleep(TIMER_ABSTIME) 避免累积漂移 (与 ParallelBus 相同模式)。
 
 void RobotController::imuLoop()
@@ -803,6 +1057,8 @@ void RobotController::imuLoop()
     std::cout << "[IMU Thread] 启动, 周期=" << (period_ns / 1000) << "us" << std::endl;
 
     while (running_.load(std::memory_order_relaxed) && !isEmergencyStopRequested()) {
+        const uint64_t cycle_start_ns = recordThreadStart(
+            ControlThreadKind::IMU, static_cast<uint64_t>(period_ns));
         // ── 获取写槽引用 ──
         IMURawData& data = imu_buffer_.acquireWriteSlot();
 
@@ -837,6 +1093,9 @@ void RobotController::imuLoop()
             imu_buffer_.commitWrite();
         }
 
+        recordThreadEnd(ControlThreadKind::IMU, cycle_start_ns,
+                        static_cast<uint64_t>(period_ns));
+
         // ── 绝对时间睡眠 (无累积漂移) ──
         next.tv_nsec += period_ns;
         while (next.tv_nsec >= 1'000'000'000L) {
@@ -855,7 +1114,7 @@ void RobotController::imuLoop()
 //
 //  从 imu_buffer_ 读取最新 IMU 数据, 从 ParallelBus 读取电机反馈,
 //  运行状态估计算法 (当前为 PassthroughEstimator 占位),
-//  结果写入 est_buffer_ 双缓冲。
+//  结果发布到 est_buffer_ 值快照。
 
 void RobotController::estimationLoop()
 {
@@ -865,7 +1124,7 @@ void RobotController::estimationLoop()
         estimator = std::make_unique<LinearKFStateEstimatorAdapter>();
 #else
         std::cerr << "[EST Thread] Linear KF 不可用" << std::endl;
-        requestEmergencyStop();
+        latchRuntimeSafetyFault(RuntimeSafetyFault::ESTIMATOR_UNAVAILABLE);
         return;
 #endif
     } else {
@@ -885,17 +1144,20 @@ void RobotController::estimationLoop()
     const uint64_t simulated_slip_start_ns = estimation_start_ns
       + static_cast<uint64_t>(config_.simulated_leg_slip_delay_ms) * 1'000'000ULL;
     bool simulated_slip_announced = false;
+    IMUBuffer::Sequence imu_reader_sequence = 0;
+    IMURawData imu{};
 
     std::cout << "[EST Thread] 启动, 周期=" << (period_ns / 1000000) << "ms" << std::endl;
 
     while (running_.load(std::memory_order_relaxed) && !isEmergencyStopRequested()) {
-        // ── 1. 读取最新 IMU 数据 (双缓冲指针, 不拷贝) ──
-        const IMURawData* imu = imu_buffer_.tryAcquireRead();
-        if (!imu) {
+        // ── 1. 读取最新 IMU 值快照；离开短锁后不会被生产者覆盖。 ──
+        if (!imu_buffer_.tryRead(imu, imu_reader_sequence)) {
             // 尚无新数据，跳过本周期
             usleep(1000);
             continue;
         }
+        const uint64_t cycle_start_ns = recordThreadStart(
+            ControlThreadKind::ESTIMATION, static_cast<uint64_t>(period_ns));
 
         // ── 2. 读取 12 电机状态 (值拷贝, ParallelBus 内部 mutex 保护) ──
         // 数组下标严格等于 motor ID，与 EstimatedState 和 NN 输入输出一致。
@@ -903,10 +1165,14 @@ void RobotController::estimationLoop()
         float joint_dq[12] = {0};
         float joint_tau[12] = {0};
         int   joint_err[12] = {0};
+        int   joint_temp[12] = {0};
         bool  joint_valid[12] = {false};
         uint64_t joint_feedback_timestamp_ns[12] = {0};
         uint64_t joint_age_ns[12];
         uint32_t joint_failure_count[12] = {0};
+        int first_motor_error_id = -1;
+        int first_overtemperature_id = -1;
+        int first_overtemperature_c = 0;
         for (uint64_t& age : joint_age_ns) age = UINT64_MAX;
 
         for (int b = 0; b < bus_count; ++b) {
@@ -919,13 +1185,50 @@ void RobotController::estimationLoop()
                 joint_dq[mid]  = motorToUrdfVelocity(mid, s.dq);
                 joint_tau[mid] = motorToUrdfTorque(mid, s.tau);
                 joint_err[mid] = s.merror;
+                joint_temp[mid] = s.temp;
                 // ParallelBus::correct 表示“最近一次事务”是否成功。500 Hz 总线上的
                 // 单次 CRC 丢包不能让 50 Hz 状态帧立即失效；继续使用最近一次成功
                 // 的反馈，真正的新鲜度由 joint_age_ns 和 100 ms 阈值判断。
                 joint_valid[mid] = s.feedback_timestamp_ns > 0 && s.merror == 0;
                 joint_feedback_timestamp_ns[mid] = s.feedback_timestamp_ns;
                 joint_failure_count[mid] = s.consecutive_failures;
+                const RuntimeSafetyFault motor_fault =
+                    RuntimeSafetySupervisor::classifyMotorFeedback(
+                        s.temp, s.merror,
+                        config_.motor_shutdown_temperature_c);
+                if (motor_fault == RuntimeSafetyFault::MOTOR_OVERTEMPERATURE
+                        && first_overtemperature_id < 0) {
+                    first_overtemperature_id = mid;
+                    first_overtemperature_c = s.temp;
+                }
+                if (motor_fault == RuntimeSafetyFault::MOTOR_ERROR
+                        && first_motor_error_id < 0) {
+                    first_motor_error_id = mid;
+                }
             }
+        }
+
+        // 温度和MError都来自已通过CRC/ID检查的最近有效反馈。
+        // 协议明确90°C触发保护，不使用未经证实的自定义阈值。
+        if (first_overtemperature_id >= 0) {
+            std::cerr << "[EST Thread] Motor " << first_overtemperature_id
+                      << " 温度达到 " << first_overtemperature_c
+                      << "°C" << std::endl;
+            latchRuntimeSafetyFault(
+                RuntimeSafetyFault::MOTOR_OVERTEMPERATURE,
+                first_overtemperature_id);
+            break;
+        }
+        if (first_motor_error_id >= 0) {
+            std::cerr << "[MotorErrors@fault]";
+            for (int id = 0; id < 12; ++id) {
+                std::cerr << " id" << id << "=" << joint_err[id]
+                          << "(temp=" << joint_temp[id] << "C)";
+            }
+            std::cerr << std::endl;
+            latchRuntimeSafetyFault(
+                RuntimeSafetyFault::MOTOR_ERROR, first_motor_error_id);
+            break;
         }
 
         // 必须在取得全部反馈快照之后采样 now。若先采样，恰好随后由总线线程
@@ -979,7 +1282,7 @@ void RobotController::estimationLoop()
         // ── 3. 运行状态估计 ──
         EstimatedState& est = est_buffer_.acquireWriteSlot();
         est = estimator->update(
-            *imu, joint_q, joint_dq, joint_tau, joint_err, joint_valid,
+            imu, joint_q, joint_dq, joint_tau, joint_err, joint_valid,
             joint_age_ns, joint_failure_count, now_ns);
         {
             std::lock_guard<std::mutex> lock(monitor_est_mutex_);
@@ -987,6 +1290,9 @@ void RobotController::estimationLoop()
             monitor_est_available_ = true;
         }
         est_buffer_.commitWrite();
+
+        recordThreadEnd(ControlThreadKind::ESTIMATION, cycle_start_ns,
+                        static_cast<uint64_t>(period_ns));
 
         // ── 绝对时间睡眠 ──
         next.tv_nsec += period_ns;
@@ -1013,6 +1319,11 @@ void RobotController::nnLoop()
     const int bus_count = static_cast<int>(config_.buses.size());
     int consecutive_invalid_states = 0;
     auto last_estimate_received = std::chrono::steady_clock::now();
+    EstimatedStateBuffer::Sequence est_reader_sequence = 0;
+    EstimatedState est{};
+    float previous_motion_safe_target[12];
+    std::memcpy(previous_motion_safe_target, config_.default_standing_pose,
+                sizeof(previous_motion_safe_target));
 
     struct timespec next;
     clock_gettime(CLOCK_MONOTONIC, &next);
@@ -1026,82 +1337,110 @@ void RobotController::nnLoop()
               << std::endl;
 
     while (running_.load(std::memory_order_relaxed) && !isEmergencyStopRequested()) {
-        // ── 1. 读取估计状态 (双缓冲指针, 不拷贝) ──
-        const EstimatedState* est = est_buffer_.tryAcquireRead();
-        if (!est) {
+        // ── 1. 读取估计状态值快照；推理期间生产者可继续发布。 ──
+        if (!est_buffer_.tryRead(est, est_reader_sequence)) {
             const auto silence_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - last_estimate_received).count();
             if (silence_ms > 100) {
                 std::cerr << "[NN Thread] 状态估计数据流超时 " << silence_ms
                           << "ms, 请求安全停机" << std::endl;
-                requestEmergencyStop();
+                latchRuntimeSafetyFault(RuntimeSafetyFault::STATE_STREAM_TIMEOUT);
             }
             usleep(1000);
             continue;
         }
+        // 只把真正收到并处理的新状态计为NN控制周期；
+        // 1 ms等待轮询不应污染帧率和周期间隔统计。
+        const uint64_t cycle_start_ns = recordThreadStart(
+            ControlThreadKind::NN, static_cast<uint64_t>(period_ns));
         last_estimate_received = std::chrono::steady_clock::now();
 
-        if (!est->valid || !est->orientation_valid || !est->gyro_valid
-                || !est->gyro_calibrated || !est->projected_gravity_valid
-                || !est->joint_feedback_valid) {
+        if (!est.valid || !est.orientation_valid || !est.gyro_valid
+                || !est.gyro_calibrated || !est.projected_gravity_valid
+                || !est.joint_feedback_valid) {
             ++consecutive_invalid_states;
             // 无效帧绝不执行推理或下发；连续异常才停机，容忍单次 I2C 瞬态抖动。
             if (consecutive_invalid_states >= 3) {
                 int first_bad_joint = -1;
                 for (int i = 0; i < 12; ++i) {
-                    if (!est->joint_valid[i]) {
+                    if (!est.joint_valid[i]) {
                         first_bad_joint = i;
                         break;
                     }
                 }
-                std::cerr << "[NN Thread] 状态估计连续无效, status=" << est->status_code
+                std::cerr << "[NN Thread] 状态估计连续无效, status=" << est.status_code
                           << ", bad_joint=" << first_bad_joint;
                 if (first_bad_joint >= 0) {
                     std::cerr << ", age="
-                              << static_cast<double>(est->joint_age_ns[first_bad_joint]) / 1.0e6
+                              << static_cast<double>(est.joint_age_ns[first_bad_joint]) / 1.0e6
                               << "ms, failures="
-                              << est->joint_failure_count[first_bad_joint];
+                              << est.joint_failure_count[first_bad_joint];
                 }
                 std::cerr << ", invalid_joints={";
                 bool first = true;
                 for (int i = 0; i < 12; ++i) {
-                    if (est->joint_valid[i]) continue;
+                    if (est.joint_valid[i]) continue;
                     if (!first) std::cerr << ",";
                     first = false;
                     std::cerr << i << ":age=";
-                    if (est->joint_age_ns[i] == UINT64_MAX) {
+                    if (est.joint_age_ns[i] == UINT64_MAX) {
                         std::cerr << "unknown";
                     } else {
                         std::cerr << std::fixed << std::setprecision(2)
-                                  << static_cast<double>(est->joint_age_ns[i]) / 1.0e6
+                                  << static_cast<double>(est.joint_age_ns[i]) / 1.0e6
                                   << "ms" << std::defaultfloat;
                     }
-                    std::cerr << "/fail=" << est->joint_failure_count[i];
+                    std::cerr << "/fail=" << est.joint_failure_count[i];
                 }
                 std::cerr << "}, 请求安全停机" << std::endl;
                 if (motor_ctrl_) {
                     printBusTimingSnapshot(
                         *motor_ctrl_, "[BusTiming@fault]", std::cerr);
+                    for (size_t bus_index = 0;
+                         bus_index < motor_ctrl_->busCount(); ++bus_index) {
+                        const ParallelBus& bus = motor_ctrl_->bus(bus_index);
+                        for (unsigned short id : bus.getMotorIds()) {
+                            if (id >= 12 || est.joint_valid[id]) continue;
+                            const MotorState state = bus.getState(id);
+                            std::cerr << "[MotorComm@fault] id=" << id
+                                      << " total=" << state.transaction_count
+                                      << " ok=" << state.success_count
+                                      << " short=" << state.short_frame_count
+                                      << " timeout=" << state.receive_timeout_count
+                                      << " proto=" << state.protocol_failure_count
+                                      << " crc=" << state.crc_failure_count
+                                      << " wrong_id=" << state.wrong_id_count
+                                      << " max_tx=" << std::fixed
+                                      << std::setprecision(2)
+                                      << state.max_transaction_duration_ns / 1.0e6
+                                      << "ms" << std::defaultfloat << std::endl;
+                        }
+                    }
                 }
-                requestEmergencyStop();
+                latchRuntimeSafetyFault(
+                    first_bad_joint >= 0
+                        ? RuntimeSafetyFault::MOTOR_FEEDBACK_INVALID
+                        : RuntimeSafetyFault::STATE_INVALID,
+                    first_bad_joint);
             }
+            recordThreadEnd(ControlThreadKind::NN, cycle_start_ns,
+                            static_cast<uint64_t>(period_ns));
             continue;
         }
         consecutive_invalid_states = 0;
 
-        // 命令独立于状态估计；只在本地栈上做一次快照，不持锁推理。
-        std::array<float, 3> command;
-        {
-            std::lock_guard<std::mutex> lock(velocity_command_mutex_);
-            command = velocity_command_;
-        }
+        // 限幅、斜坡和超时回零均在推理前完成；返回值可直接进入obs[9..11]。
+        const std::array<float, 3> command =
+            velocity_command_manager_.update(monotonicNowNs());
+        const VelocityCommandStatus command_status =
+            velocity_command_manager_.status(monotonicNowNs());
         nn_policy_->setVelocityCommand(command);
 
         // ── 2. 运行推理 (计时) ──
         auto t0 = std::chrono::high_resolution_clock::now();
 
         NNCommandSet cmds;
-        bool inference_ok = nn_policy_->infer(*est, cmds);
+        bool inference_ok = nn_policy_->infer(est, cmds);
 
         auto t1 = std::chrono::high_resolution_clock::now();
         int latency_us = static_cast<int>(
@@ -1113,15 +1452,73 @@ void RobotController::nnLoop()
             std::array<float, 12> actor_raw_action{};
             const bool has_actor_io = nn_policy_->getLastActorIO(
                 actor_observation, actor_raw_action);
-            nn_logger_->log(*est, cmds, inference_ok, latency_us,
+            nn_logger_->log(est, cmds, inference_ok, latency_us,
                             has_actor_io ? &actor_observation : nullptr,
-                            has_actor_io ? &actor_raw_action : nullptr);
+                            has_actor_io ? &actor_raw_action : nullptr,
+                            &command_status.raw,
+                            &command_status.limited,
+                            &command_status.applied,
+                            command_status.age_ns,
+                            command_status.timed_out,
+                            command_status.clamped);
+        }
+
+        // 验证器只返回上一帧安全目标用于诊断；一旦请求停机，本线程不得
+        // commit或向总线写入任何新位置/速度/力矩指令，统一阻尼拥有最高优先级。
+        if (nn_policy_->requiresSafetyStop()) {
+            latchRuntimeSafetyFault(
+                RuntimeSafetyFault::NN_COMMAND_INVALID,
+                nn_policy_->safetyStopDetail());
+            recordThreadEnd(ControlThreadKind::NN, cycle_start_ns,
+                            static_cast<uint64_t>(period_ns));
+            break;
+        }
+
+        // 独立于NN验证开关的commissioning保护：候选目标必须先通过，
+        // 才允许更新历史或进入总线。dry-run不检查实测速度，避免手动搬动
+        // monitor-only机器人触发停机，但仍检查模型目标变化。
+        if (inference_ok && cmds.valid && config_.motion_safety.enabled) {
+            float feedback_velocity[12] = {0};
+            if (!config_.nn_flags.dry_run) {
+                std::memcpy(feedback_velocity, est.joint_velocity,
+                            sizeof(feedback_velocity));
+            }
+            const MotionSafetyResult motion = evaluateMotionSafety(
+                cmds, previous_motion_safe_target, feedback_velocity,
+                1.0f / static_cast<float>(config_.nn_hz),
+                config_.motion_safety);
+            if (!motion.passed()) {
+                std::cerr << "[MotionSafety] "
+                          << motionSafetyViolationName(motion.violation)
+                          << " detail=" << motion.detail
+                          << " target_rate=" << std::fixed
+                          << std::setprecision(3)
+                          << motion.max_target_velocity_rad_s << "rad/s"
+                          << " feedback_speed="
+                          << motion.max_feedback_velocity_rad_s << "rad/s"
+                          << " aggregate_delta="
+                          << motion.aggregate_target_delta_rad << "rad"
+                          << " simultaneous="
+                          << motion.simultaneous_target_changes
+                          << std::defaultfloat
+                          << ", 保持上帧并请求阻尼停机" << std::endl;
+                latchRuntimeSafetyFault(
+                    motionViolationToRuntimeFault(motion.violation),
+                    motion.detail);
+                recordThreadEnd(ControlThreadKind::NN, cycle_start_ns,
+                                static_cast<uint64_t>(period_ns));
+                break;
+            }
         }
 
         // 这里只提交安全层最终接受的电机命令历史；Actor 原始 action 历史
         // 已由 ONNXPolicy::infer() 保存，二者不得互相覆盖。
-        if (inference_ok && cmds.valid)
+        if (inference_ok && cmds.valid) {
             nn_policy_->commitAcceptedCommand(cmds);
+            std::memcpy(previous_motion_safe_target,
+                        cmds.joint_position_target,
+                        sizeof(previous_motion_safe_target));
+        }
 
         // ── 4. 写入电机指令 (除非干运行模式) ──
         if (!config_.nn_flags.dry_run) {
@@ -1143,6 +1540,9 @@ void RobotController::nnLoop()
                 }
             }
         }
+
+        recordThreadEnd(ControlThreadKind::NN, cycle_start_ns,
+                        static_cast<uint64_t>(period_ns));
 
         // ── 绝对时间睡眠 ──
         next.tv_nsec += period_ns;

@@ -33,6 +33,10 @@ unitree_actuator_sdk/
 ├── State_Estimation/       ← 状态估计（已在 include path 中）
 │   ├── jy901s.cpp / .h
 │   └── test_jy901s.cpp
+├── robot_control/          ← 机器人控制核心实现（已在 include path 中）
+│   ├── tests/              ← robot_control的test_*.cpp统一放这里
+│   ├── debug_logs/         ← 调试、验证和阶段推进Markdown
+│   └── DATA_FLOW.md        ← 长期有效的数据流架构契约
 ├── example/
 ├── lib/
 └── build/
@@ -40,7 +44,7 @@ unitree_actuator_sdk/
 
 **已有 include path**（CMakeLists.txt 第 7 行）：
 ```cmake
-include_directories(include motor_lib State_Estimation)
+include_directories(include motor_lib State_Estimation robot_control)
 ```
 
 这意味着这三个目录下的所有 `.h` 文件，可以被项目任意位置的 `.cpp` 通过 `#include "xxx.h"` 直接引用，**无需额外配置**。
@@ -255,7 +259,8 @@ target_link_libraries(your_new_lib fast_gpio ${EXTRA_LIBS})  # 按需链接
 | 添加纯头文件（只有 `.h`） | `xx/foo.h` | **否** | 无（`include_directories` 已覆盖） |
 | 添加新库（`.h` + `.cpp`） | `xx/foo.h` + `xx/foo.cpp` | **是** | 加 `add_library(foo xx/foo.cpp)` |
 | 让 `motor_controller` 调用新库 | — | **是** | 在 `target_link_libraries(motor_controller ...)` 中追加 `foo` |
-| 添加测试/可执行文件 | `xx/test_foo.cpp` | **是** | 加 `add_executable(test_foo xx/test_foo.cpp)` + `target_link_libraries(test_foo foo ...)` |
+| 添加robot_control测试文件 | `robot_control/tests/test_foo.cpp` | **是** | 加 `add_executable(test_foo robot_control/tests/test_foo.cpp)` + `target_link_libraries(test_foo foo ...)` |
+| 添加其他测试/可执行文件 | `xx/test_foo.cpp` | **是** | 加 `add_executable(test_foo xx/test_foo.cpp)` + `target_link_libraries(test_foo foo ...)` |
 | 新目录不在 include path 中 | — | **是** | `include_directories(...)` 中追加新目录名 |
 
 ---

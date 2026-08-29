@@ -181,8 +181,8 @@ int main(int argc, char** argv)
                 if (b) std::cout << ",";
                 std::cout << std::fixed << std::setprecision(1) << controller.bus(b).getActualHz();
             }
-            std::cout << "}\n ID name   total      ok   short  crc/id window_loss total_loss"
-                         " max_age_ms max_streak\n";
+            std::cout << "}\n ID name MErr tempC   total      ok   short timeout proto crc wrong_id"
+                         " window_loss total_loss max_age_ms max_streak max_tx_ms\n";
 
             for (int id = 0; id < 12; ++id) {
                 if (!active[id]) continue;
@@ -196,15 +196,22 @@ int main(int argc, char** argv)
                 const double total_loss = s.transaction_count > 0
                     ? 100.0 * (s.transaction_count - s.success_count) / s.transaction_count : 100.0;
                 std::cout << std::setw(3) << id << " " << std::setw(5) << kNames[id]
+                          << " " << std::setw(4) << s.merror
+                          << " " << std::setw(5) << s.temp
                           << " " << std::setw(7) << s.transaction_count
                           << " " << std::setw(7) << s.success_count
                           << " " << std::setw(7) << s.short_frame_count
+                          << " " << std::setw(7) << s.receive_timeout_count
                           << " " << std::setw(7) << s.protocol_failure_count
+                          << " " << std::setw(5) << s.crc_failure_count
+                          << " " << std::setw(8) << s.wrong_id_count
                           << " " << std::setw(10) << std::setprecision(3) << window_loss << "%"
                           << " " << std::setw(9) << total_loss << "%"
                           << " " << std::setw(10) << std::setprecision(2)
                           << max_feedback_age_ns[id] * 1e-6
                           << " " << std::setw(10) << max_consecutive_failures[id]
+                          << " " << std::setw(9) << std::setprecision(2)
+                          << s.max_transaction_duration_ns * 1e-6
                           << "\n";
                 last_total[id] = s.transaction_count;
                 last_success[id] = s.success_count;

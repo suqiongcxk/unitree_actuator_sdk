@@ -121,6 +121,10 @@ private:
         uint64_t success_count = 0;
         uint64_t short_frame_count = 0;
         uint64_t protocol_failure_count = 0;
+        uint64_t receive_timeout_count = 0;
+        uint64_t crc_failure_count = 0;
+        uint64_t wrong_id_count = 0;
+        uint64_t max_transaction_duration_ns = 0;
     };
     std::vector<MotorSlot> slots_;
     mutable std::mutex slots_mtx_;   // 保护 slots_ 的读写

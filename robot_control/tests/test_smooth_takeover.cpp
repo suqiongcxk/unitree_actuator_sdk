@@ -118,6 +118,31 @@ int main()
                      "接管结束目标应等于 Actor 目标");
     }
 
+    // P0回归：危险Actor目标不得在第三帧跳到StandingPolicy。第一帧失败
+    // 就必须保持最后接受指令并请求控制器进入统一阻尼停机。
+    NNCommandSet unsafe = standing;
+    unsafe.joint_position_target[7] = standing.joint_position_target[7] + 0.6f;
+    NNCommandSet distinct_fallback = standing;
+    distinct_fallback.joint_position_target[7] -= 0.4f;
+    ValidatingPolicy fail_safe(
+        std::make_unique<ConstantActorPolicy>(unsafe),
+        std::make_unique<ConstantActorPolicy>(distinct_fallback),
+        // 即使遗留配置仍传STANDING，也绝不允许切换站姿。
+        ValidatingPolicy::FallbackMode::STANDING);
+    fail_safe.commitAcceptedCommand(standing);
+    NNCommandSet rejected_output;
+    ok &= expect(fail_safe.infer(state, rejected_output),
+                 "危险候选应返回最后安全指令供停机前保持");
+    ok &= expect(fail_safe.requiresSafetyStop(),
+                 "首个危险候选必须立即请求安全停机");
+    ok &= expect(fail_safe.safetyStopDetail() == 7,
+                 "安全停机应报告首个跳变关节");
+    for (int i = 0; i < 12; ++i) {
+        ok &= expect(std::abs(rejected_output.joint_position_target[i]
+                           - standing.joint_position_target[i]) < 1.0e-6f,
+                     "危险候选不得跳到Standing fallback或写入Actor目标");
+    }
+
     if (!ok) return 1;
     std::cout << "[PASS] smooth NN takeover tests, max_jump="
               << observed_max_jump << " rad" << std::endl;

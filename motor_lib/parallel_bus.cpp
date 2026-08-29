@@ -207,6 +207,10 @@ MotorState ParallelBus::getState(unsigned short motor_id) const
         s.success_count = slot.success_count;
         s.short_frame_count = slot.short_frame_count;
         s.protocol_failure_count = slot.protocol_failure_count;
+        s.receive_timeout_count = slot.receive_timeout_count;
+        s.crc_failure_count = slot.crc_failure_count;
+        s.wrong_id_count = slot.wrong_id_count;
+        s.max_transaction_duration_ns = slot.max_transaction_duration_ns;
         break;
     }
     return s;
@@ -340,7 +344,11 @@ void ParallelBus::controlLoop()
             data.motorType = MotorType::GO_M8010_6;
         }
         std::vector<size_t> recv_lengths(sendVec.size(), 0);
+        std::vector<bool> recv_crc_valid(sendVec.size(), false);
+        std::vector<bool> recv_id_match(sendVec.size(), false);
+        std::vector<uint64_t> transaction_duration_ns(sendVec.size(), 0);
         for (size_t i = 0; i < sendVec.size(); ++i) {
+            const uint64_t transaction_start_ns = monotonicNowNs();
             if (emergency_latched_.load(std::memory_order_acquire)) {
                 // 即使本周期已取出旧指令，急停锁存后也在发送前强制改为阻尼。
                 sendVec[i].mode = queryMotorMode(MotorType::GO_M8010_6, MotorMode::FOC);
@@ -354,6 +362,11 @@ void ParallelBus::controlLoop()
             uint8_t* sendData = sendVec[i].get_motor_send_data();
             int sendLen = sendVec[i].hex_len;
             uint8_t* recvData = recvVec[i].get_motor_recv_data();
+
+            // 上一台电机的迟到回复已经不再属于任何有效事务；若不清理，
+            // 它可能被下一台电机读走并造成整条总线持续ID错位。
+            const int serial_fd = serial_->fd();
+            motor_io::discardStaleSerialInput(serial_fd);
 
             gpio_->set(1);   // TX 模式
 
@@ -380,12 +393,25 @@ void ParallelBus::controlLoop()
 
             constexpr size_t kGoM8010RecvLength = 16;
             recv_lengths[i] = motor_io::quietSerialRecv(
-                serial_->fd(), recvData, kGoM8010RecvLength);
+                serial_fd, recvData, kGoM8010RecvLength);
             // 短帧禁止解包，也不能用未初始化字段覆盖上一帧有效状态。
-            if (motor_io::hasValidGoM8010Crc(recvData, recv_lengths[i])) {
+            recv_crc_valid[i] =
+                motor_io::hasValidGoM8010Crc(recvData, recv_lengths[i]);
+            if (recv_crc_valid[i]) {
                 recvVec[i].extract_data(&recvVec[i]);
+                recv_id_match[i] = recvVec[i].motor_id == sendVec[i].id;
+                if (!recvVec[i].correct || !recv_id_match[i]) {
+                    recvVec[i].correct = false;
+                    motor_io::discardStaleSerialInput(serial_fd);
+                }
             } else {
                 recvVec[i].correct = false;
+                motor_io::discardStaleSerialInput(serial_fd);
+            }
+            const uint64_t transaction_end_ns = monotonicNowNs();
+            if (transaction_end_ns >= transaction_start_ns) {
+                transaction_duration_ns[i] =
+                    transaction_end_ns - transaction_start_ns;
             }
         }
 
@@ -396,7 +422,10 @@ void ParallelBus::controlLoop()
                 ++slots_[i].transaction_count;
                 const bool full_frame = recv_lengths[i] == 16;
                 const bool response_ok = full_frame && recvVec[i].correct
-                                      && recvVec[i].motor_id == slots_[i].id;
+                                      && recv_crc_valid[i] && recv_id_match[i];
+                slots_[i].max_transaction_duration_ns = std::max(
+                    slots_[i].max_transaction_duration_ns,
+                    transaction_duration_ns[i]);
                 if (response_ok) {
                     slots_[i].data = recvVec[i];
                     struct timespec feedback_time;
@@ -408,8 +437,15 @@ void ParallelBus::controlLoop()
                     ++slots_[i].success_count;
                 } else {
                     ++slots_[i].consecutive_failures;
-                    if (!full_frame) ++slots_[i].short_frame_count;
-                    else ++slots_[i].protocol_failure_count;
+                    if (!full_frame) {
+                        ++slots_[i].short_frame_count;
+                        if (recv_lengths[i] == 0)
+                            ++slots_[i].receive_timeout_count;
+                    } else {
+                        ++slots_[i].protocol_failure_count;
+                        if (!recv_crc_valid[i]) ++slots_[i].crc_failure_count;
+                        else if (!recv_id_match[i]) ++slots_[i].wrong_id_count;
+                    }
                     // 保留最近一次有效数值和时间戳，但标记本帧无效。
                     slots_[i].data.correct = false;
                 }

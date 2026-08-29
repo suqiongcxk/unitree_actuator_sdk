@@ -2,6 +2,9 @@
 #define __ROBOT_CONTROL_ROBOT_CONTROLLER_H
 
 #include <string>
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
 #include <vector>
 #include <memory>
 #include <thread>
@@ -10,6 +13,9 @@
 #include <mutex>
 #include "shared_data.h"
 #include "nn_validation.h"
+#include "runtime_safety.h"
+#include "motion_safety.h"
+#include "velocity_command_manager.h"
 #include "../motor_lib/ZeroPointCalibration.h"
 
 // 前向声明 — 避免在此头文件中引入重型依赖
@@ -20,6 +26,17 @@ class NNPolicy;
 enum class StateEstimatorBackend {
     COMPLEMENTARY = 0,
     LINEAR_KF = 1,
+};
+
+enum class ControlThreadKind : size_t { IMU = 0, ESTIMATION = 1, NN = 2 };
+
+struct ControlThreadTimingStats {
+    uint64_t loop_count = 0;
+    uint64_t max_start_gap_ns = 0;
+    uint64_t max_execution_ns = 0;
+    uint64_t start_deadline_misses = 0; // 相邻启动间隔 > 1.5×目标周期
+    uint64_t execution_overruns = 0;    // 单次执行时间 > 目标周期
+    uint64_t last_start_ns = 0;          // 最近真正处理周期的单调时钟
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -47,6 +64,7 @@ struct RobotControlConfig {
     StateEstimatorBackend estimator_backend = StateEstimatorBackend::COMPLEMENTARY;
     // [vx, vy, yaw_rate]，base frame；默认无遥控命令。
     std::array<float, 3> velocity_command{{0.0f, 0.0f, 0.0f}};
+    VelocityCommandConfig velocity_command_config{};
 
     // ── 电机总线 ──
     int motor_hz = 500;                     // 每路总线控制频率
@@ -85,6 +103,11 @@ struct RobotControlConfig {
     // ── 安全退出阻尼 ──
     // 仅用于急停/正常退出后的 12 电机阻尼锁存，不改变正常控制 PD 增益。
     float emergency_damping_kd = 0.136f;  // 当前 0.068 的 2 倍
+    int runtime_thread_timeout_ms = 100; // IMU/EST/NN心跳陈旧阈值
+    int motor_shutdown_temperature_c = 90; // GO-M8010-6协议明确的保护温度
+
+    // ── 与模型无关的运动安全层 ──
+    MotionSafetyConfig motion_safety{};
 
     // ── 默认站立姿态 (12 关节, 输出端 rad, Z字排序) ──
     // [0..3] = hip(4条腿), [4..7] = thigh(4条腿), [8..11] = lower_leg(4条腿)
@@ -107,7 +130,7 @@ struct RobotControlConfig {
 //    1 x NN 推理     ( 50 Hz)
 //
 //  数据流:
-//    IMU  ──DoubleBuffer──▶ 估计  ──DoubleBuffer──▶  NN
+//    IMU  ──SnapshotBuffer──▶ 估计  ──SnapshotBuffer──▶  NN
 //    电机 ──mutex+copy──▶ 估计
 //    NN   ──mutex+copy──▶ 电机
 
@@ -138,11 +161,18 @@ public:
     bool isRunning() const;
     /// 线程安全更新 NN 速度命令 [vx,vy,yaw_rate]。拒绝 NaN/Inf。
     bool setVelocityCommand(float vx, float vy, float yaw_rate);
+    VelocityCommandSubmitResult submitVelocityCommand(
+        float vx, float vy, float yaw_rate, int hold_ms = 0);
+    VelocityCommandStatus getVelocityCommandStatus() const;
 
     // ── 监控接口 (线程安全) ──────────────────────────────────────────────
 
     bool getLatestIMUData(IMURawData& out) const;
     bool getLatestEstimatedState(EstimatedState& out) const;
+    ControlThreadTimingStats getThreadTimingStats(ControlThreadKind kind) const;
+    RuntimeSafetyStatus getRuntimeSafetyStatus() const;
+    /// 由主监控循环调用；故障时锁存首个原因并请求统一安全退出。
+    bool checkRuntimeSafety();
     int getIMUHz()       const { return config_.imu_hz; }
     int getEstimationHz() const { return config_.estimation_hz; }
     int getMotorHz()     const { return config_.motor_hz; }
@@ -180,7 +210,7 @@ private:
     IMUBuffer            imu_buffer_;
     EstimatedStateBuffer est_buffer_;
 
-    // 终端监控使用独立值快照，避免成为无锁双缓冲的第二个消费者。
+    // 终端监控使用独立值快照，不与控制链路共享读者状态。
     mutable std::mutex monitor_imu_mutex_;
     mutable std::mutex monitor_est_mutex_;
     IMURawData monitor_imu_snapshot_{};
@@ -192,8 +222,7 @@ private:
 
     std::unique_ptr<NNPolicy> nn_policy_;
     std::unique_ptr<NNInferenceLogger> nn_logger_;
-    std::array<float, 3> velocity_command_{{0.0f, 0.0f, 0.0f}};
-    std::mutex velocity_command_mutex_;
+    VelocityCommandManager velocity_command_manager_;
 
     // ── 线程 ─────────────────────────────────────────────────────────────
 
@@ -204,6 +233,23 @@ private:
 
     std::atomic<bool> running_{false};
     std::atomic<bool> shutdown_started_{false};
+
+    struct AtomicThreadTimingStats {
+        std::atomic<uint64_t> loop_count{0};
+        std::atomic<uint64_t> previous_start_ns{0};
+        std::atomic<uint64_t> max_start_gap_ns{0};
+        std::atomic<uint64_t> max_execution_ns{0};
+        std::atomic<uint64_t> start_deadline_misses{0};
+        std::atomic<uint64_t> execution_overruns{0};
+    };
+    std::array<AtomicThreadTimingStats, 3> thread_timing_{};
+    RuntimeSafetySupervisor safety_supervisor_;
+
+    uint64_t recordThreadStart(ControlThreadKind kind, uint64_t period_ns);
+    void recordThreadEnd(ControlThreadKind kind, uint64_t start_ns,
+                         uint64_t period_ns);
+    void printThreadTimingSnapshot(std::ostream& out) const;
+    void latchRuntimeSafetyFault(RuntimeSafetyFault fault, int detail = -1);
 
     // ── 标定与启动 ───────────────────────────────────────────────────────
 

@@ -284,6 +284,15 @@ EstimatedState PassthroughEstimator::update(
     if (leg.valid) {
         std::memcpy(est.foot_position, leg.foot_position, sizeof(est.foot_position));
         std::memcpy(est.foot_velocity, leg.foot_velocity, sizeof(est.foot_velocity));
+        std::memcpy(est.foot_force_body, leg.foot_force_body,
+                    sizeof(est.foot_force_body));
+        std::memcpy(est.normal_force, leg.normal_force, sizeof(est.normal_force));
+        std::memcpy(est.foot_force_residual, leg.force_residual,
+                    sizeof(est.foot_force_residual));
+        std::memcpy(est.foot_force_valid, leg.foot_force_valid,
+                    sizeof(est.foot_force_valid));
+        std::memcpy(est.contact_used_force, leg.contact_used_force,
+                    sizeof(est.contact_used_force));
         std::memcpy(est.contact, leg.contact, sizeof(est.contact));
         std::memcpy(est.contact_confidence, leg.contact_confidence,
                     sizeof(est.contact_confidence));

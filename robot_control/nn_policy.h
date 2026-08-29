@@ -27,6 +27,11 @@ public:
     virtual bool getLastActorIO(std::array<float, 48>&,
                                 std::array<float, 12>&) const { return false; }
 
+    /// 策略安全包装器检测到不可继续控制的输出时置位。
+    /// 控制线程必须在写入任何新电机指令前进入统一安全停机。
+    virtual bool requiresSafetyStop() const { return false; }
+    virtual int safetyStopDetail() const { return -1; }
+
     /// 返回策略名称 (用于日志)
     virtual const char* name() const = 0;
 };
@@ -51,17 +56,16 @@ private:
 // ═══════════════════════════════════════════════════════════════════════════════
 //
 //  将实际策略的输出通过 validateAll() 检查。
-//  如果验证失败，可选择:
-//    - 回退到 StandingPolicy (安全模式)
-//    - 丢弃本帧指令，维持上帧 (保守模式)
-//    - 仅打印警告 (调试模式)
+//  实机PREV_FRAME模式下，任何验证失败都只维持上一帧安全目标并请求
+//  统一阻尼停机；禁止运行中直接跳回默认站姿。
 
 class ValidatingPolicy : public NNPolicy {
 public:
     enum class FallbackMode {
         NONE,           // 只打印警告，仍使用 NN 输出
         PREV_FRAME,     // 丢弃本帧，维持上帧指令
-        STANDING,       // 回退到站立姿态
+        // 兼容旧配置；安全语义已与PREV_FRAME一致，禁止运行中跳到站姿。
+        STANDING,
     };
 
     ValidatingPolicy(std::unique_ptr<NNPolicy> inner,
@@ -73,6 +77,8 @@ public:
     void setVelocityCommand(const std::array<float, 3>& command) override;
     bool getLastActorIO(std::array<float, 48>& observation,
                         std::array<float, 12>& raw_action) const override;
+    bool requiresSafetyStop() const override { return safety_stop_requested_; }
+    int safetyStopDetail() const override { return safety_stop_detail_; }
     const char* name() const override { return inner_->name(); }
 
     /// 获取上一帧的验证结果
@@ -83,7 +89,6 @@ public:
 
 private:
     std::unique_ptr<NNPolicy> inner_;
-    std::unique_ptr<NNPolicy> fallback_;
     FallbackMode              mode_;
     ValidationResult          last_result_;
     int                       total_count_ = 0;
@@ -91,6 +96,8 @@ private:
     int                       consecutive_fail_count_ = 0;
     NNCommandSet              previous_accepted_command_; // 安全层上一帧有效指令
     bool                      has_prev_ = false;
+    bool                      safety_stop_requested_ = false;
+    int                       safety_stop_detail_ = -1;
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

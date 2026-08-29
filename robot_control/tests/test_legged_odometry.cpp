@@ -17,12 +17,24 @@ bool solve3(float a[3][3],const float b[3],float x[3]){
         for(int r=0;r<3;++r)if(r!=c){float f=m[r][c];for(int k=c;k<4;++k)m[r][k]-=f*m[c][k];}}
     for(int i=0;i<3;++i)x[i]=m[i][3];return true;
 }
+void setGroundForceTorques(CreeperLegKinematics& kin,const float q[12],
+                           float normal_force,float tau[12],
+                           float gear_ratio=6.333f){
+    for(int leg=0;leg<4;++leg){
+        float zero_dq[12]={0};const auto k=kin.compute(leg,q,zero_dq);
+        const int ids[3]={leg,4+leg,8+leg};
+        for(int joint=0;joint<3;++joint)
+            // 静力平衡约定：tau + J^T F_ground = 0。
+            tau[ids[joint]]=-k.jacobian[2][joint]*normal_force/gear_ratio;
+    }
+}
 }
 
 int main(){
     bool ok=true; CreeperLegKinematics kin;
-    float q[12]={0},dq[12]={0},tau[12];
-    for(int l=0;l<4;++l){q[l]=0.0f;q[4+l]=0.8f;q[8+l]=-1.5f; tau[l]=tau[4+l]=tau[8+l]=2.0f;}
+    float q[12]={0},dq[12]={0},tau[12]={0};
+    for(int l=0;l<4;++l){q[l]=0.0f;q[4+l]=0.8f;q[8+l]=-1.5f;}
+    setGroundForceTorques(kin,q,20.0f,tau);
 
     // 雅可比必须与正运动学有限差分一致。
     auto base=kin.compute(0,q,dq); ok&=expect(base.valid,"FL 正运动学应有效");
@@ -63,8 +75,9 @@ int main(){
 
     // 崎岖地面：一只脚明显高于最低脚时，持续承载不得被高度硬门槛否决。
     float rough_q[12];for(int i=0;i<12;++i)rough_q[i]=q[i];rough_q[4]=0.15f;
+    float rough_tau[12]={0};setGroundForceTorques(kin,rough_q,20.0f,rough_tau);
     LeggedOdometry rough_odom(cfg);
-    auto rough=rough_odom.update(rough_q,dq,tau,quat,omega,acc,0.02f);
+    auto rough=rough_odom.update(rough_q,dq,rough_tau,quat,omega,acc,0.02f);
     float min_foot_z=rough.foot_position[0][2],max_foot_z=min_foot_z;
     for(int l=1;l<4;++l){min_foot_z=std::min(min_foot_z,rough.foot_position[l][2]);max_foot_z=std::max(max_foot_z,rough.foot_position[l][2]);}
     ok&=expect(max_foot_z-min_foot_z>cfg.contact_height_band,"测试姿态应构造超过高度带的落差");
@@ -94,11 +107,11 @@ int main(){
     for(float& t:tau)t=0;auto airborne=odom.update(q,dq,tau,quat,omega,acc,0.02f);
     ok&=expect(airborne.airborne&&airborne.velocity_confidence==0.0f,"无支撑证据时应降为腾空/低置信度");
 
-    // 实机低载荷回归：承载约 0.55 N·m、离地约 0.17 N·m。
-    // 必须能够触地→离地→重新触地，避免高 on 门限把状态锁死在 AIR。
+    // 4477帧离线标定回归：用法向支撑力完成触地→离地→重新触地。
     LeggedOdometry hysteresis_odom;
-    float loaded_tau[12], unloaded_tau[12];
-    for(int i=0;i<12;++i){loaded_tau[i]=0.32f;unloaded_tau[i]=0.10f;}
+    float loaded_tau[12]={0}, unloaded_tau[12]={0};
+    setGroundForceTorques(kin,q,10.0f,loaded_tau);
+    setGroundForceTorques(kin,q,1.2f,unloaded_tau);
     LeggedOdometryOutput hysteresis_state;
     for(int frame=0;frame<3;++frame)
         hysteresis_state=hysteresis_odom.update(q,dq,loaded_tau,quat,omega,acc,0.02f);
@@ -106,9 +119,9 @@ int main(){
         &&hysteresis_state.contact[1]&&hysteresis_state.contact[2]&&hysteresis_state.contact[3],
         "低载荷持续三帧后四足必须判定触地");
 
-    // 已触地后即使承载降到约 0.26 N·m，也应保持接触，覆盖不平地面轻载腿。
-    float light_contact_tau[12];
-    for(float& value:light_contact_tau)value=0.15f; // 三轴范数约 0.26 N·m
+    // 已触地后法向力落在迟滞区间内仍保持接触，覆盖不平地面轻载腿。
+    float light_contact_tau[12]={0};
+    setGroundForceTorques(kin,q,5.0f,light_contact_tau);
     for(int frame=0;frame<10;++frame)
         hysteresis_state=hysteresis_odom.update(q,dq,light_contact_tau,quat,omega,acc,0.02f);
     ok&=expect(!hysteresis_state.airborne&&hysteresis_state.contact[0]
@@ -123,6 +136,13 @@ int main(){
     ok&=expect(!hysteresis_state.airborne&&hysteresis_state.contact[0]
         &&hysteresis_state.contact[1]&&hysteresis_state.contact[2]&&hysteresis_state.contact[3],
         "重新承载三帧后四足必须恢复触地");
+
+    for(int leg=0;leg<4;++leg){
+        ok&=expect(hysteresis_state.foot_force_valid[leg],"默认姿态足端力求解应有效");
+        ok&=expect(hysteresis_state.contact_used_force[leg],"接触检测应优先使用Fz");
+        ok&=expect(std::abs(hysteresis_state.normal_force[leg]-10.0f)<0.05f,
+            "估算Fz应恢复构造的法向力");
+    }
 
     if(!ok)return 1;std::cout<<"[PASS] Step 7 leg kinematics and odometry tests"<<std::endl;return 0;
 }

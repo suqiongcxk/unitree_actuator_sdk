@@ -34,10 +34,9 @@ void StandingPolicy::commitAcceptedCommand(const NNCommandSet&)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 ValidatingPolicy::ValidatingPolicy(std::unique_ptr<NNPolicy> inner,
-                                     std::unique_ptr<NNPolicy> fallback,
+                                     std::unique_ptr<NNPolicy> /*fallback*/,
                                      FallbackMode mode)
     : inner_(std::move(inner))
-    , fallback_(std::move(fallback))
     , mode_(mode)
 {}
 
@@ -53,15 +52,11 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         std::cerr << "[ValidatingPolicy] 内部策略返回无效" << std::endl;
         fail_count_++;
         consecutive_fail_count_++;
-        // 回退
-        if (fallback_ && mode_ == FallbackMode::STANDING) {
-            return fallback_->infer(est, cmds);
-        }
-        if (mode_ == FallbackMode::PREV_FRAME && consecutive_fail_count_ >= 3 && fallback_) {
-            return fallback_->infer(est, cmds);
-        }
-        if (has_prev_ && mode_ == FallbackMode::PREV_FRAME) {
+        safety_stop_requested_ = true;
+        safety_stop_detail_ = -1;
+        if (has_prev_ && mode_ != FallbackMode::NONE) {
             cmds = previous_accepted_command_;
+            std::cerr << "  → 保持最后安全指令并请求阻尼停机" << std::endl;
             return true;
         }
         return false;
@@ -79,30 +74,19 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
         consecutive_fail_count_++;
         std::cerr << "[ValidatingPolicy] " << last_result_.summary() << std::endl;
 
-        switch (mode_) {
-        case FallbackMode::STANDING:
-            if (fallback_) {
-                std::cout << "  → 回退到 " << fallback_->name() << std::endl;
-                return fallback_->infer(est, cmds);
-            }
-            return false;
-
-        case FallbackMode::PREV_FRAME:
-            if (consecutive_fail_count_ >= 3 && fallback_) {
-                std::cout << "  → 连续异常，回退到 " << fallback_->name() << std::endl;
-                return fallback_->infer(est, cmds);
-            }
+        // 实机安全原则：危险候选绝不下发，也不能突然跳到默认站姿。
+        // 总线继续保留上一帧安全目标，控制器立即切入统一阻尼退出。
+        if (mode_ != FallbackMode::NONE) {
+            safety_stop_requested_ = true;
+            safety_stop_detail_ = last_result_.first_bad_joint;
             if (has_prev_) {
-                std::cout << "  → 维持上帧指令" << std::endl;
                 cmds = previous_accepted_command_;
+                std::cerr << "  → 保持最后安全指令并请求阻尼停机" << std::endl;
                 return true;
             }
             return false;
-
-        case FallbackMode::NONE:
-            // 仍然使用 raw_cmds，但已打印警告
-            break;
         }
+        // NONE仅用于离线诊断：继续暴露原始候选，但已经打印警告。
     }
 
     // 缓存只能在控制器确认最终命令后更新，不能在这里提前写入。
@@ -121,7 +105,6 @@ void ValidatingPolicy::commitAcceptedCommand(const NNCommandSet& cmds)
 void ValidatingPolicy::setVelocityCommand(const std::array<float, 3>& command)
 {
     inner_->setVelocityCommand(command);
-    if (fallback_) fallback_->setVelocityCommand(command);
 }
 
 bool ValidatingPolicy::getLastActorIO(std::array<float, 48>& observation,

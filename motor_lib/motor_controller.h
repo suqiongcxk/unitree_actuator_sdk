@@ -29,6 +29,10 @@ struct MotorState {
     uint64_t success_count = 0;         // 累计完整且 CRC/ID 正确数
     uint64_t short_frame_count = 0;     // 累计非16字节反馈数
     uint64_t protocol_failure_count = 0;// 完整帧但 CRC/ID 错误数
+    uint64_t receive_timeout_count = 0; // 累计0字节接收超时数（short的子集）
+    uint64_t crc_failure_count = 0;     // 累计完整帧CRC错误数（protocol的子集）
+    uint64_t wrong_id_count = 0;        // 累计CRC正确但电机ID错误数（protocol的子集）
+    uint64_t max_transaction_duration_ns = 0; // 单电机完整收发事务最大耗时
 };
 
 /**

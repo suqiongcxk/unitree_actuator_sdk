@@ -3,61 +3,52 @@
 
 #include <atomic>
 #include <cstdint>
+#include <mutex>
 #include "jy901s.h"
 
 // ═══════════════════════════════════════════════════════════════════════════════
-//  Lock-Free Double-Buffer — 单写者 + 单读者 的无锁数据交换
+//  SnapshotBuffer — 单写者 + 多读者的线程安全快照交换
 // ═══════════════════════════════════════════════════════════════════════════════
 //
-//  内存模型:
-//    写者 ──写入──▶ slots_[write_idx_]  ──commitWrite()──▶ 原子翻转索引
-//    读者 ──tryAcquireRead()──▶ slots_[1-write_idx_] ◀── 只读
-//
-//  两个槽永远不会同时被读写。无需互斥锁。
+//  写者只修改writer_slot_；commitWrite()在短临界区内发布一个值副本。
+//  读者同样在短临界区内取得自己的值副本，离开锁后可任意时长使用。
+//  每个读者持有独立Sequence，因此启动等待、控制线程和监控读者互不干扰。
 
 template <typename T>
 class DoubleBuffer {
 public:
-    DoubleBuffer() {
-        write_idx_.store(0, std::memory_order_relaxed);
-        seq_.store(0, std::memory_order_relaxed);
-    }
+    using Sequence = uint64_t;
 
     // ── Writer API (只有生产者线程调用) ──────────────────────────────────────
 
     /// 获取写槽的引用。直接写入槽内内存，不拷贝。
     T& acquireWriteSlot() {
-        return slots_[write_idx_.load(std::memory_order_relaxed)];
+        return writer_slot_;
     }
 
-    /// 提交写入: 原子翻转 write_idx_ + 递增序列号。
-    /// release 屏障确保所有数据写入在索引翻转之前对所有线程可见。
+    /// 提交写入。锁只覆盖一次结构体赋值与序列号递增。
     void commitWrite() {
-        int new_write = 1 - write_idx_.load(std::memory_order_relaxed);
-        write_idx_.store(new_write, std::memory_order_release);
-        seq_.fetch_add(1, std::memory_order_release);
+        std::lock_guard<std::mutex> lock(snapshot_mutex_);
+        published_ = writer_slot_;
+        ++sequence_;
     }
 
-    // ── Reader API (只有消费者线程调用) ──────────────────────────────────────
+    // ── Reader API (支持多个消费者线程) ──────────────────────────────────────
 
-    /// 尝试获取最新数据的只读指针。
-    /// @return 指向最新完成数据的指针，或 nullptr（无新数据）。
-    /// acquire 屏障确保读取在索引翻转之后进行。
-    const T* tryAcquireRead() {
-        uint32_t current_seq = seq_.load(std::memory_order_acquire);
-        if (current_seq == last_read_seq_) {
-            return nullptr;
-        }
-        last_read_seq_ = current_seq;
-        int read_slot = 1 - write_idx_.load(std::memory_order_acquire);
-        return &slots_[read_slot];
+    /// 若存在相对该读者更新的帧，则复制到out并更新reader_sequence。
+    bool tryRead(T& out, Sequence& reader_sequence) const {
+        std::lock_guard<std::mutex> lock(snapshot_mutex_);
+        if (sequence_ == 0 || sequence_ == reader_sequence) return false;
+        out = published_;
+        reader_sequence = sequence_;
+        return true;
     }
 
 private:
-    T slots_[2];
-    std::atomic<int>      write_idx_{0};
-    std::atomic<uint32_t> seq_{0};
-    uint32_t              last_read_seq_{0};  // 仅消费者线程访问，无需 atomic
+    T writer_slot_{};                   // 仅生产者访问
+    T published_{};                     // 只在snapshot_mutex_内访问
+    mutable std::mutex snapshot_mutex_;
+    Sequence sequence_ = 0;             // 只在snapshot_mutex_内访问
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -89,7 +80,8 @@ struct EstimatedState {
     float projected_gravity[3] = {0};  // 单位重力在机体坐标系中的方向
 
     // ── 12 电机关节状态 (下标严格等于 motor ID: 0..11) ──
-    // 输出端量纲: rad, rad/s, N·m
+    // q/dq为关节输出端；tau保持GO-M8010-6 SDK回传的转子侧N·m，
+    // 进入足端力估计前再乘6.333，避免影响既有控制接口和日志兼容性。
     float joint_position[12]  = {0};
     float joint_velocity[12]  = {0};
     float joint_torque[12]    = {0};
@@ -105,6 +97,11 @@ struct EstimatedState {
     float contact_confidence[4] = {0};   // FL,FR,RL,RR，0..1
     float foot_position[4][3] = {{0}};   // 相对 base，base frame，m
     float foot_velocity[4][3] = {{0}};   // 关节运动造成的相对速度，m/s
+    float foot_force_body[4][3] = {{0}}; // 地面对足端的估算力，base frame，N
+    float normal_force[4] = {0};         // +Z法向支撑力，N
+    float foot_force_residual[4] = {0};  // 力矩重构残差，N·m
+    bool  foot_force_valid[4] = {false};
+    bool  contact_used_force[4] = {false}; // false表示求解无效并回退力矩范数
     float body_height         = 0.0f;    // base 原点到足底接触平面的高度，m
     float linear_velocity_confidence = 0.0f;
     bool  leg_odometry_valid = false;

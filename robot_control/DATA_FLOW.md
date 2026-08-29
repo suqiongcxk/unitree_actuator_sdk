@@ -23,15 +23,15 @@
 │          │   │              │   │                              │
 │ 写入     │   │ 读取 写入    │   │  读取指令 写入反馈            │
 │ ↓        │   │ ↑    ↓       │   │  ↑         ↓                 │
-│ A面/B面  │   │ A面  A面/B面 │   │  slots_    slots_            │
+│ 预备/发布 │   │ 快照 预备/发布│   │  slots_    slots_            │
 └────┬─────┘   └──┬───┬───────┘   └──┬───────────────────────────┘
      │            │   │              │
-     │ DoubleBuf  │   │ DoubleBuf    │ mutex + copy
-     │ 指针读     │   │ 指针读       │ 值拷贝
+     │ 快照短锁   │   │ 快照短锁     │ mutex + copy
+     │ 值拷贝     │   │ 值拷贝       │ 值拷贝
      │            │   │              │
      ▼            ▼   ▼              ▼
-    读B面        读B面 写A面         读→拷贝→返回
-    (不拷贝)     (不拷贝) (拷贝写入)  (值拷贝进出)
+    独立副本      独立副本 写预备槽    读→拷贝→返回
+    (可长期用)    (可长期用) (发布拷贝)  (值拷贝进出)
 ```
 
 ---
@@ -44,57 +44,56 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                      RobotController                        │
 │                                                             │
-│   imu_buffer_  (DoubleBuffer<IMURawData>)                   │
+│   imu_buffer_  (线程安全值快照，类名暂保留DoubleBuffer)     │
 │   ┌──────────────────────────────────────────┐              │
-│   │  slot_[0]  ←── 写者当前槽                │              │
-│   │  slot_[1]  ←── 读者当前槽                │              │
-│   │  write_idx_ (atomic<int>)                │              │
-│   │  seq_       (atomic<uint32_t>)           │              │
+│   │  writer_slot_ ←── 仅写线程访问           │              │
+│   │  published_   ←── mutex保护              │              │
+│   │  sequence_    ←── mutex保护              │              │
 │   └──────────────────────────────────────────┘              │
 │          ▲                     │                            │
-│          │ 写入 (直接修改)      │ 读取 (const指针)            │
+│          │ 写入预备槽           │ 短锁值拷贝                  │
 │          │                     ▼                            │
 │   ┌──────┴──────┐    ┌─────────────────┐                   │
 │   │ IMU Thread  │    │  EST Thread     │                   │
 │   │             │    │                 │                   │
 │   │ acquireWriteSlot()                │                    │
-│   │   → T& 引用 │    │ tryAcquireRead()│                   │
-│   │   直接写入   │    │   → const T*   │                   │
-│   │   槽内字段   │    │   只读指针      │                   │
+│   │   → T& 引用 │    │ tryRead(out,seq)│                   │
+│   │   直接写入   │    │   → 独立副本  │                   │
+│   │   预备槽字段 │    │   锁外读取    │                   │
 │   │             │    │                 │                   │
-│   │ commitWrite()│   │ 不拷贝，直接读   │                   │
-│   │   翻转idx   │    │ 槽内数据         │                   │
+│   │ commitWrite()│   │ 拷贝后立即解锁 │                   │
+│   │   短锁发布  │    │ 使用本地数据   │                   │
 │   └─────────────┘    └─────────────────┘                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 回答：**复用同一个地址（共享内存 + 双缓冲）**
+### 回答：**mutex保护的值快照**
 
-- 数据**不拷贝**。IMU线程获得`slot_[write_idx_]`的**引用**，直接写入槽内内存。
-- 写完调用`commitWrite()`原子翻转索引，读者即可读取。
-- 两个槽**永远不会同时被读写**：写者写A面时读者读B面，反之亦然。
+- IMU线程直接填写仅由它访问的`writer_slot_`，这一步不加锁。
+- `commitWrite()`在短临界区内将预备槽复制到`published_`并递增序列号。
+- EST线程用`tryRead(out, reader_sequence)`在短临界区取得独立值副本，锁外运行估计。
+- 每个读者拥有自己的`reader_sequence`，多个读者不会互相吞掉更新。
 - **内存归属**: `imu_buffer_` 是 `RobotController` 的成员变量，生命周期由 `RobotController` 管理。
 
-### 线程安全机制：**无锁 (lock-free)**
-- `write_idx_` 原子变量翻转，`seq_` 原子计数器递增
-- `commitWrite()`使用`memory_order_release`确保写入先于索引翻转
-- `tryAcquireRead()`使用`memory_order_acquire`确保读取在索引翻转之后
+### 线程安全机制：**mutex + 值拷贝**
+- 锁只覆盖一次结构体复制和序列号访问，不覆盖I2C、状态估计或NN推理。
+- 该设计消除了旧双缓冲在生产者连续提交两帧后绕回覆盖读指针的竞态。
 
 ### 代码示意
 ```cpp
 // === IMU Thread (写者) ===
-IMURawData& data = imu_buffer_.acquireWriteSlot();  // 获得引用，不拷贝
+IMURawData& data = imu_buffer_.acquireWriteSlot();  // 仅写线程访问
 data.angles = ...;   // 直接写入buffer内的内存
 data.acc    = ...;
-imu_buffer_.commitWrite();  // 原子翻转: 这个槽变成"可读"
+imu_buffer_.commitWrite();  // 短锁发布一个值快照
 
 // === EST Thread (读者) ===
-const IMURawData* imu = imu_buffer_.tryAcquireRead();  // 获得指针，不拷贝
-if (imu != nullptr) {
-    float ax = imu->acc.x;   // 直接读取buffer内的内存
-    float gz = imu->gyro.z;
+IMURawData imu{};
+IMUBuffer::Sequence cursor = 0;  // 每个读者各自持有
+if (imu_buffer_.tryRead(imu, cursor)) {
+    float ax = imu.acc.x;    // 锁外读取独立副本
+    float gz = imu.gyro.z;
 }
-// 读者读完不"释放"——双缓冲保证了写者不会覆盖正在被读的槽
 ```
 
 ---
@@ -177,15 +176,14 @@ MotorState ParallelBus::getState(unsigned short motor_id) const {
 ┌─────────────────────────────────────────────────────────────┐
 │                      RobotController                        │
 │                                                             │
-│   est_buffer_  (DoubleBuffer<EstimatedState>)              │
+│   est_buffer_  (线程安全值快照，类名暂保留DoubleBuffer)     │
 │   ┌──────────────────────────────────────────┐              │
-│   │  slot_[0]  ←── 写者当前槽                │              │
-│   │  slot_[1]  ←── 读者当前槽                │              │
-│   │  write_idx_ (atomic<int>)                │              │
-│   │  seq_       (atomic<uint32_t>)           │              │
+│   │  writer_slot_ ←── 仅EST线程访问          │              │
+│   │  published_   ←── mutex保护              │              │
+│   │  sequence_    ←── mutex保护              │              │
 │   └──────────────────────────────────────────┘              │
 │          ▲                     │                            │
-│          │ 写入 (拷贝赋值)      │ 读取 (const指针)            │
+│          │ 写入预备槽           │ 短锁值拷贝                  │
 │          │                     ▼                            │
 │   ┌──────┴──────┐    ┌─────────────────┐                   │
 │   │ EST Thread  │    │   NN Thread     │                   │
@@ -194,25 +192,24 @@ MotorState ParallelBus::getState(unsigned short motor_id) const {
 │   │   → EstimatedState (栈上临时对象)   │                   │
 │   │                                     │                   │
 │   │ buf.acquireWriteSlot()             │                   │
-│   │   = est;  ← 拷贝赋值到buffer槽     │                   │
-│   │ buf.commitWrite()    const EstState* e =                │
-│   │                      buf.tryAcquireRead()               │
-│   │                          → 只读指针                     │
-│   │                          不拷贝                          │
+│   │   → 在预备槽构造状态             │                   │
+│   │ buf.commitWrite()    EstimatedState e;                 │
+│   │   → 短锁发布       buf.tryRead(e, cursor)             │
+│   │                          → 独立副本                     │
+│   │                          锁外推理                       │
 │   └─────────────┘    └─────────────────┘                   │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 回答：**写入时拷贝，读取时复用地址**
+### 回答：**发布时拷贝，读取时再取得独立值副本**
 
-- EST 线程先在栈上构造 `EstimatedState` 临时对象（包括从IMU buffer读指针、从getState()值拷贝的数据）
-- `acquireWriteSlot()` 返回槽引用 → **拷贝赋值** `est` 到槽内
-- `commitWrite()` 原子翻转
-- NN线程 `tryAcquireRead()` 返回槽的 **const 指针 → 不拷贝，直接读**
-- 双缓冲保证读写的槽不会冲突
+- EST线程在仅写者可见的预备槽构造`EstimatedState`。
+- `commitWrite()`在短锁内发布一份完整快照。
+- NN线程通过`tryRead(est, cursor)`复制到自己的栈变量，推理期间不持锁。
+- 启动等待或其他读者使用独立cursor，不会干扰NN线程。
 
-### 线程安全机制：**无锁 (lock-free)**
-- 与路径#1相同的双缓冲机制
+### 线程安全机制：**mutex + 值拷贝**
+- 与路径#1相同的快照机制；锁不覆盖估计算法和NN推理。
 
 ---
 
@@ -336,14 +333,37 @@ void ParallelBus::controlLoop() {
 
 | # | 数据 | 从 | 到 | 传递方式 | 拷贝次数 | 线程安全 |
 |---|------|----|----|---------|---------|---------|
-| 1 | IMURawData | IMU Thread | IMUBuffer | **写引用** (直接写入buffer槽) | 0 | 双缓冲无锁 |
-| 2 | IMURawData | IMUBuffer | EST Thread | **读指针** (const T*, 直接读buffer槽) | 0 | 双缓冲无锁 |
+| 1 | IMURawData | IMU Thread | IMUBuffer | **发布快照** (writer_slot→published) | 1 | mutex短锁 |
+| 2 | IMURawData | IMUBuffer | EST Thread | **值快照** (published→读者栈变量) | 1 | mutex短锁 |
 | 3 | MotorState | Bus Threads | EST Thread | **值拷贝** (getState返回副本) | 1 | mutex |
-| 4 | EstimatedState | EST Thread | EstimatedStateBuffer | **值拷贝** (拷贝赋值到buffer槽) | 1 | 双缓冲无锁 |
-| 5 | EstimatedState | EstimatedStateBuffer | NN Thread | **读指针** (const T*, 直接读buffer槽) | 0 | 双缓冲无锁 |
+| 4 | EstimatedState | EST Thread | EstimatedStateBuffer | **发布快照** (writer_slot→published) | 1 | mutex短锁 |
+| 5 | EstimatedState | EstimatedStateBuffer | NN Thread | **值快照** (published→读者栈变量) | 1 | mutex短锁 |
 | 6 | 电机指令 | NN Thread | Bus Threads | **值拷贝** (setPosition参数→slots_槽位) | 1 | mutex |
 | 7 | 电机指令 | Bus slots_ | Bus 本地sendVec | **值拷贝** (slots_→sendVec) | 1 | mutex |
 | 8 | 电机反馈 | Bus 本地recvVec | Bus slots_ | **值拷贝** (recvVec→slots_→getState返回) | 1 | mutex |
+
+### 三维速度命令路径
+
+`主终端或第二终端FIFO → VelocityCommandManager → NN Thread → PolicyObservationBuilder`：
+
+- 输入为base frame的`[vx,vy,yaw_rate]`，训练范围均为`[-1,1]`。
+- 第二终端通过命名FIFO发送文本；辅助监听线程只解析并提交命令，不访问串口、GPIO、IMU或电机。
+- 提交时在短mutex临界区保存raw和limited；NN线程每个有效50 Hz周期取得applied值。
+- applied经过斜率限制；输入超过看门狗期限后目标自动变为零并平滑回零。
+- 只有applied进入Actor `observation[9..11]`；NaN/Inf永远不会被提交。
+- `Ctrl+C`不经过命令斜坡，直接走全局急停和12电机阻尼锁存。
+- FIFO中的`s`走同一个全局急停路径；原有7个实时线程仍为`1 IMU + 1 EST + 4 BUS + 1 NN`，额外线程仅属于非实时人机输入。
+
+### NN指令下发前的独立运动保护
+
+`NN候选目标 + 上一帧已接受目标 + 关节反馈速度 → MotionSafety → commit/setPosition`：
+
+- 保护位于NN推理之后、`commitAcceptedCommand()`和总线`setPosition()`之前；失败帧不会更新任何指令历史，也不会写入总线。
+- 默认commissioning门限为目标变化率`2.5 rad/s`（50 Hz时`0.05 rad/帧`）、实测关节速度`3.0 rad/s`、单帧12关节绝对变化总和`0.25 rad`。
+- 当超过`0.03 rad/帧`的关节多于3个时，也按多关节协同突变锁存停机。
+- 该保护独立于`--no-validate`，不能通过关闭NN验证绕过；dry-run仍检查候选目标，但不因人工搬动机器人的反馈速度停机。
+- 任一保护触发后保持总线已有的最后安全目标，由统一安全退出发送12电机`Kd=0.136`阻尼并回收线程。
+- 上述门限来自当前零命令成功日志与`0.20 m/s`故障日志之间的实测间隔，仍需用新策略的多seed仿真关节速度分布复核。
 
 ### 关键结论
 
@@ -351,10 +371,10 @@ void ParallelBus::controlLoop() {
 双层数据架构:
 ┌──────────────────────────────────────────────────┐
 │  传感器数据流 (IMU → EST → NN)                     │
-│  使用: DoubleBuffer<T>                            │
-│  策略: 复用同一块内存 (写引用/读指针)               │
-│  拷贝: 0次 (除了写入buffer时的1次结构体赋值)        │
-│  原因: 高频数据(200Hz), 避免拷贝开销               │
+│  使用: SnapshotBuffer语义（类名暂为DoubleBuffer）   │
+│  策略: writer槽 + mutex保护的发布快照 + 读者副本    │
+│  拷贝: 发布1次、读取1次                             │
+│  原因: 数据量小，优先消除悬空/覆盖指针和多读者竞态   │
 ├──────────────────────────────────────────────────┤
 │  电机指令/反馈流 (NN → Bus / Bus → EST)            │
 │  使用: mutex + 值拷贝                              │
@@ -371,13 +391,13 @@ void ParallelBus::controlLoop() {
 ```
 RobotController (主线程创建，生命周期覆盖所有子线程)
 │
-├── imu_buffer_          ← DoubleBuffer<IMURawData>
-│   ├── slots_[0]        ← 2个槽，约120字节
-│   └── slots_[1]
+├── imu_buffer_          ← SnapshotBuffer语义<IMURawData>
+│   ├── writer_slot_     ← 仅IMU写线程访问
+│   └── published_       ← mutex保护的已发布快照
 │
-├── est_buffer_          ← DoubleBuffer<EstimatedState>
-│   ├── slots_[0]        ← 2个槽，约200字节
-│   └── slots_[1]
+├── est_buffer_          ← SnapshotBuffer语义<EstimatedState>
+│   ├── writer_slot_     ← 仅EST写线程访问
+│   └── published_       ← mutex保护的已发布快照
 │
 ├── imu_                 ← unique_ptr<JY901S>
 │
@@ -391,6 +411,6 @@ RobotController (主线程创建，生命周期覆盖所有子线程)
     └── ParallelBus[3]
         └── slots_[3]
 
-所有线程不拥有数据内存，只持有引用/指针/临时副本。
+线程只在各自拥有的预备槽或临时值副本上做耗时计算，不跨临界区持有共享指针。
 RobotController析构时自动释放所有内存。
 ```

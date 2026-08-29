@@ -209,6 +209,10 @@ void NNInferenceLogger::writeHeader()
     for (int i = 0; i < 12; ++i) {
         file_ << ",j" << i << "_pos,j" << i << "_vel,j" << i << "_tau";
     }
+    file_ << ",cmd_raw_vx,cmd_raw_vy,cmd_raw_yaw"
+             ",cmd_limited_vx,cmd_limited_vy,cmd_limited_yaw"
+             ",cmd_applied_vx,cmd_applied_vy,cmd_applied_yaw"
+             ",cmd_age_ms,cmd_timeout,cmd_clamped";
     // Actor 的真实输入和未经安全层改写的原始输出。
     for (int i = 0; i < 48; ++i) file_ << ",obs" << i;
     for (int i = 0; i < 12; ++i) file_ << ",raw_action" << i;
@@ -223,7 +227,13 @@ void NNInferenceLogger::log(const EstimatedState& input_state,
                              const NNCommandSet& output_cmds,
                              bool valid, int latency_us,
                              const std::array<float, 48>* observation,
-                             const std::array<float, 12>* raw_action)
+                             const std::array<float, 12>* raw_action,
+                             const std::array<float, 3>* raw_command,
+                             const std::array<float, 3>* limited_command,
+                             const std::array<float, 3>* applied_command,
+                             uint64_t command_age_ns,
+                             bool command_timed_out,
+                             bool command_clamped)
 {
     if (!enabled_ || !file_.is_open()) return;
 
@@ -255,6 +265,16 @@ void NNInferenceLogger::log(const EstimatedState& input_state,
               << "," << input_state.joint_velocity[i]
               << "," << input_state.joint_torque[i];
     }
+
+    for (int i = 0; i < 3; ++i)
+        file_ << "," << (raw_command ? (*raw_command)[i] : 0.0f);
+    for (int i = 0; i < 3; ++i)
+        file_ << "," << (limited_command ? (*limited_command)[i] : 0.0f);
+    for (int i = 0; i < 3; ++i)
+        file_ << "," << (applied_command ? (*applied_command)[i] : 0.0f);
+    file_ << "," << static_cast<double>(command_age_ns) / 1.0e6
+          << "," << (command_timed_out ? 1 : 0)
+          << "," << (command_clamped ? 1 : 0);
 
 
     // 保持 CSV 列数固定；StandingPolicy 等非 Actor 策略写 NaN。

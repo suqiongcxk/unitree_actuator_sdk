@@ -101,7 +101,13 @@ public:
              const NNCommandSet& output_cmds,
              bool valid, int latency_us,
              const std::array<float, 48>* observation = nullptr,
-             const std::array<float, 12>* raw_action = nullptr);
+             const std::array<float, 12>* raw_action = nullptr,
+             const std::array<float, 3>* raw_command = nullptr,
+             const std::array<float, 3>* limited_command = nullptr,
+             const std::array<float, 3>* applied_command = nullptr,
+             uint64_t command_age_ns = 0,
+             bool command_timed_out = false,
+             bool command_clamped = false);
 
     /// 是否正在记录
     bool isEnabled() const { return enabled_; }
