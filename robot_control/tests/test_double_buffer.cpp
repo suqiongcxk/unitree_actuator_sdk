@@ -16,7 +16,7 @@ struct Payload {
     uint64_t values[128] = {0};
     uint64_t end_guard = 0;
 };
-
+//jijijijijiijiji
 bool validPayload(const Payload& payload) {
     if (payload.sequence == 0
             || payload.begin_guard != (payload.sequence ^ kGuard)
