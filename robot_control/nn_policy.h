@@ -94,6 +94,7 @@ private:
     int                       total_count_ = 0;
     int                       fail_count_  = 0;
     int                       consecutive_fail_count_ = 0;
+    uint64_t                  monitored_jump_count_ = 0;
     NNCommandSet              previous_accepted_command_; // 安全层上一帧有效指令
     bool                      has_prev_ = false;
     bool                      safety_stop_requested_ = false;

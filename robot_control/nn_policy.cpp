@@ -69,7 +69,25 @@ bool ValidatingPolicy::infer(const EstimatedState& est, NNCommandSet& cmds)
                       : est.joint_position;
     last_result_ = validateCommandSet(raw_cmds, prev);
 
-    if (!last_result_.passed) {
+    const bool jump_only = last_result_.jump_exceeded
+                        && last_result_.out_of_bounds_count == 0
+                        && last_result_.nan_count == 0
+                        && last_result_.inf_count == 0
+                        && last_result_.gain_invalid_count == 0;
+
+    if (jump_only) {
+        // 临时实机诊断：单关节目标跳变只监测，不丢弃本帧或请求停机。
+        // 限频输出，避免问题模型在50 Hz下刷屏。
+        ++monitored_jump_count_;
+        if (monitored_jump_count_ == 1 || monitored_jump_count_ % 50 == 0) {
+            std::cerr << "[ValidatingPolicy] MONITOR_ONLY JUMP joint="
+                      << last_result_.first_bad_joint
+                      << " max_delta=" << std::fixed << std::setprecision(3)
+                      << last_result_.max_jump_rad << "rad"
+                      << std::defaultfloat
+                      << " count=" << monitored_jump_count_ << std::endl;
+        }
+    } else if (!last_result_.passed) {
         fail_count_++;
         consecutive_fail_count_++;
         std::cerr << "[ValidatingPolicy] " << last_result_.summary() << std::endl;

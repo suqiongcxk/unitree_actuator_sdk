@@ -12,7 +12,7 @@ struct VelocityCommandConfig {
     // 真机部署平滑参数，单位[m/s²,m/s²,rad/s²]。
     std::array<float, 3> slew_rate{{0.5f, 0.5f, 1.0f}};
     uint64_t watchdog_timeout_ns = 500'000'000ULL;
-    uint64_t max_single_hold_ns = 2'000'000'000ULL;
+    uint64_t max_single_hold_ns = 5'000'000'000ULL;
 };
 
 enum class VelocityCommandSubmitResult {

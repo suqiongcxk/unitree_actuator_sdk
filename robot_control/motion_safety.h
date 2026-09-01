@@ -6,13 +6,21 @@
 // 与具体策略无关的运动指令保护。所有角度均为URDF输出端rad。
 struct MotionSafetyConfig {
     bool enabled = true;
-    // 50 Hz下分别对应0.05 rad/帧和实测3 rad/s；当前为commissioning保守值。
-    float max_target_velocity_rad_s = 2.5f;
+    // 临时实机诊断：仍统计单关节目标速度，但不因超限触发停机。
+    // 恢复保护时设为true，无需重写判定逻辑。
+    bool enforce_target_velocity = false;
+    // 50 Hz下对应0.10 rad/帧。
+    float max_target_velocity_rad_s = 5.0f;
+    // 临时实机诊断：仍统计反馈速度，但不因超限触发停机。
+    // 恢复保护时设为true，无需重写判定逻辑。
+    bool enforce_feedback_velocity = false;
     float max_feedback_velocity_rad_s = 3.0f;
-    // 防止多个关节在同一策略帧内同时发生中等幅度变化。
+    // 仅用于诊断统计；四足步态需要多关节协同，数量本身不触发停机。
     float significant_target_delta_rad = 0.03f;
-    int max_simultaneous_target_changes = 3;
-    float max_aggregate_target_delta_rad = 0.25f;
+    // 临时实机诊断：仍统计12关节总变化量，但不因超限触发停机。
+    bool enforce_aggregate_target_delta = false;
+    // 12关节单个策略帧的目标位置变化绝对值之和，单位rad。
+    float max_aggregate_target_delta_rad = 0.50f;
 };
 
 enum class MotionSafetyViolation {
@@ -20,7 +28,6 @@ enum class MotionSafetyViolation {
     INVALID_INPUT,
     TARGET_VELOCITY,
     FEEDBACK_VELOCITY,
-    SIMULTANEOUS_TARGET_CHANGE,
     AGGREGATE_TARGET_CHANGE,
 };
 

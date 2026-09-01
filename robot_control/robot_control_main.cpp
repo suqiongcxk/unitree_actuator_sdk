@@ -410,7 +410,7 @@ static void printHelp(const char* prog)
               << "  -h, --help          打印此帮助\n"
               << "\n急停: 输入 s/S 后回车，或按 Ctrl+C\n"
               << "速度命令: v <vx> <vy> <yaw_rate> [hold_ms]\n"
-              << "  范围为[-1,1]，默认500ms超时，hold_ms最大2000ms\n"
+              << "  范围为[-1,1]，默认500ms超时，hold_ms最大5000ms\n"
               << "平滑回零: z 后回车\n"
               << "接触诊断标记: 1=基线，2=卸载，3=重新承重（均需按回车）\n"
               << "\n验证工作流:\n"
@@ -612,11 +612,17 @@ int main(int argc, char* argv[])
               << std::endl;
     std::cout << "  运动保护: "
               << (config.motion_safety.enabled ? "ON" : "OFF")
-              << " target_rate<="
+              << " target_rate="
+              << (config.motion_safety.enforce_target_velocity
+                      ? "ENFORCED<=" : "MONITOR_ONLY threshold=")
               << config.motion_safety.max_target_velocity_rad_s << "rad/s"
-              << " feedback_speed<="
+              << " feedback_speed="
+              << (config.motion_safety.enforce_feedback_velocity
+                      ? "ENFORCED<=" : "MONITOR_ONLY threshold=")
               << config.motion_safety.max_feedback_velocity_rad_s << "rad/s"
-              << " aggregate_delta<="
+              << " aggregate_delta="
+              << (config.motion_safety.enforce_aggregate_target_delta
+                      ? "ENFORCED<=" : "MONITOR_ONLY threshold=")
               << config.motion_safety.max_aggregate_target_delta_rad << "rad"
               << std::endl;
     if (contact_diagnostics) {

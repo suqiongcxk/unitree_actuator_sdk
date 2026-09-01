@@ -10,8 +10,6 @@ bool isMotionSafetyConfigValid(const MotionSafetyConfig& config) noexcept
         && config.max_feedback_velocity_rad_s > 0.0f
         && std::isfinite(config.significant_target_delta_rad)
         && config.significant_target_delta_rad > 0.0f
-        && config.max_simultaneous_target_changes >= 0
-        && config.max_simultaneous_target_changes <= 12
         && std::isfinite(config.max_aggregate_target_delta_rad)
         && config.max_aggregate_target_delta_rad > 0.0f;
 }
@@ -23,8 +21,6 @@ const char* motionSafetyViolationName(MotionSafetyViolation violation) noexcept
     case MotionSafetyViolation::INVALID_INPUT: return "INVALID_INPUT";
     case MotionSafetyViolation::TARGET_VELOCITY: return "TARGET_VELOCITY";
     case MotionSafetyViolation::FEEDBACK_VELOCITY: return "FEEDBACK_VELOCITY";
-    case MotionSafetyViolation::SIMULTANEOUS_TARGET_CHANGE:
-        return "SIMULTANEOUS_TARGET_CHANGE";
     case MotionSafetyViolation::AGGREGATE_TARGET_CHANGE:
         return "AGGREGATE_TARGET_CHANGE";
     }
@@ -77,18 +73,17 @@ MotionSafetyResult evaluateMotionSafety(
     }
 
     // 候选指令必须先被拦截，不能等电机已经产生高速反馈后才停机。
-    if (result.max_target_velocity_rad_s > config.max_target_velocity_rad_s) {
+    if (config.enforce_target_velocity
+        && result.max_target_velocity_rad_s > config.max_target_velocity_rad_s) {
         result.violation = MotionSafetyViolation::TARGET_VELOCITY;
         result.detail = max_target_joint;
-    } else if (result.simultaneous_target_changes
-               > config.max_simultaneous_target_changes) {
-        result.violation = MotionSafetyViolation::SIMULTANEOUS_TARGET_CHANGE;
-        result.detail = result.simultaneous_target_changes;
-    } else if (result.aggregate_target_delta_rad
+    } else if (config.enforce_aggregate_target_delta
+               && result.aggregate_target_delta_rad
                > config.max_aggregate_target_delta_rad) {
         result.violation = MotionSafetyViolation::AGGREGATE_TARGET_CHANGE;
         result.detail = result.simultaneous_target_changes;
-    } else if (result.max_feedback_velocity_rad_s
+    } else if (config.enforce_feedback_velocity
+               && result.max_feedback_velocity_rad_s
                > config.max_feedback_velocity_rad_s) {
         result.violation = MotionSafetyViolation::FEEDBACK_VELOCITY;
         result.detail = max_feedback_joint;

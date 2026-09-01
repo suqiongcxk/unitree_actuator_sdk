@@ -19,7 +19,7 @@ enum class RuntimeSafetyFault : int {
     NN_COMMAND_INVALID,
     JOINT_TARGET_RATE_EXCEEDED,
     JOINT_FEEDBACK_VELOCITY_EXCEEDED,
-    MULTI_JOINT_TARGET_CHANGE,
+    AGGREGATE_TARGET_CHANGE,
 };
 
 struct RuntimeSafetyStatus {
@@ -73,8 +73,8 @@ public:
             return "JOINT_TARGET_RATE_EXCEEDED";
         case RuntimeSafetyFault::JOINT_FEEDBACK_VELOCITY_EXCEEDED:
             return "JOINT_FEEDBACK_VELOCITY_EXCEEDED";
-        case RuntimeSafetyFault::MULTI_JOINT_TARGET_CHANGE:
-            return "MULTI_JOINT_TARGET_CHANGE";
+        case RuntimeSafetyFault::AGGREGATE_TARGET_CHANGE:
+            return "AGGREGATE_TARGET_CHANGE";
         }
         return "UNKNOWN";
     }

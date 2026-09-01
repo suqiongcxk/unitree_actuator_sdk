@@ -27,8 +27,8 @@ int main()
                 RuntimeSafetyFault::JOINT_FEEDBACK_VELOCITY_EXCEEDED))
                 != "JOINT_FEEDBACK_VELOCITY_EXCEEDED"
             || std::string(RuntimeSafetySupervisor::name(
-                RuntimeSafetyFault::MULTI_JOINT_TARGET_CHANGE))
-                != "MULTI_JOINT_TARGET_CHANGE") {
+                RuntimeSafetyFault::AGGREGATE_TARGET_CHANGE))
+                != "AGGREGATE_TARGET_CHANGE") {
         std::cerr << "[FAIL] 温度故障名称映射错误" << std::endl;
         return 1;
     }

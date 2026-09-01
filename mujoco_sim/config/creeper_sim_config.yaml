@@ -1,0 +1,11 @@
+# Documentation/configuration manifest; the C++ defaults match these values.
+physics_dt: 0.005
+decimation: 4
+policy_hz: 50
+kp_joint: 25.0
+kd_joint: 0.5
+torque_limit_nm: 23.7   # URDF-derived simulation asset; not a verified continuous hardware rating.
+velocity_limit_rad_s: 30.1 # URDF-derived simulation asset; not a verified continuous hardware rating.
+action_scale: 0.25
+default_keyframe: standing
+stop_behavior: stop_actor_and_end_mj_step

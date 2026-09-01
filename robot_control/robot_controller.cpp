@@ -97,9 +97,8 @@ RuntimeSafetyFault motionViolationToRuntimeFault(
         return RuntimeSafetyFault::JOINT_TARGET_RATE_EXCEEDED;
     case MotionSafetyViolation::FEEDBACK_VELOCITY:
         return RuntimeSafetyFault::JOINT_FEEDBACK_VELOCITY_EXCEEDED;
-    case MotionSafetyViolation::SIMULTANEOUS_TARGET_CHANGE:
     case MotionSafetyViolation::AGGREGATE_TARGET_CHANGE:
-        return RuntimeSafetyFault::MULTI_JOINT_TARGET_CHANGE;
+        return RuntimeSafetyFault::AGGREGATE_TARGET_CHANGE;
     case MotionSafetyViolation::INVALID_INPUT:
         return RuntimeSafetyFault::NN_COMMAND_INVALID;
     case MotionSafetyViolation::NONE:

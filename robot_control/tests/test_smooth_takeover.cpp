@@ -118,10 +118,25 @@ int main()
                      "接管结束目标应等于 Actor 目标");
     }
 
-    // P0回归：危险Actor目标不得在第三帧跳到StandingPolicy。第一帧失败
+    // 单关节跳变当前仅监测，不得请求停机或丢弃Actor目标。
+    NNCommandSet monitored_jump = standing;
+    monitored_jump.joint_position_target[7] += 0.11f;
+    ValidatingPolicy jump_monitor(
+        std::make_unique<ConstantActorPolicy>(monitored_jump));
+    jump_monitor.commitAcceptedCommand(standing);
+    NNCommandSet monitored_output;
+    ok &= expect(jump_monitor.infer(state, monitored_output),
+                 "监测模式应接受跳变候选目标");
+    ok &= expect(!jump_monitor.requiresSafetyStop(),
+                 "监测模式不得因单关节跳变停机");
+    ok &= expect(std::abs(monitored_output.joint_position_target[7]
+                       - monitored_jump.joint_position_target[7]) < 1.0e-6f,
+                 "监测模式应保留Actor候选目标");
+
+    // P0回归：真正越过机械限位的Actor目标不得切换到StandingPolicy。第一帧失败
     // 就必须保持最后接受指令并请求控制器进入统一阻尼停机。
     NNCommandSet unsafe = standing;
-    unsafe.joint_position_target[7] = standing.joint_position_target[7] + 0.6f;
+    unsafe.joint_position_target[7] = JOINT_LIMITS[7][1] + 0.1f;
     NNCommandSet distinct_fallback = standing;
     distinct_fallback.joint_position_target[7] -= 0.4f;
     ValidatingPolicy fail_safe(
