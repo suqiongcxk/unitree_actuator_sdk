@@ -10,10 +10,10 @@ MESSAGE="${1:-auto commit $(date '+%Y-%m-%d %H:%M')}"
 echo "=== 变更文件 ==="
 git status -s
 
-# if [ -z "$(git status -s)" ]; then
-#     echo "工作区干净，无需提交"
-#     exit 0
-# fi
+if [ -z "$(git status -s)" ]; then
+    echo "工作区干净，无需提交"
+    exit 0
+fi
 
 echo ""
 echo "=== 提交信息: $MESSAGE ==="
