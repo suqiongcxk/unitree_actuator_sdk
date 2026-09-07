@@ -1,5 +1,6 @@
 #include "leg_kinematics.h"
 #include "legged_odometry.h"
+#include "robot_model_parameters.h"
 
 #include <cmath>
 #include <iostream>
@@ -38,6 +39,15 @@ int main(){
 
     // 雅可比必须与正运动学有限差分一致。
     auto base=kin.compute(0,q,dq); ok&=expect(base.valid,"FL 正运动学应有效");
+    // Creeper20260906 零角度足端：hip->thigh 的X偏移由0.05825改为0.06825 m。
+    const float zero_q[12]={0};
+    const auto zero_pose=kin.compute(0,zero_q,dq);
+    const float expected_zero_foot[3]={0.20485f,0.1408f,-0.4180f};
+    ok&=expect(zero_pose.valid
+        && distance3(zero_pose.foot_position,expected_zero_foot)<1e-6f,
+        "FL足端位置必须与Creeper20260906 URDF一致");
+    ok&=expect(std::abs(creeper_model::kTotalUrdfMassKg-11.932221638634982)<1e-12,
+        "共享模型总质量必须与Creeper20260906 URDF一致");
     const float eps=1e-4f;
     for(int j=0;j<3;++j){int id[3]={0,4,8};q[id[j]]+=eps;auto moved=kin.compute(0,q,dq);q[id[j]]-=eps;
         for(int a=0;a<3;++a){float fd=(moved.foot_position[a]-base.foot_position[a])/eps;

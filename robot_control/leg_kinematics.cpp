@@ -1,4 +1,5 @@
 #include "leg_kinematics.h"
+#include "robot_model_parameters.h"
 
 #include <cmath>
 
@@ -37,10 +38,17 @@ CreeperLegKinematics::Result CreeperLegKinematics::compute(
     const float front = leg < 2 ? 1.0f : -1.0f;
     const float left = (leg == 0 || leg == 2) ? 1.0f : -1.0f;
     // 以 URDF joint origin 为唯一几何来源，不使用 STL 外观尺寸。
-    const Vec3 hip_o{front*0.1366f, left*0.0650f, 0.0f};
-    const Vec3 hip_to_thigh{front*0.05825f, left*0.0186f, 0.0f};
-    const Vec3 thigh_to_calf{0.0f, left*0.0572f, -0.2100f};
-    const Vec3 calf_to_foot{0.0f, 0.0f, -0.2080f};
+    const Vec3 hip_o{
+        front*static_cast<float>(creeper_model::kHipOriginX),
+        left*static_cast<float>(creeper_model::kHipOriginY), 0.0f};
+    const Vec3 hip_to_thigh{
+        front*static_cast<float>(creeper_model::kHipToThighX),
+        left*static_cast<float>(creeper_model::kHipToThighY), 0.0f};
+    const Vec3 thigh_to_calf{
+        0.0f, left*static_cast<float>(creeper_model::kThighToCalfY),
+        static_cast<float>(creeper_model::kThighToCalfZ)};
+    const Vec3 calf_to_foot{
+        0.0f, 0.0f, static_cast<float>(creeper_model::kCalfToFootZ)};
 
     const float qh=q[ids[0]], qt=q[ids[1]], qc=q[ids[2]];
     const Vec3 p_hip=hip_o;

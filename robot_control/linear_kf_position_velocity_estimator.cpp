@@ -1,4 +1,5 @@
 #include "linear_kf_position_velocity_estimator.h"
+#include "robot_model_parameters.h"
 
 #include <Eigen/Cholesky>
 #include <algorithm>
@@ -16,7 +17,13 @@ EigenLegKinematics::Result EigenLegKinematics::compute(
     int leg,const Eigen::Matrix<double,12,1>& q,const Eigen::Matrix<double,12,1>& dq) const {
     Result o;if(leg<0||leg>=4||!finite(q)||!finite(dq))return o;
     int id[3]={leg,4+leg,8+leg};double front=leg<2?1.0:-1.0,left=(leg==0||leg==2)?1.0:-1.0;
-    Eigen::Vector3d h(front*.1366,left*.065,0),ht(front*.05825,left*.0186,0),tc(0,left*.0572,-.210),cf(0,0,-.208);
+    Eigen::Vector3d h(front*creeper_model::kHipOriginX,
+                      left*creeper_model::kHipOriginY,0);
+    Eigen::Vector3d ht(front*creeper_model::kHipToThighX,
+                       left*creeper_model::kHipToThighY,0);
+    Eigen::Vector3d tc(0,left*creeper_model::kThighToCalfY,
+                       creeper_model::kThighToCalfZ);
+    Eigen::Vector3d cf(0,0,creeper_model::kCalfToFootZ);
     Eigen::Matrix3d Rh=rx(q[id[0]]),Rt=ry(q[id[1]]),Rc=ry(q[id[2]]);
     Eigen::Vector3d p0=h,p1=p0+Rh*ht,p2=p1+Rh*Rt*tc,p3=p2+Rh*Rt*Rc*cf;
     Eigen::Vector3d axes[3]={Eigen::Vector3d::UnitX(),Rh*Eigen::Vector3d::UnitY(),Rh*Rt*Eigen::Vector3d::UnitY()};

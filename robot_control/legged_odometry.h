@@ -3,6 +3,7 @@
 
 #include "leg_kinematics.h"
 #include "foot_force_estimator.h"
+#include "robot_model_parameters.h"
 
 struct LeggedOdometryConfig {
     // 4477帧实机日志离线标定值。优先使用地面对足端的+Z法向力，
@@ -15,7 +16,7 @@ struct LeggedOdometryConfig {
     float contact_torque_on = 0.28f;       // 转子N·m，回退触地阈值
     float contact_torque_off = 0.20f;      // 转子N·m，回退离地阈值
     float contact_height_band = 0.035f;   // 仅用于高度置信度，不否决高低地形接触
-    float foot_radius = 0.020f;            // URDF 足球碰撞球半径，m
+    float foot_radius = static_cast<float>(creeper_model::kFootRadius);
     float max_contact_foot_speed = 2.0f;  // 相对机体，m/s
     float slip_residual_threshold = 0.35f;// 支撑腿速度约束不一致，m/s
     int contact_on_frames = 3;

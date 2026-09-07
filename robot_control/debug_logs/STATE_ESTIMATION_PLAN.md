@@ -297,7 +297,7 @@
 
 ### 2026-08-14 — Step 7 代码实现
 
-- 新增 `CreeperLegKinematics`，使用 `Creeper20260714.urdf` 的 joint origin 实现 FL/FR/RL/RR 正运动学和 3×3 雅可比。
+- 新增 `CreeperLegKinematics`；当前已迁移为使用 `Creeper20260906.urdf` 的 joint origin 实现 FL/FR/RL/RR 正运动学和 3×3 雅可比。
 - 显式使用 motor-ID 排列：每条腿的关节为 `[leg, 4+leg, 8+leg]`，不依赖 URDF 文件的腿优先出现顺序。
 - 新增 `LeggedOdometry`，以每足独立 `AIR→TOUCHDOWN→STANCE` 状态机联合关节力矩、足端速度和多帧迟滞输出接触与置信度。
 - 足端相对高度只作为低权重置信度，不再是接触硬门槛；已增加超过 3.5 cm 高度带仍能承载接触的崎岖地形回归测试。

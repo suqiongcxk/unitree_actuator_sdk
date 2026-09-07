@@ -5,6 +5,7 @@
 - `STATE_ESTIMATION_PLAN.md`：状态估计及实机测试的主推进记录。
 - `LINEAR_KF_ESTIMATOR.md`：Linear KF接口、坐标系和验证说明。
 - `LOW_SPEED_POLICY_RETRAINING_SPEC.md`：新低速策略的训练端审计与部署门槛。
+- `URDF_20260906_MIGRATION.md`：新旧 URDF 差异、代码同步范围与复查结果。
 
 系统长期有效的数据流契约保留在`robot_control/DATA_FLOW.md`，避免与阶段性调试记录混放。
 终端 1：启动机器人控制程序

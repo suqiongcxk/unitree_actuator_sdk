@@ -1,7 +1,7 @@
 #ifndef ROBOT_CONTROL_LEG_KINEMATICS_H
 #define ROBOT_CONTROL_LEG_KINEMATICS_H
 
-// Creeper20260714 URDF 的四腿运动学。腿序固定为 FL, FR, RL, RR，
+// Creeper20260906 URDF 的四腿运动学。腿序固定为 FL, FR, RL, RR，
 // 输入关节数组则使用控制程序的 motor-ID 排列。
 class CreeperLegKinematics {
 public:

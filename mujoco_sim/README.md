@@ -1,6 +1,6 @@
 # Creeper standalone MuJoCo simulator
 
-This directory is a C++17, headless-first simulator for Creeper20260714. It has no ROS, Unitree SDK, serial, GPIO, I2C, motor, or physical-sensor dependency. The default-pose controller works without an ONNX file; ONNX Runtime is discovered at build time and is required only for `--onnx`.
+This directory is a C++17, headless-first simulator for Creeper20260906. It has no ROS, Unitree SDK, serial, GPIO, I2C, motor, or physical-sensor dependency. The default-pose controller works without an ONNX file; ONNX Runtime is discovered at build time and is required only for `--onnx`.
 
 ## Dependencies and build
 

@@ -7,7 +7,7 @@
 
 namespace creeper {
 
-// 独立 Creeper20260714 腿部运动学。坐标：X前、Y左、Z上；单位 m/rad/s。
+// 独立 Creeper20260906 腿部运动学。坐标：X前、Y左、Z上；单位 m/rad/s。
 class EigenLegKinematics {
 public:
     struct Result {
