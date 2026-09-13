@@ -1,0 +1,1907 @@
+{
+  "task": "Isaac-Velocity-Flat-Creeper-20260906-V5-Play-v0",
+  "checkpoint": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v5/2026-09-11_11-47-06_scratch_seed42_balanced_commands_contact_safe/model_950.pt",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51
+  ],
+  "protocol": "5s zero + 1s ramp + 10s hold + 1s ramp down + 5s zero",
+  "foot_contact_threshold_n": 1.0,
+  "summaries": {
+    "0.0": {
+      "trial_count": 10,
+      "mean_actual_vx": -5.755646338839143e-05,
+      "std_across_trials": 5.63076577315602e-06,
+      "periodic_liftoff_all_trials": false,
+      "periodic_trial_count": 0,
+      "any_nonparticipating_leg": true,
+      "reset_trials": 0,
+      "base_contact_trials": 0,
+      "nonfoot_contact_trials": 0,
+      "post_zero_stable_trials": 10,
+      "max_joint_velocity_radps": 0.07195237278938293,
+      "max_torque_nm": 7.351291179656982,
+      "max_delta_q_des": 0.2238219976425171,
+      "mean_contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "mean_contact_slip_mps": [
+        0.003378416830673814,
+        0.0006642690568696707,
+        0.008047694619745017,
+        0.009959269687533379
+      ]
+    },
+    "0.05": {
+      "trial_count": 10,
+      "mean_actual_vx": 0.0011550215798343088,
+      "std_across_trials": 4.0622858996415485e-06,
+      "periodic_liftoff_all_trials": false,
+      "periodic_trial_count": 0,
+      "any_nonparticipating_leg": true,
+      "reset_trials": 0,
+      "base_contact_trials": 0,
+      "nonfoot_contact_trials": 0,
+      "post_zero_stable_trials": 10,
+      "max_joint_velocity_radps": 0.21156169474124908,
+      "max_torque_nm": 8.024104118347168,
+      "max_delta_q_des": 0.2238219976425171,
+      "mean_contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "mean_contact_slip_mps": [
+        0.006568486522883177,
+        0.014089228305965661,
+        0.021282219514250755,
+        0.030816623382270335
+      ]
+    },
+    "0.1": {
+      "trial_count": 10,
+      "mean_actual_vx": 0.0020800922065925985,
+      "std_across_trials": 6.135433778298647e-06,
+      "periodic_liftoff_all_trials": false,
+      "periodic_trial_count": 0,
+      "any_nonparticipating_leg": true,
+      "reset_trials": 0,
+      "base_contact_trials": 0,
+      "nonfoot_contact_trials": 0,
+      "post_zero_stable_trials": 10,
+      "max_joint_velocity_radps": 0.6725283861160278,
+      "max_torque_nm": 8.4010591506958,
+      "max_delta_q_des": 0.2238219976425171,
+      "mean_contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "mean_contact_slip_mps": [
+        0.0345017921179533,
+        0.030266362056136132,
+        0.021880272403359415,
+        0.04956917464733124
+      ]
+    },
+    "0.2": {
+      "trial_count": 10,
+      "mean_actual_vx": 0.17083536396035923,
+      "std_across_trials": 0.002642216820147054,
+      "periodic_liftoff_all_trials": true,
+      "periodic_trial_count": 10,
+      "any_nonparticipating_leg": false,
+      "reset_trials": 0,
+      "base_contact_trials": 0,
+      "nonfoot_contact_trials": 0,
+      "post_zero_stable_trials": 10,
+      "max_joint_velocity_radps": 7.318937301635742,
+      "max_torque_nm": 9.032682418823242,
+      "max_delta_q_des": 0.2285064458847046,
+      "mean_contact_duty": [
+        0.9823999999999999,
+        0.9823999999999999,
+        0.7407999999999999,
+        0.7586
+      ],
+      "mean_contact_slip_mps": [
+        0.1145018383860588,
+        0.11724714338779449,
+        0.029416982270777225,
+        0.032632280886173246
+      ]
+    },
+    "0.4": {
+      "trial_count": 10,
+      "mean_actual_vx": 0.40765807521939273,
+      "std_across_trials": 0.00042635116182103357,
+      "periodic_liftoff_all_trials": true,
+      "periodic_trial_count": 10,
+      "any_nonparticipating_leg": false,
+      "reset_trials": 0,
+      "base_contact_trials": 0,
+      "nonfoot_contact_trials": 0,
+      "post_zero_stable_trials": 10,
+      "max_joint_velocity_radps": 8.368478775024414,
+      "max_torque_nm": 11.502602577209473,
+      "max_delta_q_des": 0.3733466863632202,
+      "mean_contact_duty": [
+        0.8196,
+        0.8257999999999999,
+        0.6454,
+        0.6563999999999999
+      ],
+      "mean_contact_slip_mps": [
+        0.10751596838235855,
+        0.1318189911544323,
+        0.04471915699541569,
+        0.045362182334065436
+      ]
+    }
+  },
+  "trials": [
+    {
+      "target_vx": 0.0,
+      "seed": 42,
+      "mean_vx_hold": -4.850662869102962e-05,
+      "std_vx_hold": 8.83938035679292e-05,
+      "mean_height_hold": 0.30466326683759687,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.0032749574165791273,
+        0.0010121951345354319,
+        0.008163475431501865,
+        0.010004257783293724
+      ],
+      "max_joint_velocity_radps": 0.06189484894275665,
+      "max_torque_nm": 7.351291179656982,
+      "max_delta_q_des": 0.22381901741027832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.568771985451652e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 43,
+      "mean_vx_hold": -5.5379867169904175e-05,
+      "std_vx_hold": 0.00010217858829243333,
+      "mean_height_hold": 0.30467655235528945,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.0033295259345322847,
+        0.0006038600113242865,
+        0.008149082772433758,
+        0.009994694031774998
+      ],
+      "max_joint_velocity_radps": 0.05859328806400299,
+      "max_torque_nm": 7.347085952758789,
+      "max_delta_q_des": 0.2238219976425171,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.562263705030394e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 44,
+      "mean_vx_hold": -4.7606274449208285e-05,
+      "std_vx_hold": 8.024307760593692e-05,
+      "mean_height_hold": 0.3046153951883316,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.003402166534215212,
+        0.0010456661693751812,
+        0.007971065118908882,
+        0.009908262640237808
+      ],
+      "max_joint_velocity_radps": 0.05566754937171936,
+      "max_torque_nm": 7.341523170471191,
+      "max_delta_q_des": 0.22367751598358154,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.6681553291467328e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 45,
+      "mean_vx_hold": -5.6531039517722094e-05,
+      "std_vx_hold": 0.00010388686876677755,
+      "mean_height_hold": 0.3046758235692978,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.003338522743433714,
+        0.0005815583863295615,
+        0.008147228509187698,
+        0.010007061995565891
+      ],
+      "max_joint_velocity_radps": 0.06022396683692932,
+      "max_torque_nm": 7.346764087677002,
+      "max_delta_q_des": 0.2238173484802246,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.7069110605613483e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 46,
+      "mean_vx_hold": -6.433578363612469e-05,
+      "std_vx_hold": 0.00012084952061628001,
+      "mean_height_hold": 0.3046379950642586,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.003448912175372243,
+        0.0005618099239654839,
+        0.007932864129543304,
+        0.00991407036781311
+      ],
+      "max_joint_velocity_radps": 0.05126121640205383,
+      "max_torque_nm": 7.342070579528809,
+      "max_delta_q_des": 0.2237166166305542,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.71149541347404e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 47,
+      "mean_vx_hold": -6.21089173018845e-05,
+      "std_vx_hold": 0.00011488093177294481,
+      "mean_height_hold": 0.30462202107906344,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.00347255845554173,
+        0.0006230074213817716,
+        0.00786605104804039,
+        0.009883081540465355
+      ],
+      "max_joint_velocity_radps": 0.07195237278938293,
+      "max_torque_nm": 7.338254451751709,
+      "max_delta_q_des": 0.22368013858795166,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.5014471397686672e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 48,
+      "mean_vx_hold": -6.03688845585566e-05,
+      "std_vx_hold": 0.00011303197212955049,
+      "mean_height_hold": 0.30466612631082535,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.0033847016748040915,
+        0.0005325830425135791,
+        0.008064989931881428,
+        0.009977747686207294
+      ],
+      "max_joint_velocity_radps": 0.055373892188072205,
+      "max_torque_nm": 7.345374584197998,
+      "max_delta_q_des": 0.2237858772277832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.6787840977485757e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 49,
+      "mean_vx_hold": -5.580929817733704e-05,
+      "std_vx_hold": 0.00010231057411517856,
+      "mean_height_hold": 0.30467750304937363,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.003326864680275321,
+        0.0006004961906000972,
+        0.008159883320331573,
+        0.009996435604989529
+      ],
+      "max_joint_velocity_radps": 0.06067529320716858,
+      "max_torque_nm": 7.347360610961914,
+      "max_delta_q_des": 0.2238215208053589,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.6092388274652574e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 50,
+      "mean_vx_hold": -6.093500594215584e-05,
+      "std_vx_hold": 0.00011400347114473831,
+      "mean_height_hold": 0.304664603471756,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.003375452011823654,
+        0.000532610050868243,
+        0.008060925640165806,
+        0.009981749579310417
+      ],
+      "max_joint_velocity_radps": 0.05380852520465851,
+      "max_torque_nm": 7.342945575714111,
+      "max_delta_q_des": 0.22378134727478027,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.6004685967345722e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.0,
+      "seed": 51,
+      "mean_vx_hold": -6.398293443999137e-05,
+      "std_vx_hold": 0.00012039806430360555,
+      "mean_height_hold": 0.30464380729198454,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.003430506680160761,
+        0.0005489042378030717,
+        0.007961380295455456,
+        0.00992533564567566
+      ],
+      "max_joint_velocity_radps": 0.050679802894592285,
+      "max_torque_nm": 7.343896389007568,
+      "max_delta_q_des": 0.22372984886169434,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 1.6242400027598097e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 42,
+      "mean_vx_hold": 0.001161977286070936,
+      "std_vx_hold": 0.004686739064055225,
+      "mean_height_hold": 0.3005005215406418,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006671241018921137,
+        0.015044310130178928,
+        0.021339915692806244,
+        0.030585072934627533
+      ],
+      "max_joint_velocity_radps": 0.20755288004875183,
+      "max_torque_nm": 8.018023490905762,
+      "max_delta_q_des": 0.22381901741027832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 9.327828975074226e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 43,
+      "mean_vx_hold": 0.001156539617171802,
+      "std_vx_hold": 0.004670660948666448,
+      "mean_height_hold": 0.30052970492839814,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.0066337320022284985,
+        0.014102322049438953,
+        0.021514352411031723,
+        0.030979527160525322
+      ],
+      "max_joint_velocity_radps": 0.20847590267658234,
+      "max_torque_nm": 8.017807006835938,
+      "max_delta_q_des": 0.2238219976425171,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00010908844638227795,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 44,
+      "mean_vx_hold": 0.0011611732974779443,
+      "std_vx_hold": 0.0046817789252054185,
+      "mean_height_hold": 0.3004696978330612,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006436916533857584,
+        0.014770924113690853,
+        0.021035637706518173,
+        0.030559780076146126
+      ],
+      "max_joint_velocity_radps": 0.20289459824562073,
+      "max_torque_nm": 8.024104118347168,
+      "max_delta_q_des": 0.22367751598358154,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 9.900232563571384e-05,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 45,
+      "mean_vx_hold": 0.0011565489920321852,
+      "std_vx_hold": 0.0046700685002471105,
+      "mean_height_hold": 0.3005324409008026,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006461930926889181,
+        0.013956006616353989,
+        0.021416690200567245,
+        0.03099707141518593
+      ],
+      "max_joint_velocity_radps": 0.20958907902240753,
+      "max_torque_nm": 8.01948356628418,
+      "max_delta_q_des": 0.2238173484802246,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00011515914326688895,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 46,
+      "mean_vx_hold": 0.0011500854181686008,
+      "std_vx_hold": 0.004666401668697835,
+      "mean_height_hold": 0.3005178549289703,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006603968795388937,
+        0.013863843865692616,
+        0.02112250216305256,
+        0.030943386256694794
+      ],
+      "max_joint_velocity_radps": 0.20412665605545044,
+      "max_torque_nm": 8.004937171936035,
+      "max_delta_q_des": 0.2237166166305542,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00011395160031194488,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 47,
+      "mean_vx_hold": 0.0011510527927675867,
+      "std_vx_hold": 0.004677294939417182,
+      "mean_height_hold": 0.300505431830883,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006598027888685465,
+        0.013846002519130707,
+        0.021076004952192307,
+        0.030706755816936493
+      ],
+      "max_joint_velocity_radps": 0.2051931917667389,
+      "max_torque_nm": 7.998743057250977,
+      "max_delta_q_des": 0.22368013858795166,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00011336780056202164,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 48,
+      "mean_vx_hold": 0.0011535495743255524,
+      "std_vx_hold": 0.004679522901911501,
+      "mean_height_hold": 0.3005326848626137,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006421716883778572,
+        0.013744033873081207,
+        0.02130717597901821,
+        0.03080694191157818
+      ],
+      "max_joint_velocity_radps": 0.2049761414527893,
+      "max_torque_nm": 8.003517150878906,
+      "max_delta_q_des": 0.2237858772277832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0001114969852642389,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 49,
+      "mean_vx_hold": 0.0011565253861335804,
+      "std_vx_hold": 0.0046746717503484275,
+      "mean_height_hold": 0.3005303140282631,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.00663409661501646,
+        0.014053529128432274,
+        0.02141912281513214,
+        0.030832650139927864
+      ],
+      "max_joint_velocity_radps": 0.21156169474124908,
+      "max_torque_nm": 8.021804809570312,
+      "max_delta_q_des": 0.2238215208053589,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00011150864912754817,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 50,
+      "mean_vx_hold": 0.0011526299888719223,
+      "std_vx_hold": 0.004677884981998229,
+      "mean_height_hold": 0.3005318322777748,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006616167724132538,
+        0.01367163099348545,
+        0.021349342539906502,
+        0.03094605728983879
+      ],
+      "max_joint_velocity_radps": 0.2076352834701538,
+      "max_torque_nm": 8.003735542297363,
+      "max_delta_q_des": 0.22378134727478027,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00011392439987200002,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.05,
+      "seed": 51,
+      "mean_vx_hold": 0.0011501334453229788,
+      "std_vx_hold": 0.004667523383103271,
+      "mean_height_hold": 0.30052073556184766,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.006607066839933395,
+        0.013839679770171642,
+        0.021241450682282448,
+        0.030808990821242332
+      ],
+      "max_joint_velocity_radps": 0.20408250391483307,
+      "max_torque_nm": 8.005399703979492,
+      "max_delta_q_des": 0.22372984886169434,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00011069414844617616,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 42,
+      "mean_vx_hold": 0.002093097927157942,
+      "std_vx_hold": 0.00773998193817721,
+      "mean_height_hold": 0.29541504245996475,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03376167267560959,
+        0.031203335151076317,
+        0.021807806566357613,
+        0.049422550946474075
+      ],
+      "max_joint_velocity_radps": 0.5256773829460144,
+      "max_torque_nm": 8.380183219909668,
+      "max_delta_q_des": 0.22381901741027832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.000132664360197244,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 43,
+      "mean_vx_hold": 0.0020789420567743945,
+      "std_vx_hold": 0.007769267447138861,
+      "mean_height_hold": 0.2954778042435646,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03294143080711365,
+        0.02993917278945446,
+        0.022468023002147675,
+        0.04989428445696831
+      ],
+      "max_joint_velocity_radps": 0.4580659866333008,
+      "max_torque_nm": 8.365772247314453,
+      "max_delta_q_des": 0.2238219976425171,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0001494774815121976,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 44,
+      "mean_vx_hold": 0.002085116261660005,
+      "std_vx_hold": 0.007763188504814489,
+      "mean_height_hold": 0.29541264283657076,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.034087132662534714,
+        0.03107992559671402,
+        0.022265244275331497,
+        0.0492543950676918
+      ],
+      "max_joint_velocity_radps": 0.48323118686676025,
+      "max_torque_nm": 8.362035751342773,
+      "max_delta_q_des": 0.22367751598358154,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00014528744834630438,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 45,
+      "mean_vx_hold": 0.0020777343941444995,
+      "std_vx_hold": 0.007653076894725086,
+      "mean_height_hold": 0.2954433997273445,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.0345047228038311,
+        0.03002442978322506,
+        0.02180369570851326,
+        0.04965607076883316
+      ],
+      "max_joint_velocity_radps": 0.5752387642860413,
+      "max_torque_nm": 8.4010591506958,
+      "max_delta_q_des": 0.2238173484802246,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0001390085275246141,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 46,
+      "mean_vx_hold": 0.0020822874020959715,
+      "std_vx_hold": 0.007694595949618752,
+      "mean_height_hold": 0.29542173665761945,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03487232327461243,
+        0.030103065073490143,
+        0.02150644175708294,
+        0.04927625134587288
+      ],
+      "max_joint_velocity_radps": 0.6005730032920837,
+      "max_torque_nm": 8.360142707824707,
+      "max_delta_q_des": 0.2237166166305542,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00014393378674867563,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 47,
+      "mean_vx_hold": 0.0020839792068873065,
+      "std_vx_hold": 0.007679397114933051,
+      "mean_height_hold": 0.2954348140358925,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03503214567899704,
+        0.03014974854886532,
+        0.021845776587724686,
+        0.04935627058148384
+      ],
+      "max_joint_velocity_radps": 0.5935548543930054,
+      "max_torque_nm": 8.344831466674805,
+      "max_delta_q_des": 0.22368013858795166,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00015060389957701167,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 48,
+      "mean_vx_hold": 0.0020757590041539514,
+      "std_vx_hold": 0.007721673846300312,
+      "mean_height_hold": 0.2954951567649841,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03430882468819618,
+        0.02977587841451168,
+        0.02228810451924801,
+        0.05018371343612671
+      ],
+      "max_joint_velocity_radps": 0.4466986656188965,
+      "max_torque_nm": 8.36322021484375,
+      "max_delta_q_des": 0.2237858772277832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00014556223436860212,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 49,
+      "mean_vx_hold": 0.0020752020562686086,
+      "std_vx_hold": 0.00768748592516525,
+      "mean_height_hold": 0.2954431416988373,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.034759823232889175,
+        0.030244633555412292,
+        0.021838467568159103,
+        0.0497807115316391
+      ],
+      "max_joint_velocity_radps": 0.6725283861160278,
+      "max_torque_nm": 8.38110065460205,
+      "max_delta_q_des": 0.2238215208053589,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0001399086857175765,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 50,
+      "mean_vx_hold": 0.002069513835973339,
+      "std_vx_hold": 0.007671412974301999,
+      "mean_height_hold": 0.2954271958470345,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03493225947022438,
+        0.029952101409435272,
+        0.021757179871201515,
+        0.04976749047636986
+      ],
+      "max_joint_velocity_radps": 0.649867832660675,
+      "max_torque_nm": 8.369208335876465,
+      "max_delta_q_des": 0.22378134727478027,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00014669810615790388,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.1,
+      "seed": 51,
+      "mean_vx_hold": 0.0020792899208099697,
+      "std_vx_hold": 0.007642763719818836,
+      "mean_height_hold": 0.2954013822078705,
+      "contact_duty": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "contact_transitions": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "periodic_liftoff_each_leg": false,
+      "long_term_nonparticipating_leg": true,
+      "mean_contact_slip_mps": [
+        0.03581758588552475,
+        0.03019133023917675,
+        0.021221984177827835,
+        0.049100007861852646
+      ],
+      "max_joint_velocity_radps": 0.5746898055076599,
+      "max_torque_nm": 8.349893569946289,
+      "max_delta_q_des": 0.22372984886169434,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00014811499006706677,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 42,
+      "mean_vx_hold": 0.17087076181918381,
+      "std_vx_hold": 0.03889734965062811,
+      "mean_height_hold": 0.29633306819200517,
+      "contact_duty": [
+        0.98,
+        0.986,
+        0.744,
+        0.754
+      ],
+      "contact_transitions": [
+        18,
+        14,
+        64,
+        63
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10997352004051208,
+        0.12109876424074173,
+        0.029387330636382103,
+        0.03361224755644798
+      ],
+      "max_joint_velocity_radps": 5.6644673347473145,
+      "max_torque_nm": 8.472555160522461,
+      "max_delta_q_des": 0.22381901741027832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0004871089071351283,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 43,
+      "mean_vx_hold": 0.16903625869564712,
+      "std_vx_hold": 0.04180051754263038,
+      "mean_height_hold": 0.29628689217567444,
+      "contact_duty": [
+        0.98,
+        0.984,
+        0.746,
+        0.766
+      ],
+      "contact_transitions": [
+        18,
+        16,
+        63,
+        62
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10751235485076904,
+        0.11960641294717789,
+        0.029169315472245216,
+        0.035621438175439835
+      ],
+      "max_joint_velocity_radps": 5.492685317993164,
+      "max_torque_nm": 8.606971740722656,
+      "max_delta_q_des": 0.2238219976425171,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0008770403003048462,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 44,
+      "mean_vx_hold": 0.16790720041375606,
+      "std_vx_hold": 0.044455094216947946,
+      "mean_height_hold": 0.2961446016430855,
+      "contact_duty": [
+        0.986,
+        0.976,
+        0.746,
+        0.758
+      ],
+      "contact_transitions": [
+        12,
+        22,
+        62,
+        62
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.11949554830789566,
+        0.10195592790842056,
+        0.028149185702204704,
+        0.02996971271932125
+      ],
+      "max_joint_velocity_radps": 5.646875858306885,
+      "max_torque_nm": 9.032682418823242,
+      "max_delta_q_des": 0.22367751598358154,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0006757706182543189,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 45,
+      "mean_vx_hold": 0.17450550169497728,
+      "std_vx_hold": 0.030076041939841185,
+      "mean_height_hold": 0.2963967007398605,
+      "contact_duty": [
+        0.982,
+        0.984,
+        0.728,
+        0.76
+      ],
+      "contact_transitions": [
+        16,
+        16,
+        66,
+        63
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.12000273168087006,
+        0.12328268587589264,
+        0.032423730939626694,
+        0.03466801345348358
+      ],
+      "max_joint_velocity_radps": 6.479371547698975,
+      "max_torque_nm": 8.566564559936523,
+      "max_delta_q_des": 0.2238173484802246,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0003404949502146337,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 46,
+      "mean_vx_hold": 0.1740426001921296,
+      "std_vx_hold": 0.03065608547054335,
+      "mean_height_hold": 0.29635355532169344,
+      "contact_duty": [
+        0.98,
+        0.982,
+        0.728,
+        0.756
+      ],
+      "contact_transitions": [
+        18,
+        16,
+        66,
+        62
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.11129079014062881,
+        0.1191180944442749,
+        0.03003155067563057,
+        0.03193637356162071
+      ],
+      "max_joint_velocity_radps": 5.9149861335754395,
+      "max_torque_nm": 8.488819122314453,
+      "max_delta_q_des": 0.2285064458847046,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00022597563064967593,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 47,
+      "mean_vx_hold": 0.1722449117973447,
+      "std_vx_hold": 0.036170316248809266,
+      "mean_height_hold": 0.29634741801023484,
+      "contact_duty": [
+        0.982,
+        0.984,
+        0.74,
+        0.754
+      ],
+      "contact_transitions": [
+        16,
+        14,
+        64,
+        64
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.1158689484000206,
+        0.11963022500276566,
+        0.029292766004800797,
+        0.0318913534283638
+      ],
+      "max_joint_velocity_radps": 6.171316146850586,
+      "max_torque_nm": 8.737464904785156,
+      "max_delta_q_des": 0.22368013858795166,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0005383126394735882,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 48,
+      "mean_vx_hold": 0.1670104715619236,
+      "std_vx_hold": 0.04482493313694366,
+      "mean_height_hold": 0.2962905048131943,
+      "contact_duty": [
+        0.986,
+        0.98,
+        0.752,
+        0.762
+      ],
+      "contact_transitions": [
+        12,
+        16,
+        62,
+        61
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.11749225109815598,
+        0.10981090366840363,
+        0.027366582304239273,
+        0.03135358914732933
+      ],
+      "max_joint_velocity_radps": 5.831179618835449,
+      "max_torque_nm": 8.773338317871094,
+      "max_delta_q_des": 0.2237858772277832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0005164244919736423,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 49,
+      "mean_vx_hold": 0.1687998341731727,
+      "std_vx_hold": 0.042525230396610075,
+      "mean_height_hold": 0.2962200285792351,
+      "contact_duty": [
+        0.98,
+        0.986,
+        0.746,
+        0.758
+      ],
+      "contact_transitions": [
+        20,
+        14,
+        64,
+        62
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10768546164035797,
+        0.12561464309692383,
+        0.02948022074997425,
+        0.030150434002280235
+      ],
+      "max_joint_velocity_radps": 5.383869171142578,
+      "max_torque_nm": 8.559632301330566,
+      "max_delta_q_des": 0.2238215208053589,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00024319327157475831,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 50,
+      "mean_vx_hold": 0.1696315259952098,
+      "std_vx_hold": 0.04111216139996306,
+      "mean_height_hold": 0.2962790933251381,
+      "contact_duty": [
+        0.988,
+        0.982,
+        0.742,
+        0.76
+      ],
+      "contact_transitions": [
+        10,
+        18,
+        64,
+        62
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.12374967336654663,
+        0.11733721196651459,
+        0.02606838382780552,
+        0.031777411699295044
+      ],
+      "max_joint_velocity_radps": 5.575680732727051,
+      "max_torque_nm": 8.698511123657227,
+      "max_delta_q_des": 0.22378134727478027,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00034650592921631564,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.2,
+      "seed": 51,
+      "mean_vx_hold": 0.1743045732602477,
+      "std_vx_hold": 0.031195445086154225,
+      "mean_height_hold": 0.29643372070789337,
+      "contact_duty": [
+        0.98,
+        0.98,
+        0.736,
+        0.758
+      ],
+      "contact_transitions": [
+        18,
+        20,
+        66,
+        64
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.11194710433483124,
+        0.11501656472682953,
+        0.03280075639486313,
+        0.03534223511815071
+      ],
+      "max_joint_velocity_radps": 7.318937301635742,
+      "max_torque_nm": 8.554499626159668,
+      "max_delta_q_des": 0.22372984886169434,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0007012334552246102,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 42,
+      "mean_vx_hold": 0.4076541127562523,
+      "std_vx_hold": 0.022339459247774033,
+      "mean_height_hold": 0.29696664261817934,
+      "contact_duty": [
+        0.822,
+        0.822,
+        0.648,
+        0.656
+      ],
+      "contact_transitions": [
+        80,
+        79,
+        81,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.11120878159999847,
+        0.1286374181509018,
+        0.048428043723106384,
+        0.04395954683423042
+      ],
+      "max_joint_velocity_radps": 7.686400413513184,
+      "max_torque_nm": 11.502602577209473,
+      "max_delta_q_des": 0.2848532199859619,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0017404613705972831,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 43,
+      "mean_vx_hold": 0.4079511649310589,
+      "std_vx_hold": 0.02085282705103922,
+      "mean_height_hold": 0.2969878267645836,
+      "contact_duty": [
+        0.818,
+        0.826,
+        0.646,
+        0.658
+      ],
+      "contact_transitions": [
+        80,
+        78,
+        81,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10535804182291031,
+        0.13039661943912506,
+        0.04479838162660599,
+        0.04759236425161362
+      ],
+      "max_joint_velocity_radps": 7.556241989135742,
+      "max_torque_nm": 11.326128959655762,
+      "max_delta_q_des": 0.30052340030670166,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.009110900973901152,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 44,
+      "mean_vx_hold": 0.4071506890952587,
+      "std_vx_hold": 0.021460727956644735,
+      "mean_height_hold": 0.2969519994854927,
+      "contact_duty": [
+        0.82,
+        0.822,
+        0.644,
+        0.654
+      ],
+      "contact_transitions": [
+        80,
+        79,
+        81,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10736904293298721,
+        0.12844860553741455,
+        0.04516218975186348,
+        0.04085236415266991
+      ],
+      "max_joint_velocity_radps": 8.166471481323242,
+      "max_torque_nm": 11.01019287109375,
+      "max_delta_q_des": 0.29531586170196533,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0012129255834346015,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 45,
+      "mean_vx_hold": 0.4069196644723415,
+      "std_vx_hold": 0.022345839154525402,
+      "mean_height_hold": 0.2969892879724503,
+      "contact_duty": [
+        0.83,
+        0.83,
+        0.644,
+        0.666
+      ],
+      "contact_transitions": [
+        80,
+        80,
+        82,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.12816861271858215,
+        0.1443943828344345,
+        0.04066156968474388,
+        0.041366737335920334
+      ],
+      "max_joint_velocity_radps": 7.1960978507995605,
+      "max_torque_nm": 10.281062126159668,
+      "max_delta_q_des": 0.2921966314315796,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0007701618267068019,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 46,
+      "mean_vx_hold": 0.4071960743665695,
+      "std_vx_hold": 0.020464963681523694,
+      "mean_height_hold": 0.29693940436840055,
+      "contact_duty": [
+        0.816,
+        0.832,
+        0.642,
+        0.658
+      ],
+      "contact_transitions": [
+        80,
+        79,
+        81,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10190174728631973,
+        0.1380748748779297,
+        0.040392473340034485,
+        0.04450969025492668
+      ],
+      "max_joint_velocity_radps": 7.765745162963867,
+      "max_torque_nm": 10.692991256713867,
+      "max_delta_q_des": 0.29598498344421387,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.001738512294832617,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 47,
+      "mean_vx_hold": 0.40764325168728827,
+      "std_vx_hold": 0.021523792541429918,
+      "mean_height_hold": 0.29696769958734515,
+      "contact_duty": [
+        0.826,
+        0.824,
+        0.642,
+        0.658
+      ],
+      "contact_transitions": [
+        80,
+        80,
+        80,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.11603161692619324,
+        0.13208281993865967,
+        0.044842056930065155,
+        0.04643240571022034
+      ],
+      "max_joint_velocity_radps": 7.161612510681152,
+      "max_torque_nm": 10.561635971069336,
+      "max_delta_q_des": 0.2961735725402832,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0016413515744109948,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 48,
+      "mean_vx_hold": 0.4076280436813831,
+      "std_vx_hold": 0.019668127513942292,
+      "mean_height_hold": 0.29699186915159226,
+      "contact_duty": [
+        0.822,
+        0.834,
+        0.646,
+        0.658
+      ],
+      "contact_transitions": [
+        80,
+        80,
+        81,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.1128668487071991,
+        0.15116077661514282,
+        0.04094383120536804,
+        0.04277646541595459
+      ],
+      "max_joint_velocity_radps": 7.052525997161865,
+      "max_torque_nm": 10.99989128112793,
+      "max_delta_q_des": 0.3733466863632202,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0020747374913965663,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 49,
+      "mean_vx_hold": 0.40816450414061545,
+      "std_vx_hold": 0.02192616599373189,
+      "mean_height_hold": 0.29697684848308564,
+      "contact_duty": [
+        0.808,
+        0.818,
+        0.646,
+        0.648
+      ],
+      "contact_transitions": [
+        80,
+        78,
+        80,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.08269740641117096,
+        0.11508853733539581,
+        0.04659144952893257,
+        0.04988143593072891
+      ],
+      "max_joint_velocity_radps": 8.043652534484863,
+      "max_torque_nm": 11.340710639953613,
+      "max_delta_q_des": 0.2877262830734253,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.0045547534028689066,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 50,
+      "mean_vx_hold": 0.408129874587059,
+      "std_vx_hold": 0.019914337555452518,
+      "mean_height_hold": 0.29696295326948163,
+      "contact_duty": [
+        0.818,
+        0.824,
+        0.648,
+        0.654
+      ],
+      "contact_transitions": [
+        80,
+        78,
+        80,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10511017590761185,
+        0.127462700009346,
+        0.045257702469825745,
+        0.04827556386590004
+      ],
+      "max_joint_velocity_radps": 7.04979944229126,
+      "max_torque_nm": 10.987290382385254,
+      "max_delta_q_des": 0.3726276159286499,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00865636270493269,
+      "post_zero_stable": true
+    },
+    {
+      "target_vx": 0.4,
+      "seed": 51,
+      "mean_vx_hold": 0.40814337247610094,
+      "std_vx_hold": 0.021832550594268182,
+      "mean_height_hold": 0.2969567057490349,
+      "contact_duty": [
+        0.816,
+        0.826,
+        0.648,
+        0.654
+      ],
+      "contact_transitions": [
+        80,
+        78,
+        80,
+        80
+      ],
+      "periodic_liftoff_each_leg": true,
+      "long_term_nonparticipating_leg": false,
+      "mean_contact_slip_mps": [
+        0.10444740951061249,
+        0.12244317680597305,
+        0.050113871693611145,
+        0.04797524958848953
+      ],
+      "max_joint_velocity_radps": 8.368478775024414,
+      "max_torque_nm": 11.317090034484863,
+      "max_delta_q_des": 0.27633416652679443,
+      "reset_count": 0,
+      "base_contact_frames": 0,
+      "nonfoot_contact_frames": 0,
+      "post_zero_mean_abs_vx": 0.00964070349931717,
+      "post_zero_stable": true
+    }
+  ]
+}

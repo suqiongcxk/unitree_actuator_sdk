@@ -17,6 +17,13 @@ import tty
 from dataclasses import dataclass
 
 
+MIN_VX_SPEED = 0.5   # 前进/后退最低速度，m/s
+MIN_VY_SPEED = 0.3   # 左右平移最低速度，m/s
+MIN_YAW_SPEED = 0.5  # 左右转最低角速度，rad/s
+MAX_SPEED = 1.0
+SPEED_STEP = 0.1
+
+
 @dataclass
 class VelocityState:
     vx: float = 0.0
@@ -90,15 +97,15 @@ def apply_speed_key(key: str, settings: SpeedSettings,
                     state: VelocityState) -> bool:
     """以0.1为步长调整速度幅值，并同步当前激活轴。"""
     if key in ("+", "="):
-        settings.vx = min(1.0, round(settings.vx + 0.1, 2))
-        settings.vy = min(1.0, round(settings.vy + 0.1, 2))
+        settings.vx = min(MAX_SPEED, round(settings.vx + SPEED_STEP, 2))
+        settings.vy = min(MAX_SPEED, round(settings.vy + SPEED_STEP, 2))
     elif key in ("-", "_"):
-        settings.vx = max(0.1, round(settings.vx - 0.1, 2))
-        settings.vy = max(0.1, round(settings.vy - 0.1, 2))
+        settings.vx = max(MIN_VX_SPEED, round(settings.vx - SPEED_STEP, 2))
+        settings.vy = max(MIN_VY_SPEED, round(settings.vy - SPEED_STEP, 2))
     elif key == "]":
-        settings.yaw = min(1.0, round(settings.yaw + 0.1, 2))
+        settings.yaw = min(MAX_SPEED, round(settings.yaw + SPEED_STEP, 2))
     elif key == "[":
-        settings.yaw = max(0.1, round(settings.yaw - 0.1, 2))
+        settings.yaw = max(MIN_YAW_SPEED, round(settings.yaw - SPEED_STEP, 2))
     else:
         return False
 
@@ -135,12 +142,12 @@ def write_fifo_no_create(path: str, command: str) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="WASDQE 四足机器人速度控制台")
     parser.add_argument("--fifo", default="/tmp/creeper_velocity_command.fifo")
-    parser.add_argument("--vx", type=float, default=0.30,
-                        help="W/S 前后速度幅值 m/s (默认: 0.30)")
-    parser.add_argument("--vy", type=float, default=0.20,
-                        help="A/D 侧向速度幅值 m/s (默认: 0.20)")
-    parser.add_argument("--yaw", type=float, default=0.40,
-                        help="Q/E 偏航角速度幅值 rad/s (默认: 0.40)")
+    parser.add_argument("--vx", type=float, default=MIN_VX_SPEED,
+                        help="W/S 前后速度幅值 m/s (范围: 0.50~1.00，默认: 0.50)")
+    parser.add_argument("--vy", type=float, default=MIN_VY_SPEED,
+                        help="A/D 侧向速度幅值 m/s (范围: 0.30~1.00，默认: 0.30)")
+    parser.add_argument("--yaw", type=float, default=MIN_YAW_SPEED,
+                        help="Q/E 偏航角速度 rad/s (范围: 0.50~1.00，默认: 0.50)")
     parser.add_argument("--refresh-ms", type=int, default=100,
                         help="命令刷新周期 ms (默认: 100)")
     parser.add_argument("--deadman-ms", type=int, default=650,
@@ -151,9 +158,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     settings = SpeedSettings(args.vx, args.vy, args.yaw)
-    if any(not (0.0 < value <= 1.0)
-           for value in (settings.vx, settings.vy, settings.yaw)):
-        print("错误: --vx/--vy/--yaw 必须在 (0, 1] 内。", file=sys.stderr)
+    if not (MIN_VX_SPEED <= settings.vx <= MAX_SPEED):
+        print("错误: --vx 必须在 [0.50, 1.00] m/s 内。", file=sys.stderr)
+        return 2
+    if not (MIN_VY_SPEED <= settings.vy <= MAX_SPEED):
+        print("错误: --vy 必须在 [0.30, 1.00] m/s 内。", file=sys.stderr)
+        return 2
+    if not (MIN_YAW_SPEED <= settings.yaw <= MAX_SPEED):
+        print("错误: --yaw 必须在 [0.50, 1.00] rad/s 内。", file=sys.stderr)
         return 2
     if not (20 <= args.refresh_ms <= 400):
         print("错误: --refresh-ms 必须在 [20, 400] ms 内。", file=sys.stderr)

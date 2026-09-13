@@ -229,6 +229,9 @@ bool RobotController::initialize()
         // 不允许进入机械限位标定和站立过渡。
         std::cout << "[RobotController] *** MONITOR ONLY: 跳过机械标定和站立 ***"
                   << std::endl;
+        std::cout << "[RobotController] 注意: 未建立机械零点，关节状态为占位值；"
+                     "本模式只能验证通信/线程/推理存活，不能验收策略 observation"
+                  << std::endl;
     } else if (!runCalibrationSequence()) {
         std::cerr << "[RobotController] 错误: 标定失败, 禁止进入控制模式" << std::endl;
         startup_phase_ = StartupPhase::FAULT;

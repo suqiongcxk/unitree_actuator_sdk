@@ -6,6 +6,28 @@
 - `LINEAR_KF_ESTIMATOR.md`：Linear KF接口、坐标系和验证说明。
 - `LOW_SPEED_POLICY_RETRAINING_SPEC.md`：新低速策略的训练端审计与部署门槛。
 - `URDF_20260906_MIGRATION.md`：新旧 URDF 差异、代码同步范围与复查结果。
+- `MODEL_950_DEPLOYMENT_VALIDATION.md`：model_950 交付物、数值对拍和实机准入结论。
+
+
+请为新策略模型提供一个独立的版本化交付目录，包含：
+
+1. creeper_model_<版本号>_actor.onnx
+2. creeper_model_<版本号>_actor.onnx.sha256
+3. model_<版本号>.pt
+4. policy_golden_vectors.json
+5. deployment_manifest.json
+6. simulation_report.md
+
+要求：
+- ONNX输入严格为 float32 [1,48]，名称为 obs；
+- ONNX输出严格为 float32 [1,12]，名称为 actions；
+- golden vectors 至少包含100个连续帧；
+- 每帧包含完整48维 observation、12维Actor原始输出和12维q_des；
+- golden vectors 必须包含 previous_raw_action 的连续递归关系；
+- manifest记录模型版本、checkpoint SHA256、ONNX SHA256、Git提交、
+  URDF SHA256、opset、策略频率、default pose和action_scale；
+- simulation report至少报告零速度站立、前进、后退、左右平移、
+  左右转向测试，以及NaN、跌倒、非法接触和电机错误统计。
 
 系统长期有效的数据流契约保留在`robot_control/DATA_FLOW.md`，避免与阶段性调试记录混放。
 终端 1：启动机器人控制程序
@@ -14,7 +36,7 @@
 cd /home/orangepi/unitree_actuator_sdk
 
 sudo ./build/robot_control \
-  --onnx robot_control/creeper_flat_model_700_actor.onnx \
+  --onnx model_deliveries/model_950/creeper_model_950_actor.onnx \
   --log \
   --log-file /tmp/keyboard_walk_test.csv \
   2>&1 | tee -i /tmp/keyboard_walk_test.log
@@ -28,15 +50,15 @@ sudo ./build/robot_control \
 cd /home/orangepi/unitree_actuator_sdk
 
 python3 robot_control/keyboard_velocity_console.py \
-  --vx 0.30 \
-  --vy 0.20 \
-  --yaw 0.40
+  --vx 0.50 \
+  --vy 0.30 \
+  --yaw 0.50
 ```
 
 操作：
 
 - `W/S/A/D/Q/E`：运动
-- `+/-`：调整平移速度
-- `]/[`：调整转向速度
+- `+/-`：以 0.1 m/s 调整前后与平移速度；最低分别为 0.5/0.3 m/s
+- `]/[`：以 0.1 rad/s 调整转向速度；最低为 0.5 rad/s
 - `空格`：平滑回零
 - `X` 或 `Ctrl+C`：安全停机

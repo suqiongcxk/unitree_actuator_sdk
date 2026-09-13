@@ -28,9 +28,16 @@ def value(row, name):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print(f"用法: {sys.argv[0]} /tmp/step6_real_policy.csv")
+    if len(sys.argv) not in (2, 3):
+        print(f"用法: {sys.argv[0]} /tmp/step6_real_policy.csv [smooth_takeover_frames]")
         return 2
+
+    try:
+        takeover_frames = 0 if len(sys.argv) == 2 else int(sys.argv[2])
+        if takeover_frames < 0:
+            raise ValueError
+    except ValueError:
+        return fail("smooth_takeover_frames 必须是非负整数")
 
     try:
         with open(sys.argv[1], newline="", encoding="utf-8") as stream:
@@ -45,6 +52,7 @@ def main():
         "av_x", "av_y", "av_z", "pg_x", "pg_y", "pg_z",
         *(f"j{i}_pos" for i in range(12)),
         *(f"j{i}_vel" for i in range(12)),
+        *(f"j{i}_tau" for i in range(12)),
         *(f"obs{i}" for i in range(48)),
         *(f"raw_action{i}" for i in range(12)),
         *(f"tgt{i}" for i in range(12)),
@@ -71,6 +79,7 @@ def main():
 
     try:
         previous_timestamp = -1
+        joint_feedback_peak = 0.0
         for frame, row in enumerate(rows):
             timestamp = int(row["timestamp_ns"])
             if timestamp <= previous_timestamp:
@@ -94,6 +103,12 @@ def main():
                     peaks["zero_velocity_command"], abs(value(row, f"obs{9 + axis}")))
 
             for joint in range(12):
+                joint_feedback_peak = max(
+                    joint_feedback_peak,
+                    abs(value(row, f"j{joint}_pos")),
+                    abs(value(row, f"j{joint}_vel")),
+                    abs(value(row, f"j{joint}_tau")),
+                )
                 peaks["relative_joint_position"] = max(
                     peaks["relative_joint_position"],
                     abs(value(row, f"obs{12 + joint}")
@@ -108,15 +123,25 @@ def main():
                     peaks["previous_raw_action"],
                     abs(value(row, f"obs{36 + joint}") - expected_history))
 
-                expected_target = (DEFAULT_POSE[joint]
-                                   + ACTION_SCALE * value(row, f"raw_action{joint}"))
-                peaks["target_formula"] = max(
-                    peaks["target_formula"],
-                    abs(value(row, f"tgt{joint}") - expected_target))
+                # SmoothTakeover 期间 tgt 是默认站姿与 Actor 目标的
+                # smoothstep 混合值，只在接管完成后检查 Actor 目标公式。
+                if frame >= takeover_frames:
+                    expected_target = (DEFAULT_POSE[joint]
+                                       + ACTION_SCALE * value(row, f"raw_action{joint}"))
+                    peaks["target_formula"] = max(
+                        peaks["target_formula"],
+                        abs(value(row, f"tgt{joint}") - expected_target))
     except (KeyError, ValueError) as error:
         return fail(str(error))
 
-    print(f"[Step6] frames={len(rows)}, action_scale={ACTION_SCALE}")
+    # monitor-only 跳过机械零点标定时，当前控制器会发布全零关节占位值。
+    # 这种日志只能验证线程/推理存活，不能证明真实 policy observation 正确。
+    if joint_feedback_peak <= 1.0e-9:
+        return fail("12关节位置/速度/力矩全程为零；疑似未标定占位数据，"
+                    "不能用于实机 observation 验收")
+
+    print(f"[Step6] frames={len(rows)}, action_scale={ACTION_SCALE}, "
+          f"smooth_takeover_frames={takeover_frames}")
     for name, peak in peaks.items():
         print(f"  {name:28s} max_abs={peak:.3e}")
     bad = {name: peak for name, peak in peaks.items() if peak > TOLERANCE}

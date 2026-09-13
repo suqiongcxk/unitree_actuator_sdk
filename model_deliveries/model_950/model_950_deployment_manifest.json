@@ -1,0 +1,81 @@
+{
+  "overall_status": "FAIL_FOR_ACTUATED_HARDWARE",
+  "allowed_stage": "dry-run",
+  "checkpoint": {
+    "path": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v5/2026-09-11_11-47-06_scratch_seed42_balanced_commands_contact_safe/model_950.pt",
+    "sha256": "df9eb646aa3fbde7b60a4f7f7aed2ffd4d2f07a0681988f7d040161c967bb5ec",
+    "iteration": 950,
+    "restored_from_real_training_configuration": true
+  },
+  "actor": {
+    "class": "ActorCritic",
+    "network": "48-128-128-128-12",
+    "activation": "ELU",
+    "output_activation": "none",
+    "recurrent": false,
+    "observation_normalizer": "Identity",
+    "exported_semantics": "deterministic actor mean"
+  },
+  "onnx": {
+    "path": "creeper_model_950_actor.onnx",
+    "sha256": "6a3bb260138a2d4e813cafd47624ad883a601d3666fce3feec3a506ac7b4aab8",
+    "opset": 18,
+    "input": {"name": "obs", "dtype": "float32", "shape": [1, 48], "dynamic": false},
+    "output": {"name": "actions", "dtype": "float32", "shape": [1, 12], "dynamic": false},
+    "cpu_execution_provider": "passed"
+  },
+  "interface": {
+    "joint_order": ["FL_hip_joint", "FR_hip_joint", "RL_hip_joint", "RR_hip_joint", "FL_thigh_joint", "FR_thigh_joint", "RL_thigh_joint", "RR_thigh_joint", "FL_calf_joint", "FR_calf_joint", "RL_calf_joint", "RR_calf_joint"],
+    "default_joint_position": [0.1, -0.1, 0.1, -0.1, 0.8, 0.8, 1.0, 1.0, -1.5, -1.5, -1.5, -1.5],
+    "observation_size": 48,
+    "action_size": 12,
+    "action_scale": 0.25,
+    "q_des_formula": "default_joint_position + float32(0.25) * raw_action",
+    "policy_frequency_hz": 50,
+    "physics_dt_s": 0.005,
+    "decimation": 4,
+    "policy_dt_s": 0.02,
+    "gear_ratio_applied": false
+  },
+  "asset": {
+    "name": "Creeper20260906",
+    "urdf": "/root/gpufree-data/Creeper20260906/urdf/Creeper20260906.urdf",
+    "urdf_sha256": "37ff462cfe9a9c353fa3bb0befc1cda09372f63837fafc30aba96adb04c9ebf0",
+    "runtime_usd": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/Creeper20260906.usd",
+    "runtime_usd_sha256": "c25ba016bba0107b7d2d356dd7d6bda41bd26cc972eba3a4616b0bc1547d7289",
+    "runtime_mass_kg": 11.932221412658691,
+    "source_provenance": "converter config points to the verified URDF; saved V5 env.yaml points to this USD"
+  },
+  "verification": {
+    "random_observations": 1000,
+    "random_max_abs_error": 9.5367431640625e-7,
+    "random_mean_abs_error": 6.998416068881852e-8,
+    "random_max_relative_error": 0.0015215271851047873,
+    "continuous_rollout_frames": 100,
+    "rollout_max_abs_error": 7.152557373046875e-7,
+    "first_previous_action_max_abs": 0.0,
+    "history_vs_previous_pytorch_max_abs_error": 0.0,
+    "observation_segment_max_abs_error": 0.0,
+    "q_des_formula_max_abs_error": 0.0,
+    "joint_limit_violations": 0,
+    "max_delta_q_des_rad_per_frame": 0.3733466863632202,
+    "hardware_jump_threshold_rad_per_frame": 0.1,
+    "hardware_jump_gate": "FAIL"
+  },
+  "behavior": {
+    "seeds": [42, 43, 44, 45, 46, 47, 48, 49, 50, 51],
+    "vx_0p00": "stable standing, no periodic gait",
+    "vx_0p05": "no locomotion gait; mean vx 0.001155 m/s",
+    "vx_0p10": "no locomotion gait; mean vx 0.002080 m/s",
+    "vx_0p20": "10/10 periodic four-leg participation; mean vx 0.170835 m/s",
+    "vx_0p40": "10/10 periodic four-leg participation; mean vx 0.407658 m/s",
+    "reset_trials": 0,
+    "base_contact_trials": 0,
+    "nonfoot_contact_trials": 0,
+    "post_zero_stable_trials": 50
+  },
+  "blocking_reasons": [
+    "single-frame q_des changes exceed the 0.10 rad hardware safety threshold",
+    "0.05 and 0.10 m/s do not produce locomotion, so deployment must enforce the documented 0.2 m/s translation deadzone"
+  ]
+}
