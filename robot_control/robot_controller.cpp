@@ -144,6 +144,10 @@ RobotControlConfig RobotController::getDefaultConfig()
     c.nn_hz         = 50;
     c.default_kp    = 0.625f;
     c.default_kd    = 0.0125f;
+#ifdef DEFAULT_ONNX_MODEL_PATH
+    // 由CMake注入当前源码树中的版本化模型绝对路径，避免启动目录影响默认模型。
+    c.onnx_model_path = DEFAULT_ONNX_MODEL_PATH;
+#endif
 
     // 4 路 RS-485 总线, 每路 3 个电机 (hip / thigh / lower_leg)
     c.buses = {
@@ -296,7 +300,7 @@ bool RobotController::initialize()
                 onnx_active = true;
             }
         } else {
-            // ──── StandingPolicy 模式 (默认) ────
+            // ──── 显式 StandingPolicy 回退模式 ────
             policy = std::make_unique<StandingPolicy>(
                 config_.default_standing_pose, config_.default_kp, config_.default_kd);
             std::cout << "[RobotController] 使用 StandingPolicy (无 ONNX 模型)" << std::endl;

@@ -12,8 +12,10 @@ Checkpoint: model_1299.pt
 Checkpoint SHA256: 4285d2262ed122da182bba8e0790a8c477f11ad31940ad2fb1d502721da3a7cd
 ```
 
-旧 `model_950` 与 `model_700` 均保留，未覆盖或删除。运行时必须显式传入上面的
-版本化 ONNX 路径；未传 `--onnx` 时仍使用 `StandingPolicy`。
+旧 `model_950` 与 `model_700` 均保留，未覆盖或删除。自2026-09-24起，上面的
+版本化ONNX路径已设为 `robot_control` 默认模型；`--onnx <path>` 可覆盖默认模型，
+`--standing-policy` 可显式回退StandingPolicy。`--step7-diagnostics` 仍自动使用
+StandingPolicy，不改变原有诊断语义。
 
 ## 接口核对
 

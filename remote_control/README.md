@@ -21,8 +21,8 @@ UART TX/RX连接外置CH340，再由CH340的USB连接RK3588。
 该链路只负责传递速度目标和安全指令。ESP32/串口线程不得直接控制电机，指令必须
 进入现有 `VelocityCommandManager -> Safety Manager -> NN Policy`。
 
-当前状态：已冻结 Protocol V1 并建立配置模板，尚未实现或接入 `robot_control`，
-不会访问串口或驱动电机。
+当前状态：已冻结 Protocol V1，并实现纯内存编解码器和流解析器；尚未打开真实串口，
+也未接入 `robot_control`，不会访问或驱动电机。
 
 ## 硬件注意事项
 
@@ -37,6 +37,15 @@ UART TX/RX连接外置CH340，再由CH340的USB连接RK3588。
 
 - `docs/SERIAL_PROTOCOL_V1.md`：已冻结的串口帧、命令、状态和安全语义；
 - `config/serial_remote.conf.example`：RK3588 端建议配置。
+- `include/serial_protocol_v1.hpp`、`src/serial_protocol_v1.cpp`：纯协议实现；
+- `tests/test_serial_protocol_v1.cpp`：拆包、粘包、噪声、CRC与序号测试。
+
+纯软件测试：
+
+```bash
+cmake --build build --target test_serial_protocol_v1 -j2
+./build/test_serial_protocol_v1
+```
 
 硬件接入后先执行只读识别：
 

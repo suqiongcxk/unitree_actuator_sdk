@@ -155,6 +155,20 @@ add_executable(test_velocity_command_manager
     robot_control/tests/test_velocity_command_manager.cpp)
 target_link_libraries(test_velocity_command_manager velocity_command_manager)
 
+# ESP32-S3串口遥控Protocol V1纯软件编解码与流解析测试。
+# 该目标不打开串口、不访问GPIO或电机。
+add_library(serial_protocol_v1
+    remote_control/src/serial_protocol_v1.cpp)
+target_include_directories(serial_protocol_v1 PUBLIC remote_control/include)
+set_target_properties(serial_protocol_v1 PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+add_executable(test_serial_protocol_v1
+    remote_control/tests/test_serial_protocol_v1.cpp)
+target_link_libraries(test_serial_protocol_v1 serial_protocol_v1)
+set_target_properties(test_serial_protocol_v1 PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
 # 按需构建：cmake --build build --target test_double_buffer_tsan
 add_executable(test_double_buffer_tsan EXCLUDE_FROM_ALL
     robot_control/tests/test_double_buffer.cpp)
@@ -296,7 +310,9 @@ if(ONNX_FOUND)
     target_include_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/include")
     target_link_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/lib")
     target_link_libraries(robot_control onnxruntime)
-    target_compile_definitions(robot_control PRIVATE ONNXRUNTIME_AVAILABLE)
+    target_compile_definitions(robot_control PRIVATE
+        ONNXRUNTIME_AVAILABLE
+        DEFAULT_ONNX_MODEL_PATH="${CMAKE_SOURCE_DIR}/model_deliveries/model_0922_candidate/creeper_v30_model1299/creeper_model_v30_model1299_actor.onnx")
     # 设置 rpath 让可执行文件在运行时找到 .so
     set_target_properties(robot_control PROPERTIES
         INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"
