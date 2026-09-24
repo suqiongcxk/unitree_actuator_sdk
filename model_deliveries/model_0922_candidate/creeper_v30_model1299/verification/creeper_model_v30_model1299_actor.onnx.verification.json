@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "checkpoint": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v30/2026-09-22_13-09-59_calf_tail_w0p05_from_v29_1050/model_1299.pt",
+  "checkpoint_sha256": "4285d2262ed122da182bba8e0790a8c477f11ad31940ad2fb1d502721da3a7cd",
+  "onnx": "/root/gpufree-data/CreeperLab/model_delivery_staging/v30_model1299/creeper_v30_model1299_actor.onnx",
+  "onnx_sha256": "280e3429e72573be96955a1341a9c00e492838db004b0b51c982279e97f45382",
+  "input": [
+    1,
+    48
+  ],
+  "output": [
+    1,
+    12
+  ],
+  "dtype": "float32",
+  "dynamic_dimensions": false,
+  "pytorch_onnx_max_abs_error": 2.86102294921875e-06
+}

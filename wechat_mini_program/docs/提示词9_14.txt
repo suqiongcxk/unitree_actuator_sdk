@@ -1,0 +1,61 @@
+我是一个刚接手这个项目的人，我没有耐心看完之前所有的聊天记录
+请你直接简洁一点告诉我，之前做了什么，接下来要做什么，遇到哪些问题，需要给另一个在3588上操作的同时提供什么内容等等要点
+
+可以把这个项目理解成两半：微信小程序遥控端 和 RK3588 机器人端。目前小程序端已经基本开发完成，RK3588 端还需要按已经冻结的通信协议去实现。
+
+你只需要先记住下面这些要点：
+
+项目目标：手机微信小程序横屏遥控 12 自由度四足机器人。左摇杆控制 vx/vy，右摇杆控制 wz。小程序不模拟 WASD/QE，而是直接发送速度命令给 RK3588，再由 RK3588 送给 RL Policy。
+小程序已经完成：横屏双摇杆、20 Hz cmd_vel、5 Hz heartbeat、WebSocket、自动重连、RTT、控制权、停止、软件急停、长按解除急停、Mock、机器人状态/电池/CPU/GPU/IMU/网络等数据显示框架，以及异常情况下自动归零和锁定。
+协议已经冻结为 Protocol V1。核心消息为：client_hello、claim_control、release_control、cmd_vel、heartbeat、stop、estop、estop_clear；RK3588 返回 server_hello、command_ack、heartbeat_ack、robot_state、各种 telemetry、estop_state、warning/error/fault。
+坐标规定已经定死：vx > 0 前进，vy > 0 左移，wz > 0 绕 +Z 逆时针；vx/vy 单位 m/s，wz 单位 rad/s。以后不要两边各自随意改符号。
+已经有 PC 测试服务器，地址默认 ws://127.0.0.1:8765。真实 WebSocket 自动测试已经跑通，实测 cmd_vel ≈ 19.92 Hz，heartbeat ≈ 4.93 Hz。重连、SESSION_INVALID、CONTROL_BUSY、急停、heartbeat 超时等都测试过。
+现在小程序端主要剩人工验收：微信开发者工具实际运行、手机横屏、双指操作、刘海/圆角屏、锁屏、微信前后台、Wi-Fi 断开恢复、真机局域网 WebSocket。这些通过以后，小程序 V1 就可以基本冻结。
+RK3588 端现在要做的核心事情：按照 Protocol V1 实现 WebSocket Server，并把收到的 vx/vy/wz 接入统一 VelocityCommand → Safety Manager → RL Policy。绝对不要让 WebSocket 网络线程直接控制电机。
+RK3588 必须实现两个独立 watchdog：cmd_vel 超时和 heartbeat 超时必须分开。heartbeat 正常也不能让一条旧的非零速度一直有效。当前建议 cmd_timeout≈250 ms、heartbeat_timeout≈600 ms，后续实机测试再调。
+必须实现控制权机制：只有收到 claim_control 并返回成功 ACK 后，小程序才能发送非零速度。断线或重连后旧控制权必须失效，不能自动恢复。
+急停要区分：stop 只是速度归零，随后还能继续走；estop 是锁存的软件急停，必须显式 estop_clear。软件急停不能替代真实的物理急停。
+目前最大的未完成部分：RK3588 正式服务、RK3588 与 RL Policy 的连接、真实遥测、电池/IMU/CPU/GPU/网络数据、实际机器狗联调、WSS/认证以及最终小程序发布。
+不要现在继续加功能：站立、趴下、步态切换、视频、地图、OTA、多机器人等都先不要做。先把“手机 → RK3588 → RL → 机器狗”这条链路稳定跑通。
+
+给负责 RK3588 的人，最重要的是直接交这几样：
+
+docs/PROTOCOL_V1.md
+docs/AUTOMATED_TEST_REPORT.md
+tools/protocol_v1_test_server/server.py
+tools/protocol_v1_test_server/README.md
+
+其中 PROTOCOL_V1.md 是最重要的接口合同。RK3588 开发者应该严格按照它实现，不要自己重新设计一套 JSON。
+
+你们两个人接下来最合理的并行分工就是：
+
+你：
+微信开发者工具 + 手机人工验收
+        │
+        │ Protocol V1 不再随意修改
+        │
+另一个人：
+RK3588 WebSocket Server
+→ session / seq
+→ claim_control
+→ heartbeat/watchdog
+→ cmd_vel
+→ stop / estop
+→ robot_state / telemetry
+→ 接 RL Policy
+
+然后双方第一次真正汇合的里程碑应该是：
+
+微信小程序
+↓
+Wi-Fi / WebSocket
+↓
+RK3588
+↓
+vx / vy / wz
+↓
+RL Policy
+↓
+先控制 MuJoCo 或低风险实机
+
+现在最优先的事情只有两个：你完成小程序真机人工验收；另一个人按照 PROTOCOL_V1.md 开始实现 RK3588 端。
