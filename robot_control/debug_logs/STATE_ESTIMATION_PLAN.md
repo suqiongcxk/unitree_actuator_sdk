@@ -526,7 +526,7 @@
 - 新增`VelocityCommandManager`及单元测试，覆盖默认零命令、`[-1,1]`限幅、三轴斜坡、500 ms边界、超时回零、NaN拒绝和终端最长2秒保持。
 - 既有PolicyObservation、NN安全验证、状态估计、Linear KF、足端力、腿部里程计、并发快照测试均通过。
 - 20帧Python/C++ golden-vector回归仍通过：observation最大绝对误差`8.34e-7`，C++ ONNX与golden ONNX最大误差`9.54e-7`，证明命令管理层没有改变Actor接口语义。
-- 默认FIFO为`/tmp/creeper_velocity_command.fifo`；启动主程序后，可在第二终端运行`bash robot_control/velocity_command_console.sh`，输入`v/z/s`。FIFO中的`s`与主终端`Ctrl+C`进入同一套锁存式安全停机流程；主终端输入仍作为备用通道保留。
+- 默认FIFO为`/tmp/creeper_velocity_command.fifo`；启动主程序后，可在第二终端运行`bash remote_control/keyboard/velocity_command_console.sh`，输入`v/z/s`。FIFO中的`s`与主终端`Ctrl+C`进入同一套锁存式安全停机流程；主终端输入仍作为备用通道保留。
 - 2026-08-28完成双终端实机集成测试：FIFO输入的`vx=0.10 m/s`及`yaw_rate=0.20 rad/s`均被主进程正确接收，2秒保持期结束后健康输出显示`timeout=1`且`applied=(0,0,0)`；`z`可主动回零，FIFO输入`s`后IMU/EST/NN线程及四路总线均正常回收，12电机成功进入`Kd=0.136`阻尼。该测试确认命令通道和安全退出，不替代Phase 5的50 Hz CSV逐帧验证。
 
 ### 验收门槛

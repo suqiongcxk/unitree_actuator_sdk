@@ -1,7 +1,7 @@
-# ESP32-S3 -> CH340 -> RK3588 串口遥控配置（Protocol V1）
+# ESP32-S3 -> RK3588 UART1_M1直连串口遥控配置（Protocol V1）
 
-# 初次测试可使用 /dev/ttyUSB0；正式部署应改成 udev 稳定软链接。
-device=/dev/creeper_remote
+# GPIO1_B7=RX、GPIO1_B6=TX；需由用户启用uart1-m1 overlay并重启。
+device=/dev/ttyS1
 baud_rate=115200
 data_bits=8
 parity=none

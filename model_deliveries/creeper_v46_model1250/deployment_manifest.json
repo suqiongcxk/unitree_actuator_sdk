@@ -1,0 +1,421 @@
+{
+  "schema_version": "1.0",
+  "delivery_id": "creeper_v46_model1250",
+  "created_at": "2026-10-01T14:08:24.695131+00:00",
+  "model_version": "V46",
+  "checkpoint_number": 1250,
+  "training": {
+    "task": "Isaac-Velocity-Flat-Creeper-20260906-V46-v0",
+    "play_task": "Isaac-Velocity-Flat-Creeper-20260906-V46-Play-v0",
+    "run_directory": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v46_safe_joint_targets/2026-10-01_21-08-21_continue_from_v46_1100_to1299",
+    "seed": 42,
+    "num_envs": 4096
+  },
+  "source_control": {
+    "git_commit": null,
+    "unavailable_reason": "The editable /workspace/isaaclab runtime Creeper source has no trustworthy Git baseline; no commit was created for delivery.",
+    "source_snapshot_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/source_snapshot"
+  },
+  "interface": {
+    "observation_size": 48,
+    "observation_order": [
+      "base_linear_velocity_body[3]",
+      "base_angular_velocity_body[3]",
+      "projected_gravity_body[3]",
+      "command_vx_vy_yaw_rate[3]",
+      "joint_position_relative_to_default[12]",
+      "joint_velocity[12]",
+      "previous_raw_action[12]"
+    ],
+    "action_size": 12,
+    "action_order": [
+      "FL_hip_joint",
+      "FR_hip_joint",
+      "RL_hip_joint",
+      "RR_hip_joint",
+      "FL_thigh_joint",
+      "FR_thigh_joint",
+      "RL_thigh_joint",
+      "RR_thigh_joint",
+      "FL_calf_joint",
+      "FR_calf_joint",
+      "RL_calf_joint",
+      "RR_calf_joint"
+    ],
+    "policy_frequency_hz": 50.0,
+    "physics_frequency_hz": 200.0,
+    "default_joint_position": [
+      0.10000000149011612,
+      -0.10000000149011612,
+      0.10000000149011612,
+      -0.10000000149011612,
+      0.800000011920929,
+      0.800000011920929,
+      1.0,
+      1.0,
+      -1.5,
+      -1.5,
+      -1.5,
+      -1.5
+    ],
+    "action_scale": 0.25,
+    "q_des_formula": "default_joint_position + action_scale * raw_action",
+    "previous_action_semantics": "observation[36:48] is previous Actor raw_action",
+    "onnx": {
+      "input": {
+        "name": "obs",
+        "shape": [
+          1,
+          48
+        ],
+        "dtype": "tensor(float)"
+      },
+      "output": {
+        "name": "actions",
+        "shape": [
+          1,
+          12
+        ],
+        "dtype": "tensor(float)"
+      },
+      "opsets": {
+        "ai.onnx": 18
+      },
+      "onnxruntime_version": "1.22.1",
+      "providers": [
+        "CPUExecutionProvider"
+      ]
+    }
+  },
+  "acceptance": {
+    "isaac": "PASS",
+    "mujoco": "PASS",
+    "hardware": null,
+    "q_des_threshold_rad_per_20ms": 0.5,
+    "threshold_note": "Temporary offline engineering criterion; not a hardware-validated physical limit. V46 also enforces per-joint deterministic q_des bounds inside the real mechanical safety range."
+  },
+  "artifacts": {
+    "onnx": {
+      "path": "creeper_model_v46_model1250_actor.onnx",
+      "sha256": "2893426e5d3cf0c42dbbaef6236cbc3b38e889f89fda8acc8ce464197f913cfc",
+      "size_bytes": 166143
+    },
+    "onnx_sha256": {
+      "path": "creeper_model_v46_model1250_actor.onnx.sha256",
+      "sha256": "9d8160c283963600d269639e6c6185be3773f417862a385f579a153afeebbad3",
+      "size_bytes": 105
+    },
+    "checkpoint": {
+      "path": "model_1250.pt",
+      "sha256": "739fe6e3215f4df0fee38a037114f3f5475ce85f91c043275372b90c010c2b94",
+      "size_bytes": 983925
+    },
+    "golden_vectors": {
+      "path": "policy_golden_vectors.json",
+      "sha256": "a8756f8bb9b0aacefc6a51140d2c272dc2c0fdf0f7ae17c0d527823ff910c9df",
+      "size_bytes": 461095
+    },
+    "simulation_report": {
+      "path": "simulation_report.md",
+      "sha256": "2342e7135e32ff91c753d88d4498c32479c1e84c520609b3d180db641c0ad85f",
+      "size_bytes": 2668
+    },
+    "onnx_verification": {
+      "path": "verification/creeper_model_v46_model1250_actor.onnx.verification.json",
+      "sha256": "8db069f2c44f4c1373dce48d2bef3e1a6feab7700b00f68fa503c926b61f8c39",
+      "size_bytes": 807
+    }
+  },
+  "assets": [
+    {
+      "role": "urdf",
+      "path": "assets/urdf/Creeper20260906.urdf",
+      "sha256": "37ff462cfe9a9c353fa3bb0befc1cda09372f63837fafc30aba96adb04c9ebf0",
+      "size_bytes": 20076,
+      "source_path": "/root/gpufree-data/Creeper20260906/urdf/Creeper20260906.urdf"
+    },
+    {
+      "role": "usd",
+      "path": "assets/usd/Creeper20260906.usd",
+      "sha256": "c25ba016bba0107b7d2d356dd7d6bda41bd26cc972eba3a4616b0bc1547d7289",
+      "size_bytes": 1464,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/Creeper20260906.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_base.usd",
+      "sha256": "070df3bb9e8384ec5da1cf74dc9ed22cc7b907d468787c814ca39b01461b47bd",
+      "size_bytes": 58664421,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_base.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_physics.usd",
+      "sha256": "c8ebde1fb515d30f43665be27dd0d09201c3d23cd5f40b23b8ec7b654ca7bb4f",
+      "size_bytes": 6330,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_physics.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_robot.usd",
+      "sha256": "c30037f94fedb8186d41066a9b7c84b27772cf3b7f367b4d2f339d2813c19453",
+      "size_bytes": 2080,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_robot.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_sensor.usd",
+      "sha256": "d7a03e24632394b4b672bb308f15364aff3922facefc374ab19503346289f337",
+      "size_bytes": 655,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_sensor.usd"
+    },
+    {
+      "role": "usd_import_config",
+      "path": "assets/usd/config.yaml",
+      "sha256": "70531843778fb039c47a96f55b6c15ec5c0600f670d0b396dc628ecf969622e5",
+      "size_bytes": 644,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/config.yaml"
+    },
+    {
+      "role": "mjcf",
+      "path": "assets/mujoco/Creeper20260906.xml",
+      "sha256": "e27f49a9adbaaebddfe78c01a313cf277ef44338c4dc2b9666aa09b4c4fbf81c",
+      "size_bytes": 14733,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/Creeper20260906.xml"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/base_part0.stl",
+      "sha256": "70418dfa084fcfa3664f841123f6f893f2785d72c0825edb3a4baa9a51938340",
+      "size_bytes": 7500084,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/base_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/base_part1.stl",
+      "sha256": "4da008742a235d002304276822a7c9a243a12f137411fb4271d14267c0a1615b",
+      "size_bytes": 5594084,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/base_part1.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FL_hip_part0.stl",
+      "sha256": "4b918b2fbfd615dd053d24b07d5b94927876917b6111b3d6483cc4907d44e66e",
+      "size_bytes": 3151584,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FL_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FL_thigh_part0.stl",
+      "sha256": "6328bd40f7ffd0e568856cd73606ba142c42d55ac5d47914c846901b3fd22b9e",
+      "size_bytes": 3428484,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FL_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FL_calf_part0.stl",
+      "sha256": "a51cf1ecdefaa1cfe5e0930022300e102b246f28957b34b07c997e512de2b0be",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FL_calf_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FR_hip_part0.stl",
+      "sha256": "2dbead8080ce30f97287b5570cd40c9eea93fbc5c85b0eb05a6549e343c777c4",
+      "size_bytes": 3152384,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FR_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FR_thigh_part0.stl",
+      "sha256": "0013b329338f8b83ce8174d5f99f98310663b6802b01b51ba019bea750fefd7f",
+      "size_bytes": 3433084,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FR_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FR_calf_part0.stl",
+      "sha256": "de703c23442634c001874ceedea5635377b8e1af0bf71cf1db3542d2ce36f608",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FR_calf_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RL_hip_part0.stl",
+      "sha256": "90ee8b9e6fe32e4be6baaa67cfa06a23455055efb3ef2c0e46310c2c7ee92cb5",
+      "size_bytes": 3152384,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RL_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RL_thigh_part0.stl",
+      "sha256": "6fdf9b22be3fd10b4a96447b25c3c4ef14212ec64fe5662eff49630c50ae82aa",
+      "size_bytes": 3428884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RL_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RL_calf_part0.stl",
+      "sha256": "f4fc2dd64241f563777c4eaebbff5785aa4425c44e5a0a465c63138aaad54a1d",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RL_calf_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RR_hip_part0.stl",
+      "sha256": "e08b7bae7408d36d5852149bbefe9e843b94683c1389ada35cd4dfc5820a0cbe",
+      "size_bytes": 3151584,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RR_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RR_thigh_part0.stl",
+      "sha256": "ac4f7ed7e22a9b36cd9ea8725da6f9574ecc6df89399c9be7ce7a95f4bc0f5cf",
+      "size_bytes": 3433584,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RR_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RR_calf_part0.stl",
+      "sha256": "841b6783aa8b3042f646cda15f32adc2a64614f7a0edb285b3a4c52ba4e4c02c",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RR_calf_part0.stl"
+    }
+  ],
+  "configs": [
+    {
+      "role": "env",
+      "path": "configs/env.yaml",
+      "sha256": "1754a6a27d672472306a58bf83f70a276828968efba4561f0ff971c3b60efc0a",
+      "size_bytes": 27864,
+      "source_path": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v46_safe_joint_targets/2026-10-01_21-08-21_continue_from_v46_1100_to1299/params/env.yaml"
+    },
+    {
+      "role": "agent",
+      "path": "configs/agent.yaml",
+      "sha256": "62921da5e4d049ca63eb735d9d4b4ef3ca966df125fa6a0acb0766454f1ec3fa",
+      "size_bytes": 1326,
+      "source_path": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v46_safe_joint_targets/2026-10-01_21-08-21_continue_from_v46_1100_to1299/params/agent.yaml"
+    }
+  ],
+  "evidence": [
+    {
+      "label": "V46 authoritative report",
+      "path": "evidence/REPORT.md",
+      "sha256": "04ca7ab427e6fafc3a7ea24504ad8d11198a57f00d79b3d8b4013520d59728bf",
+      "size_bytes": 4339,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/docs/rl/reports/2026-10-01_V45\u5173\u8282\u76ee\u6807\u8d8a\u754c\u4fee\u590d\u4e0eV46\u8de8\u4eff\u771f\u9a8c\u6536.md"
+    },
+    {
+      "label": "Isaac three-seed full evaluation",
+      "path": "evidence/isaac/full_multiseed.json",
+      "sha256": "403af2b9ed6099fe329068ba7e17f7ade27819741e700990d123ce350030e402",
+      "size_bytes": 1586664,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_isaac_multiseed.json"
+    },
+    {
+      "label": "MuJoCo standing",
+      "path": "evidence/mujoco/standing.json",
+      "sha256": "93da097a129d803b49559d79a7ac9a057681608f14975204bc5f639876bf17e5",
+      "size_bytes": 4250,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/standing.json"
+    },
+    {
+      "label": "MuJoCo vx +0.2",
+      "path": "evidence/mujoco/vx_p02.json",
+      "sha256": "1e4cf1ed7c6212022a6068c925dd113e01bf3c40900d53d0caab23d1edd3bc98",
+      "size_bytes": 4283,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vx_p02.json"
+    },
+    {
+      "label": "MuJoCo vx -0.2",
+      "path": "evidence/mujoco/vx_m02.json",
+      "sha256": "215526ab7d91b7dda9689339ea067b04d8bd578d670e5ca9e9bd37819485bac9",
+      "size_bytes": 4290,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vx_m02.json"
+    },
+    {
+      "label": "MuJoCo vx +1.0",
+      "path": "evidence/mujoco/vx_p10.json",
+      "sha256": "5922d75cf6cf91440dc14c8f4aae492cda8bf69cb16fe7968e90a8af2ed7d5f8",
+      "size_bytes": 4203,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vx_p10.json"
+    },
+    {
+      "label": "MuJoCo vx -1.0",
+      "path": "evidence/mujoco/vx_m10.json",
+      "sha256": "285ce626f6ac375d742d6ba416a6bca07b0535d4d416cfab91c194585bd9b911",
+      "size_bytes": 4223,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vx_m10.json"
+    },
+    {
+      "label": "MuJoCo vy +0.3",
+      "path": "evidence/mujoco/vy_p03.json",
+      "sha256": "96435b1afc6a1752f5909694d19c8d21cc8583d76505b175869d79647de4171c",
+      "size_bytes": 4277,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vy_p03.json"
+    },
+    {
+      "label": "MuJoCo vy -0.3",
+      "path": "evidence/mujoco/vy_m03.json",
+      "sha256": "39fedd63a9feec5656b21d6e72a4f9e2f88f9b04410a588e4b601437f915a0a9",
+      "size_bytes": 4286,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vy_m03.json"
+    },
+    {
+      "label": "MuJoCo yaw +1.0",
+      "path": "evidence/mujoco/yaw_p10.json",
+      "sha256": "c42995f94683c7e8f23fb610f7b18f398beb20ea45d21e80f6661e941a388af9",
+      "size_bytes": 4227,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/yaw_p10.json"
+    },
+    {
+      "label": "MuJoCo yaw -1.0",
+      "path": "evidence/mujoco/yaw_m10.json",
+      "sha256": "c4cac56794b04fc5b532f13ecbc33f206416973deae64dd9f595d41f065456a1",
+      "size_bytes": 4215,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/yaw_m10.json"
+    },
+    {
+      "label": "MuJoCo forward lateral",
+      "path": "evidence/mujoco/forward_lateral.json",
+      "sha256": "dc7f799f489abd94f9125261fa237bba604b45cfc55a5d3c9065e4063b491f2b",
+      "size_bytes": 4340,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/forward_lateral.json"
+    },
+    {
+      "label": "MuJoCo forward turn",
+      "path": "evidence/mujoco/forward_turn.json",
+      "sha256": "f1225eb599a7002fd1b417bb7832bca6151487ca5e88058919b33f1ef9a31a08",
+      "size_bytes": 4279,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/forward_turn.json"
+    },
+    {
+      "label": "MuJoCo three axis",
+      "path": "evidence/mujoco/three_axis.json",
+      "sha256": "8f362fa745305e182568adad1d8b06ccabeb8ecbf75ec1bd3869bf881af90b04",
+      "size_bytes": 4341,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/three_axis.json"
+    },
+    {
+      "label": "MuJoCo safe stop",
+      "path": "evidence/mujoco/vx_p10_stop.json",
+      "sha256": "2e0349d338321a4d9fe90ea58ea8cd2d1560d7005a42fce2c95cba1ff3502064",
+      "size_bytes": 4683,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/vx_p10_stop.json"
+    },
+    {
+      "label": "MuJoCo direction switch",
+      "path": "evidence/mujoco/direction_switch.json",
+      "sha256": "48b7e6457dcc87c630786192ba4ba26210a32c655c009db91653d0fd1bf7c75e",
+      "size_bytes": 4879,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-10-01_v45_qdes_safety_research/v46_model1250_mujoco/direction_switch.json"
+    }
+  ],
+  "notes": [
+    "Offline Isaac and MuJoCo PASS only; hardware remains NOT_TESTED.",
+    "The 0.50 rad/20 ms value is a provisional offline engineering criterion, not a motor physical limit.",
+    "Do not use the V45 delivery after its real-hardware FR calf q_des boundary fault; V46 requires a new protected hardware validation."
+  ],
+  "hardware_status": "NOT_TESTED"
+}

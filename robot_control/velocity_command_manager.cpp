@@ -12,6 +12,21 @@ float moveToward(float current, float target, float maximum_step)
     if (delta < -maximum_step) return current - maximum_step;
     return target;
 }
+
+float applyCommandRamp(float current, float target, float dt_sec,
+                       float acceleration_rate, float deceleration_rate)
+{
+    // 反向命令必须先按减速斜率回到零，下一周期才从零向反方向加速。
+    // 这样不会在一个策略周期内穿越零点并同时混用两种斜率。
+    if (current * target < 0.0f) {
+        return moveToward(current, 0.0f, deceleration_rate * dt_sec);
+    }
+
+    const bool increasing_magnitude = std::fabs(target) > std::fabs(current);
+    const float rate = increasing_magnitude ? acceleration_rate
+                                            : deceleration_rate;
+    return moveToward(current, target, rate * dt_sec);
+}
 }
 
 VelocityCommandManager::VelocityCommandManager(
@@ -21,9 +36,11 @@ VelocityCommandManager::VelocityCommandManager(
     for (size_t i = 0; i < 3; ++i) {
         if (!std::isfinite(config_.minimum[i])
                 || !std::isfinite(config_.maximum[i])
-                || !std::isfinite(config_.slew_rate[i])
+                || !std::isfinite(config_.acceleration_rate[i])
+                || !std::isfinite(config_.deceleration_rate[i])
                 || config_.minimum[i] > config_.maximum[i]
-                || config_.slew_rate[i] <= 0.0f) {
+                || config_.acceleration_rate[i] <= 0.0f
+                || config_.deceleration_rate[i] <= 0.0f) {
             throw std::invalid_argument("invalid velocity command config");
         }
     }
@@ -77,9 +94,9 @@ std::array<float, 3> VelocityCommandManager::update(uint64_t now_ns)
     const std::array<float, 3> zero{{0.0f, 0.0f, 0.0f}};
     const auto& desired = status_.timed_out ? zero : status_.limited;
     for (size_t i = 0; i < 3; ++i) {
-        const float maximum_step = config_.slew_rate[i] * dt_sec;
-        status_.applied[i] = moveToward(
-            status_.applied[i], desired[i], maximum_step);
+        status_.applied[i] = applyCommandRamp(
+            status_.applied[i], desired[i], dt_sec,
+            config_.acceleration_rate[i], config_.deceleration_rate[i]);
     }
     status_.age_ns = status_.source_active && now_ns >= status_.last_input_ns
         ? now_ns - status_.last_input_ns : 0;

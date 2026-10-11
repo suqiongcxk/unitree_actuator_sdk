@@ -1,14 +1,31 @@
-# ESP32-S3 串口遥控
+# 遥控接口
+
+本目录集中管理RK3588的上层遥控入口。目前包括：
+
+- `keyboard/`：PC键盘、SSH桥接和终端备用控制器；
+- `network/`：RK3588调试热点的配置、开启和恢复脚本；
+- `docs/KEYBOARD_REMOTE_CONTROL.md`：PC多键遥控说明；
+- `docs/RK3588_WIFI_AP.md`：`Creeper_Dog`调试热点说明；
+- `docs/SERIAL_PROTOCOL_V1.md`：ESP32-S3 UART协议；
+- `docs/SERIAL_REMOTE_RECEIVER.md`：UART第一阶段独立握手诊断程序；
+- `docs/SERIAL_VELOCITY_VALIDATOR.md`：使用真实速度管理器的无电机仲裁验证；
+- `include/`、`src/`：UART协议编解码实现；
+- `tests/`：键盘和串口协议纯软件测试。
+
+键盘遥控已接入现有FIFO。ESP32-S3 UART链路已进入独立握手诊断阶段，尚未接入
+机器人控制。
+
+## ESP32-S3 串口遥控
 
 目标链路：
 
 ```text
-手机 ──Wi-Fi── ESP32 ──3.3V TTL UART── CH340 ──USB── RK3588
-                                      /dev/ttyUSB*
+手机 ──Wi-Fi── ESP32-S3 ──3.3V TTL UART── RK3588 UART1_M1
+                                            /dev/ttyS1
 ```
 
-已确认硬件为自研 **ESP32-S3 PCB**，没有使用带USB转串口的开发板；PCB引出的
-UART TX/RX连接外置CH340，再由CH340的USB连接RK3588。
+已确认硬件为自研 **ESP32-S3 PCB**。PCB UART直接连接Orange Pi 5 Pro排针上的
+`UART1_M1`，不再使用CH340或USB转串口。
 
 ## 项目职责边界
 
@@ -21,17 +38,30 @@ UART TX/RX连接外置CH340，再由CH340的USB连接RK3588。
 该链路只负责传递速度目标和安全指令。ESP32/串口线程不得直接控制电机，指令必须
 进入现有 `VelocityCommandManager -> Safety Manager -> NN Policy`。
 
-当前状态：已冻结 Protocol V1，并实现纯内存编解码器和流解析器；尚未打开真实串口，
-也未接入 `robot_control`，不会访问或驱动电机。
+当前状态：已冻结 Protocol V1，并实现纯内存编解码器、流解析器和独立串口诊断程序；
+尚未接入 `robot_control`，不会访问或驱动电机。
 
-## 硬件注意事项
+第一阶段独立诊断程序`serial_remote_receiver`已经实现。它可以打开`/dev/ttyS1`
+完成HELLO/HEARTBEAT握手，并安全打印STOP、ESTOP和限幅后的CMD_VEL；它仍未接入
+`robot_control`，不会访问或驱动电机。使用方法见`docs/SERIAL_REMOTE_RECEIVER.md`。
 
-- 已确认当前CH340为 **3.3V TTL UART**，不能换成正负电压的RS-232转换器；
-- `ESP32 TX -> CH340 RX`，`ESP32 RX <- CH340 TX`，并连接 GND；
-- 不要换用5V TX的USB-UART直接连接ESP32-S3；更换模块后必须重新确认电平；
-- 除非经过供电预算确认，不要同时用 CH340 VCC 和其他电源给 ESP32 供电；
-- 不连接 CH340 的 DTR/RTS 到 ESP32 EN/BOOT，避免开串口时复位或进入下载模式；
-- 当前自研PCB与CH340的3.3V逻辑电平条件已确认。
+第二阶段无电机验证程序`serial_velocity_validator`已经实现。它复用实际
+`VelocityCommandManager`，完成SERIAL/KEYBOARD控制权仲裁、单位转换、独立命令与
+链路watchdog和逻辑ESTOP测试，但仍不打开电机串口或产生关节指令。当前正式
+`robot_control`尚未接入UART；详见`docs/SERIAL_VELOCITY_VALIDATOR.md`。
+
+## 硬件接线
+
+```text
+RK3588 GPIO1_B7（物理7脚，UART1_M1_RX）  <- ESP32-S3 TX
+RK3588 GPIO1_B6（物理15脚，UART1_M1_TX） -> ESP32-S3 RX
+RK3588 GND                                 -- ESP32-S3 GND
+```
+
+- 双方必须使用 **3.3V TTL**；不得接5V TTL或RS-232电平；
+- TX/RX必须交叉，GND必须共地；
+- ESP32-S3已有独立供电时，不连接排针3.3V/5V，避免重复供电；
+- 只使用TX、RX、GND，不使用RTS/CTS硬件流控。
 
 ## 文档
 
@@ -47,13 +77,14 @@ cmake --build build --target test_serial_protocol_v1 -j2
 ./build/test_serial_protocol_v1
 ```
 
-硬件接入后先执行只读识别：
+当前工程的四路电机UART和IMU均未使用GPIO1_B6/B7。2026-10-07已只读确认
+`uart1-m1`启用且`/dev/ttyS1`存在。可用以下命令复核：
 
 ```bash
-lsusb
-dmesg --follow
-ls -l /dev/ttyUSB* /dev/serial/by-id/* 2>/dev/null
+ls -l /dev/ttyS1
+gpio readall
+cat /boot/orangepiEnv.txt
 ```
 
-确认实际 VID/PID、设备节点和是否带唯一序列号后，再制定 udev 稳定设备名。不要在
-未识别硬件前把 `/dev/ttyUSB0` 永久写死。
+物理7脚/15脚应为UART复用，且`/dev/ttyS1`存在。不要把`/dev/ttyS9`
+误认为这组排针：`ttyS9` 是另一个控制器，不对应GPIO1_B6/B7。

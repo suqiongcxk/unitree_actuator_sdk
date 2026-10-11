@@ -22,7 +22,7 @@ int main()
     const auto result = manager.submit({{2.0f, -0.4f, 0.5f}}, 100 * ms);
     if (result != VelocityCommandSubmitResult::CLAMPED) return 1;
     command = manager.update(120 * ms);
-    if (!near(command[0], 0.01f) || !near(command[1], -0.01f)
+    if (!near(command[0], 0.006f) || !near(command[1], -0.006f)
             || !near(command[2], 0.02f)) return 1;
 
     // 500 ms边界仍有效，超过后平滑回零。
@@ -52,20 +52,29 @@ int main()
     // 前进/左移/左转直接切换到反向时，必须按斜率限制平滑过零。
     VelocityCommandManager reversal;
     reversal.update(100 * ms);
-    reversal.submit({{0.3f, 0.2f, 0.4f}}, 100 * ms, 5000 * ms);
+    reversal.submit({{0.15f, 0.15f, 0.4f}}, 100 * ms, 5000 * ms);
     for (uint64_t now_ms = 120; now_ms <= 700; now_ms += 20) {
-        reversal.submit({{0.3f, 0.2f, 0.4f}}, now_ms * ms);
+        reversal.submit({{0.15f, 0.15f, 0.4f}}, now_ms * ms);
         reversal.update(now_ms * ms);
     }
     const auto before_reverse = reversal.status(700 * ms).applied;
     reversal.submit({{-0.3f, -0.2f, -0.4f}}, 700 * ms, 5000 * ms);
     const auto after_reverse = reversal.update(720 * ms);
-    if (!near(before_reverse[0], 0.3f)
-            || !near(before_reverse[1], 0.2f)
+    if (!near(before_reverse[0], 0.15f)
+            || !near(before_reverse[1], 0.15f)
             || !near(before_reverse[2], 0.4f)
-            || !near(after_reverse[0], 0.29f)
-            || !near(after_reverse[1], 0.19f)
+            || !near(after_reverse[0], 0.134f)
+            || !near(after_reverse[1], 0.134f)
             || !near(after_reverse[2], 0.38f)) return 1;
+
+    // 小正值切换到负目标时，本周期只能减到零，不能直接穿越零点。
+    VelocityCommandManager zero_crossing;
+    zero_crossing.update(100 * ms);
+    zero_crossing.submit({{0.006f, 0.0f, 0.0f}}, 100 * ms, 5000 * ms);
+    zero_crossing.update(120 * ms);
+    zero_crossing.submit({{-0.3f, 0.0f, 0.0f}}, 120 * ms, 5000 * ms);
+    if (!near(zero_crossing.update(140 * ms)[0], 0.0f)) return 1;
+    if (!near(zero_crossing.update(160 * ms)[0], -0.006f)) return 1;
 
     std::cout << "[PASS] velocity command limits, slew and watchdog tests"
               << std::endl;
