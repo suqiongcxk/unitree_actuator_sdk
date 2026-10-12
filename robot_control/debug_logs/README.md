@@ -1,6 +1,14 @@
 # 调试与验证文档目录
 
+./push_wechat_project.sh "完成微信登录界面"
+
+
+
 本目录用于保存状态估计、策略验证、实机推进计划和阶段性技术结论。
+
+当前PC键盘多键遥控的修改原因、安全设计和使用方法见
+`../../remote_control/docs/KEYBOARD_REMOTE_CONTROL.md`。真正的组合键客户端必须运行在连接物理
+键盘的Windows PC本地，不能在SSH终端内运行。
 
 - `STATE_ESTIMATION_PLAN.md`：状态估计及实机测试的主推进记录。
 - `LINEAR_KF_ESTIMATOR.md`：Linear KF接口、坐标系和验证说明。
@@ -36,10 +44,9 @@
 cd /home/orangepi/unitree_actuator_sdk
 
 sudo ./build/robot_control \
-  --onnx model_deliveries/model_950/creeper_model_950_actor.onnx \
   --log \
-  --log-file /tmp/keyboard_walk_test.csv \
-  2>&1 | tee -i /tmp/keyboard_walk_test.log
+  --log-file /tmp/v45_keyboard_walk.csv \
+  2>&1 | tee -i /tmp/v45_keyboard_walk.log
 ```
 
 等待校准、开环站立和 NN 平滑接管全部完成。
@@ -49,16 +56,17 @@ sudo ./build/robot_control \
 ```bash
 cd /home/orangepi/unitree_actuator_sdk
 
-python3 robot_control/keyboard_velocity_console.py \
-  --vx 0.50 \
-  --vy 0.30 \
+python3 remote_control/keyboard/keyboard_velocity_console.py \
+  --vx 0.20 \
+  --vy 0.20 \
   --yaw 0.50
 ```
 
 操作：
 
 - `W/S/A/D/Q/E`：运动
-- `+/-`：以 0.1 m/s 调整前后与平移速度；最低分别为 0.5/0.3 m/s
+- `+/-`：以0.1 m/s独立调整前后速度，范围0.2~1.0 m/s
+- `>/<`：以0.1 m/s独立调整横移速度，范围0.2~0.3 m/s
 - `]/[`：以 0.1 rad/s 调整转向速度；最低为 0.5 rad/s
 - `空格`：平滑回零
 - `X` 或 `Ctrl+C`：安全停机

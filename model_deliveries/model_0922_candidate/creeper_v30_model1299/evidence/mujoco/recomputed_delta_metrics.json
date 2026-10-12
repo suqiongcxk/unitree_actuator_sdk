@@ -1,0 +1,282 @@
+{
+  "definition": "abs(q_des[t]-q_des[t-1]) between consecutive recorded 50 Hz policy frames",
+  "threshold_semantics": "strictly greater than threshold",
+  "cases": {
+    "standing20": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/standing20_trace.npz",
+      "policy_frame_count": 1100,
+      "joint_control_step_samples": 13188,
+      "mean_rad": 1.9681169082260075e-05,
+      "p95_rad": 7.615387439727781e-05,
+      "p99_rad": 8.571147918701172e-05,
+      "max_rad": 0.00010669231414794922,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "vx_0p2": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_0p2_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.02171282193053304,
+      "p95_rad": 0.0703323185443878,
+      "p99_rad": 0.10486148357391363,
+      "max_rad": 0.16518747806549072,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 68,
+          "ratio": 0.01623686723973257
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "vx_0p5": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_0p5_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.03236839642575671,
+      "p95_rad": 0.11153236031532286,
+      "p99_rad": 0.15436006784439088,
+      "max_rad": 0.20632338523864746,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 243,
+          "ratio": 0.058022922636103154
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "vx_1p0": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_1p0_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.04667773234383083,
+      "p95_rad": 0.1490697622299194,
+      "p99_rad": 0.17951205492019665,
+      "max_rad": 0.20632338523864746,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 560,
+          "ratio": 0.13371537726838587
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "transition_0p5_to_0": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/transition_0p5_to_0_trace.npz",
+      "policy_frame_count": 214,
+      "joint_control_step_samples": 2556,
+      "mean_rad": 0.018577299034150088,
+      "p95_rad": 0.07631561160087585,
+      "p99_rad": 0.13933732509612992,
+      "max_rad": 0.20632338523864746,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 73,
+          "ratio": 0.028560250391236306
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "vx_neg_1p0": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_neg_1p0_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.04588069054791784,
+      "p95_rad": 0.13336541056632975,
+      "p99_rad": 0.16872112989425658,
+      "max_rad": 0.2415490746498108,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 539,
+          "ratio": 0.1287010506208214
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "vy_pos_0p2": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vy_pos_0p2_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.020518649430854786,
+      "p95_rad": 0.07366827726364131,
+      "p99_rad": 0.10937771677970887,
+      "max_rad": 0.16563832759857178,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 74,
+          "ratio": 0.01766953199617956
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "vy_neg_0p2": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vy_neg_0p2_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.019179380541523242,
+      "p95_rad": 0.07353142499923702,
+      "p99_rad": 0.11183030247688303,
+      "max_rad": 0.18003153800964355,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 76,
+          "ratio": 0.018147086914995225
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "yaw_pos_0p5": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/yaw_pos_0p5_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.011697565688402058,
+      "p95_rad": 0.040955356881022434,
+      "p99_rad": 0.06358044289052486,
+      "max_rad": 0.09569835662841797,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "yaw_neg_0p5": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/yaw_neg_0p5_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.011072564418245296,
+      "p95_rad": 0.03786228559911236,
+      "p99_rad": 0.060396646186709445,
+      "max_rad": 0.09280955791473389,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "mixed_pos": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/mixed_pos_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.023984559511885033,
+      "p95_rad": 0.07600594162940978,
+      "p99_rad": 0.10438196182250979,
+      "max_rad": 0.1293855905532837,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 68,
+          "ratio": 0.01623686723973257
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    },
+    "mixed_neg": {
+      "trace": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/mixed_neg_trace.npz",
+      "policy_frame_count": 350,
+      "joint_control_step_samples": 4188,
+      "mean_rad": 0.0242702338396222,
+      "p95_rad": 0.07373446524143212,
+      "p99_rad": 0.10242133021354675,
+      "max_rad": 0.12652409076690674,
+      "thresholds": {
+        "over_0.10_rad": {
+          "count": 55,
+          "ratio": 0.013132760267430755
+        },
+        "over_0.30_rad": {
+          "count": 0,
+          "ratio": 0.0
+        },
+        "over_0.50_rad": {
+          "count": 0,
+          "ratio": 0.0
+        }
+      }
+    }
+  }
+}

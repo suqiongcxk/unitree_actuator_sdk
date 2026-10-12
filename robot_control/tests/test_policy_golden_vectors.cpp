@@ -32,6 +32,10 @@ struct Value {
             throw std::runtime_error("JSON 缺少字段: " + key);
         return it->second;
     }
+
+    bool has(const std::string& key) const {
+        return type == Type::Object && object.find(key) != object.end();
+    }
 };
 
 class Parser {
@@ -158,10 +162,25 @@ int main(int argc, char** argv)
         const auto& frames = root.at("frames").array;
         if (frames.empty()) throw std::runtime_error("黄金向量没有帧");
 
-        const auto default_pose_vector = numbers(frames.front(), "default_joint_position", 12);
+        // 旧格式把默认姿态和所有拆分观测字段放在每一帧；新版交付格式
+        // 把固定配置放在 metadata，并只保存最终 observation/action/q_des。
+        const bool compact_schema = frames.front().has("observation");
+        const auto& config = compact_schema ? root.at("metadata") : frames.front();
+        const auto default_pose_vector = numbers(config, "default_joint_position", 12);
+        float action_scale = 0.25f;
+        if (compact_schema) {
+            const auto& scale_value = config.at("action_scale");
+            if (scale_value.type != json::Value::Type::Number
+                    || !std::isfinite(scale_value.number))
+                throw std::runtime_error("action_scale 不是有限数值");
+            action_scale = static_cast<float>(scale_value.number);
+        }
         float default_pose[12];
         for (int i = 0; i < 12; ++i) default_pose[i] = default_pose_vector[i];
         PolicyObservationBuilder builder(default_pose);
+        std::cout << "[Golden] schema="
+                  << (compact_schema ? "compact-delivery-v1" : "legacy-expanded")
+                  << std::endl;
 
         Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "GoldenVectorTest");
         Ort::SessionOptions options;
@@ -185,6 +204,9 @@ int main(int argc, char** argv)
 
         ErrorPeak obs_peak, nonhistory_obs_peak, direct_action_peak;
         ErrorPeak action_peak, target_peak, history_peak;
+        std::vector<float> previous_expected_action(12, 0.0f);
+        if (compact_schema)
+            previous_expected_action = numbers(config, "first_previous_raw_action", 12);
         Ort::MemoryInfo memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
         const std::array<int64_t, 2> input_shape{{1, 48}};
         const char* input_names[] = {"obs"};
@@ -192,16 +214,13 @@ int main(int argc, char** argv)
 
         for (std::size_t f = 0; f < frames.size(); ++f) {
             const auto& frame = frames[f];
-            const auto lin = numbers(frame, "base_linear_velocity_body", 3);
-            const auto ang = numbers(frame, "base_angular_velocity_body", 3);
-            const auto gravity = numbers(frame, "projected_gravity_body", 3);
             const auto command = numbers(frame, "command", 3);
-            const auto q = numbers(frame, "joint_position", 12);
-            const auto dq = numbers(frame, "joint_velocity", 12);
-            const auto expected_history = numbers(frame, "previous_raw_action", 12);
-            const auto expected_obs = numbers(frame, "observation_final", 48);
-            const auto expected_action = numbers(frame, "onnx_actor_raw_action", 12);
-            const auto expected_target = numbers(frame, "joint_position_target", 12);
+            const auto expected_obs = numbers(
+                frame, compact_schema ? "observation" : "observation_final", 48);
+            const auto expected_action = numbers(
+                frame, compact_schema ? "raw_action" : "onnx_actor_raw_action", 12);
+            const auto expected_target = numbers(
+                frame, compact_schema ? "q_des" : "joint_position_target", 12);
 
             // 固定使用训练端保存的最终 observation 推理，用于隔离不同
             // ONNX Runtime 数值实现与 previous_raw_action 闭环递归误差。
@@ -213,10 +232,32 @@ int main(int argc, char** argv)
                 Ort::RunOptions{nullptr}, input_names, &direct_tensor, 1,
                 output_names, 1);
             const float* direct_action = direct_outputs[0].GetTensorData<float>();
-            for (int i = 0; i < 12; ++i)
+            for (int i = 0; i < 12; ++i) {
                 direct_action_peak.observe(direct_action[i], expected_action[i],
                                            static_cast<int>(f), i);
+                const float target = default_pose[i] + action_scale * direct_action[i];
+                target_peak.observe(target, expected_target[i], static_cast<int>(f), i);
+            }
 
+            if (compact_schema) {
+                // 新交付格式仍可独立确认速度命令和 previous raw-action
+                // 在48维 observation 中的位置与训练语义完全一致。
+                for (int i = 0; i < 3; ++i)
+                    nonhistory_obs_peak.observe(expected_obs[9 + i], command[i],
+                                                static_cast<int>(f), 9 + i);
+                for (int i = 0; i < 12; ++i)
+                    history_peak.observe(expected_obs[36 + i], previous_expected_action[i],
+                                         static_cast<int>(f), 36 + i);
+                previous_expected_action = expected_action;
+                continue;
+            }
+
+            const auto lin = numbers(frame, "base_linear_velocity_body", 3);
+            const auto ang = numbers(frame, "base_angular_velocity_body", 3);
+            const auto gravity = numbers(frame, "projected_gravity_body", 3);
+            const auto q = numbers(frame, "joint_position", 12);
+            const auto dq = numbers(frame, "joint_velocity", 12);
+            const auto expected_history = numbers(frame, "previous_raw_action", 12);
             EstimatedState state;
             for (int i = 0; i < 3; ++i) {
                 state.body_linear_velocity[i] = lin[i];
@@ -245,8 +286,6 @@ int main(int argc, char** argv)
             const float* action = outputs[0].GetTensorData<float>();
             for (int i = 0; i < 12; ++i) {
                 action_peak.observe(action[i], expected_action[i], static_cast<int>(f), i);
-                const float target = default_pose[i] + 0.25f * action[i];
-                target_peak.observe(target, expected_target[i], static_cast<int>(f), i);
             }
             if (!builder.commitRawAction(action)) throw std::runtime_error("ONNX 输出包含 NaN/Inf");
         }
@@ -256,11 +295,16 @@ int main(int argc, char** argv)
                       << peak.value << " frame=" << peak.frame << " index=" << peak.index << '\n';
         };
         std::cout << "[Golden] frames=" << frames.size() << '\n';
-        print_peak("C++ observation vs Python", obs_peak);
-        print_peak("non-history observation", nonhistory_obs_peak);
-        print_peak("previous raw-action history", history_peak);
+        if (compact_schema) {
+            print_peak("obs command semantics", nonhistory_obs_peak);
+            print_peak("obs raw-action history", history_peak);
+        } else {
+            print_peak("C++ observation vs Python", obs_peak);
+            print_peak("non-history observation", nonhistory_obs_peak);
+            print_peak("previous raw-action history", history_peak);
+        }
         print_peak("fixed-input ONNX parity", direct_action_peak);
-        print_peak("closed-loop ONNX parity", action_peak);
+        if (!compact_schema) print_peak("closed-loop ONNX parity", action_peak);
         print_peak("C++ q_des vs Python q_des", target_peak);
 
         constexpr float kDirectObservationTolerance = 1e-6f;
@@ -269,12 +313,17 @@ int main(int argc, char** argv)
         // previous_raw_action 递归累积；固定输入对拍仍保持严格门限，
         // 闭环项只用于确认误差没有失控或暴露历史语义错误。
         constexpr float kClosedLoopTolerance = 1e-4f;
-        const bool passed = nonhistory_obs_peak.value <= kDirectObservationTolerance &&
-                            obs_peak.value <= kClosedLoopTolerance &&
-                            history_peak.value <= kClosedLoopTolerance &&
-                            direct_action_peak.value <= kDirectInferenceTolerance &&
-                            action_peak.value <= kClosedLoopTolerance &&
-                            target_peak.value <= kClosedLoopTolerance;
+        const bool compact_passed = nonhistory_obs_peak.value <= kDirectObservationTolerance &&
+                                    history_peak.value <= kDirectObservationTolerance &&
+                                    direct_action_peak.value <= kDirectInferenceTolerance &&
+                                    target_peak.value <= kDirectInferenceTolerance;
+        const bool legacy_passed = nonhistory_obs_peak.value <= kDirectObservationTolerance &&
+                                   obs_peak.value <= kClosedLoopTolerance &&
+                                   history_peak.value <= kClosedLoopTolerance &&
+                                   direct_action_peak.value <= kDirectInferenceTolerance &&
+                                   action_peak.value <= kClosedLoopTolerance &&
+                                   target_peak.value <= kClosedLoopTolerance;
+        const bool passed = compact_schema ? compact_passed : legacy_passed;
         if (!passed) {
             std::cerr << "[FAIL] 黄金向量对拍超过容差" << std::endl;
             return 1;

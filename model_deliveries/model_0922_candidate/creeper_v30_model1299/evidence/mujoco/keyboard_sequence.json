@@ -1,0 +1,148 @@
+{
+  "definition": "raw q_des at consecutive 50 Hz policy frames; formal 0.5 m/s^2 translation and 1.0 rad/s^2 yaw ramps",
+  "segments": {
+    "forward_1p0": {
+      "max_rad": 0.20632338523864746,
+      "p95_rad": 0.1425652801990509,
+      "p99_rad": 0.17695684731006622,
+      "over_0p10_ratio": 0.11291666666666667,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.27702229157588587,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "reverse_to_neg_1p0": {
+      "max_rad": 0.20052319765090942,
+      "p95_rad": 0.11440621316432953,
+      "p99_rad": 0.16317494213581085,
+      "over_0p10_ratio": 0.077,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.2838758343244029,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "stop_after_reverse": {
+      "max_rad": 0.1762939691543579,
+      "p95_rad": 0.09358542412519455,
+      "p99_rad": 0.14310692250728607,
+      "over_0p10_ratio": 0.03944444444444444,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28599354850905273,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "lateral_pos": {
+      "max_rad": 0.16267430782318115,
+      "p95_rad": 0.07080410420894623,
+      "p99_rad": 0.11091671884059906,
+      "over_0p10_ratio": 0.0175,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.2848987673444816,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "lateral_reverse": {
+      "max_rad": 0.18591368198394775,
+      "p95_rad": 0.06325559318065643,
+      "p99_rad": 0.10634388774633408,
+      "over_0p10_ratio": 0.010833333333333334,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28643555205593374,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "stop_after_lateral": {
+      "max_rad": 0.12930047512054443,
+      "p95_rad": 0.028756333515048027,
+      "p99_rad": 0.06155850738286972,
+      "over_0p10_ratio": 0.0016666666666666668,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.2853265255307659,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "yaw_pos": {
+      "max_rad": 0.06584668159484863,
+      "p95_rad": 0.019698401913046837,
+      "p99_rad": 0.03478538244962692,
+      "over_0p10_ratio": 0.0,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28526383502903563,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "yaw_reverse": {
+      "max_rad": 0.0501856803894043,
+      "p95_rad": 0.019194822758436203,
+      "p99_rad": 0.03199378028512001,
+      "over_0p10_ratio": 0.0,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28567650268382044,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "stop_after_yaw": {
+      "max_rad": 0.010999321937561035,
+      "p95_rad": 0.0038638829719275236,
+      "p99_rad": 0.007692722603678703,
+      "over_0p10_ratio": 0.0,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28893396970872703,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "mixed_pos": {
+      "max_rad": 0.120552659034729,
+      "p95_rad": 0.07012125849723816,
+      "p99_rad": 0.10140049457550049,
+      "over_0p10_ratio": 0.011666666666666667,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28057269724381906,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "mixed_reverse": {
+      "max_rad": 0.14024049043655396,
+      "p95_rad": 0.06378591060638428,
+      "p99_rad": 0.10196736454963684,
+      "over_0p10_ratio": 0.012222222222222223,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.28448406309928015,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    },
+    "final_stop": {
+      "max_rad": 0.10902488231658936,
+      "p95_rad": 0.02217986062169075,
+      "p99_rad": 0.048737701028585434,
+      "over_0p10_ratio": 0.0005555555555555556,
+      "over_0p30_ratio": 0.0,
+      "over_0p50_ratio": 0.0,
+      "minimum_base_height_m": 0.2850981278817009,
+      "nonfoot_frames": 0,
+      "base_contact_frames": 0
+    }
+  },
+  "overall": {
+    "max_rad": 0.20632338523864746,
+    "p95_rad": 0.08636685460805893,
+    "p99_rad": 0.14681342244148254,
+    "over_0p10_ratio": 0.03364583333333333,
+    "over_0p30_ratio": 0.0,
+    "over_0p50_ratio": 0.0,
+    "minimum_base_height_m": 0.27702229157588587,
+    "nonfoot_frames": 0,
+    "base_contact_frames": 0
+  }
+}

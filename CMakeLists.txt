@@ -155,6 +155,78 @@ add_executable(test_velocity_command_manager
     robot_control/tests/test_velocity_command_manager.cpp)
 target_link_libraries(test_velocity_command_manager velocity_command_manager)
 
+# ESP32-S3串口遥控Protocol V1纯软件编解码与流解析测试。
+# 该目标不打开串口、不访问GPIO或电机。
+add_library(serial_protocol_v1
+    remote_control/src/serial_protocol_v1.cpp)
+target_include_directories(serial_protocol_v1 PUBLIC remote_control/include)
+set_target_properties(serial_protocol_v1 PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+add_executable(test_serial_protocol_v1
+    remote_control/tests/test_serial_protocol_v1.cpp)
+target_link_libraries(test_serial_protocol_v1 serial_protocol_v1)
+set_target_properties(test_serial_protocol_v1 PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+# ESP32-S3 UART Protocol V1第一阶段独立握手诊断程序。该目标不链接
+# robot_control、GPIO或电机库，CMD_VEL只解析和打印。
+add_library(serial_remote_diagnostic
+    remote_control/src/serial_remote_diagnostic.cpp)
+target_include_directories(serial_remote_diagnostic PUBLIC remote_control/include)
+target_link_libraries(serial_remote_diagnostic PUBLIC serial_protocol_v1)
+set_target_properties(serial_remote_diagnostic PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+add_executable(serial_remote_receiver
+    remote_control/src/serial_remote_receiver.cpp)
+target_link_libraries(serial_remote_receiver
+    serial_remote_diagnostic serial_protocol_v1)
+set_target_properties(serial_remote_receiver PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+# 无电机PTY集成测试：通过伪串口启动真实receiver并验证握手、心跳、
+# CRC/长度/序号拒绝、限幅打印以及600ms超时。
+add_executable(test_serial_remote_receiver
+    remote_control/tests/test_serial_remote_receiver.cpp)
+target_link_libraries(test_serial_remote_receiver
+    serial_remote_diagnostic serial_protocol_v1 util)
+add_dependencies(test_serial_remote_receiver serial_remote_receiver)
+set_target_properties(test_serial_remote_receiver PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+# Protocol V1输入源仲裁和实际VelocityCommandManager接入层。仍不链接
+# robot_control、GPIO或电机库。
+add_library(serial_velocity_control
+    remote_control/src/serial_velocity_control.cpp)
+target_include_directories(serial_velocity_control PUBLIC
+    remote_control/include robot_control)
+target_link_libraries(serial_velocity_control PUBLIC
+    serial_remote_diagnostic serial_protocol_v1 velocity_command_manager)
+set_target_properties(serial_velocity_control PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+# 独立无电机实串口验证入口。
+add_executable(serial_velocity_validator
+    remote_control/src/serial_velocity_validator.cpp)
+target_link_libraries(serial_velocity_validator serial_velocity_control)
+set_target_properties(serial_velocity_validator PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+add_executable(test_serial_velocity_control
+    remote_control/tests/test_serial_velocity_control.cpp)
+target_link_libraries(test_serial_velocity_control serial_velocity_control)
+set_target_properties(test_serial_velocity_control PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
+add_executable(test_serial_velocity_validator_pty
+    remote_control/tests/test_serial_velocity_validator_pty.cpp)
+target_link_libraries(test_serial_velocity_validator_pty
+    serial_protocol_v1 serial_remote_diagnostic util)
+add_dependencies(test_serial_velocity_validator_pty serial_velocity_validator)
+set_target_properties(test_serial_velocity_validator_pty PROPERTIES
+    CXX_STANDARD 14 CXX_STANDARD_REQUIRED YES CXX_EXTENSIONS NO)
+
 # 按需构建：cmake --build build --target test_double_buffer_tsan
 add_executable(test_double_buffer_tsan EXCLUDE_FROM_ALL
     robot_control/tests/test_double_buffer.cpp)
@@ -296,7 +368,9 @@ if(ONNX_FOUND)
     target_include_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/include")
     target_link_directories(robot_control PRIVATE "${ONNXRUNTIME_DIR}/lib")
     target_link_libraries(robot_control onnxruntime)
-    target_compile_definitions(robot_control PRIVATE ONNXRUNTIME_AVAILABLE)
+    target_compile_definitions(robot_control PRIVATE
+        ONNXRUNTIME_AVAILABLE
+        DEFAULT_ONNX_MODEL_PATH="${CMAKE_SOURCE_DIR}/model_deliveries/creeper_v46_model1250/creeper_model_v46_model1250_actor.onnx")
     # 设置 rpath 让可执行文件在运行时找到 .so
     set_target_properties(robot_control PROPERTIES
         INSTALL_RPATH "${ONNXRUNTIME_DIR}/lib"

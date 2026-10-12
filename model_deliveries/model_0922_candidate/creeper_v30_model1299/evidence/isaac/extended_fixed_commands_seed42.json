@@ -1,0 +1,2598 @@
+{
+  "task": "Isaac-Velocity-Flat-Creeper-20260906-V30-Play-v0",
+  "seed": 42,
+  "num_envs": 4,
+  "dt": 0.02,
+  "warmup_s": 2.0,
+  "duration_s": 5.0,
+  "observation_size": 48,
+  "action_size": 12,
+  "joint_names": [
+    "FL_hip_joint",
+    "FR_hip_joint",
+    "RL_hip_joint",
+    "RR_hip_joint",
+    "FL_thigh_joint",
+    "FR_thigh_joint",
+    "RL_thigh_joint",
+    "RR_thigh_joint",
+    "FL_calf_joint",
+    "FR_calf_joint",
+    "RL_calf_joint",
+    "RR_calf_joint"
+  ],
+  "delta_definition": "abs(0.25 * (raw_action[t] - raw_action[t-1])) at consecutive 50 Hz policy steps; first step after reset is excluded",
+  "results": {
+    "model_1299": {
+      "vx_neg_1p0_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          -1.0,
+          0.0,
+          0.0
+        ],
+        "mean_velocity_body": [
+          -0.9727147221565247,
+          0.0024480817373842,
+          0.0015659368364140391
+        ],
+        "final_1s_mean_velocity_body": [
+          -1.0001806020736694,
+          0.0002433036279398948,
+          0.002976876450702548
+        ],
+        "mean_height_m": 0.3129225969314575,
+        "min_height_m": 0.27568334341049194,
+        "max_abs_roll_rad": 0.06847918778657913,
+        "max_abs_pitch_rad": 0.12342450022697449,
+        "foot_contact_duty": [
+          0.5130000114440918,
+          0.5070000290870667,
+          0.4690000116825104,
+          0.45900002121925354
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            24,
+            25,
+            27,
+            26
+          ],
+          [
+            24,
+            25,
+            27,
+            26
+          ],
+          [
+            24,
+            25,
+            27,
+            26
+          ],
+          [
+            24,
+            25,
+            27,
+            26
+          ]
+        ],
+        "max_joint_velocity_rad_s": 11.543663024902344,
+        "max_torque_nm": 18.69879150390625,
+        "delta_q_des_mean_rad": 0.05106039717793465,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.14500750601291656,
+          "p99": 0.19206751883029938,
+          "p99p9": 0.27163153886795044
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.27929607033729553,
+          "q_des_abs_mean_rad": 0.027864238247275352,
+          "q_des_abs_p95_rad": 0.08184713870286942,
+          "q_des_abs_p99_rad": 0.11098185181617737,
+          "q_des_abs_p99p9_rad": 0.2177649438381195,
+          "q_des_abs_max_rad": 0.260864794254303
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.05181727185845375,
+            "p99": 0.07251638174057007,
+            "p99p9": 0.19711261987686157,
+            "max": 0.20903454720973969,
+            "over_0p10_count": 4,
+            "over_0p10_ratio": 0.004000000189989805,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.08028266578912735,
+            "max_abs_joint_velocity_when_over": 0.11267171800136566,
+            "mean_abs_torque_when_over": 4.742184638977051,
+            "mean_foot_height_when_over": 0.02001255191862583,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0037256423383951187,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 4,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.049719542264938354,
+            "p99": 0.07394655793905258,
+            "p99p9": 0.1959017813205719,
+            "max": 0.20345178246498108,
+            "over_0p10_count": 4,
+            "over_0p10_ratio": 0.004000000189989805,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.01457134447991848,
+            "max_abs_joint_velocity_when_over": 0.03249150514602661,
+            "mean_abs_torque_when_over": 4.755781173706055,
+            "mean_foot_height_when_over": 0.02001352049410343,
+            "mean_abs_foot_vertical_velocity_when_over": 0.00367188174277544,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 4,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.06364259868860245,
+            "p99": 0.07247345894575119,
+            "p99p9": 0.08950425684452057,
+            "max": 0.09176431596279144,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.07131031900644302,
+            "p99": 0.09478000551462173,
+            "p99p9": 0.18430133163928986,
+            "max": 0.18457859754562378,
+            "over_0p10_count": 8,
+            "over_0p10_ratio": 0.00800000037997961,
+            "over_near_same_leg_contact_transition": 8,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 2.8836421966552734,
+            "max_abs_joint_velocity_when_over": 4.521566867828369,
+            "mean_abs_torque_when_over": 1.826844573020935,
+            "mean_foot_height_when_over": 0.022889871150255203,
+            "mean_abs_foot_vertical_velocity_when_over": 0.04626720771193504,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 3,
+              "stance_to_air": 4,
+              "air_to_stance": 0,
+              "air_to_air": 1
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.1820812076330185,
+            "p99": 0.20603495836257935,
+            "p99p9": 0.2555534839630127,
+            "max": 0.26088201999664307,
+            "over_0p10_count": 312,
+            "over_0p10_ratio": 0.31200000643730164,
+            "over_near_same_leg_contact_transition": 168,
+            "over_near_transition_ratio": 0.5384615659713745,
+            "mean_abs_joint_velocity_when_over": 3.16214656829834,
+            "max_abs_joint_velocity_when_over": 7.1167778968811035,
+            "mean_abs_torque_when_over": 3.1276464462280273,
+            "mean_foot_height_when_over": 0.04489808529615402,
+            "mean_abs_foot_vertical_velocity_when_over": 0.1359637826681137,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 73,
+              "stance_to_air": 0,
+              "air_to_stance": 48,
+              "air_to_air": 191
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.19252514839172363,
+            "p99": 0.2146022468805313,
+            "p99p9": 0.33003583550453186,
+            "max": 0.34148427844047546,
+            "over_0p10_count": 273,
+            "over_0p10_ratio": 0.27300000190734863,
+            "over_near_same_leg_contact_transition": 132,
+            "over_near_transition_ratio": 0.48351648449897766,
+            "mean_abs_joint_velocity_when_over": 3.4037253856658936,
+            "max_abs_joint_velocity_when_over": 11.543663024902344,
+            "mean_abs_torque_when_over": 3.03214430809021,
+            "mean_foot_height_when_over": 0.0444800890982151,
+            "mean_abs_foot_vertical_velocity_when_over": 0.1369141936302185,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 63,
+              "stance_to_air": 0,
+              "air_to_stance": 46,
+              "air_to_air": 164
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.11316551268100739,
+            "p99": 0.1268451064825058,
+            "p99p9": 0.15215905010700226,
+            "max": 0.15309831500053406,
+            "over_0p10_count": 112,
+            "over_0p10_ratio": 0.1120000034570694,
+            "over_near_same_leg_contact_transition": 82,
+            "over_near_transition_ratio": 0.7321428656578064,
+            "mean_abs_joint_velocity_when_over": 2.9601333141326904,
+            "max_abs_joint_velocity_when_over": 9.33720874786377,
+            "mean_abs_torque_when_over": 1.6428637504577637,
+            "mean_foot_height_when_over": 0.03327213227748871,
+            "mean_abs_foot_vertical_velocity_when_over": 0.4189189672470093,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 28,
+              "stance_to_air": 4,
+              "air_to_stance": 44,
+              "air_to_air": 36
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.11358128488063812,
+            "p99": 0.1377965360879898,
+            "p99p9": 0.15702328085899353,
+            "max": 0.16408079862594604,
+            "over_0p10_count": 147,
+            "over_0p10_ratio": 0.1469999998807907,
+            "over_near_same_leg_contact_transition": 97,
+            "over_near_transition_ratio": 0.6598639488220215,
+            "mean_abs_joint_velocity_when_over": 3.086073160171509,
+            "max_abs_joint_velocity_when_over": 9.43654727935791,
+            "mean_abs_torque_when_over": 1.8607254028320312,
+            "mean_foot_height_when_over": 0.03741733729839325,
+            "mean_abs_foot_vertical_velocity_when_over": 0.49272963404655457,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 38,
+              "stance_to_air": 0,
+              "air_to_stance": 48,
+              "air_to_air": 61
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.15172699093818665,
+            "p99": 0.16415472328662872,
+            "p99p9": 0.29782918095588684,
+            "max": 0.30595555901527405,
+            "over_0p10_count": 329,
+            "over_0p10_ratio": 0.32899999618530273,
+            "over_near_same_leg_contact_transition": 275,
+            "over_near_transition_ratio": 0.8358662724494934,
+            "mean_abs_joint_velocity_when_over": 2.6043052673339844,
+            "max_abs_joint_velocity_when_over": 5.548450469970703,
+            "mean_abs_torque_when_over": 1.7219181060791016,
+            "mean_foot_height_when_over": 0.035695724189281464,
+            "mean_abs_foot_vertical_velocity_when_over": 0.12996850907802582,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 80,
+              "stance_to_air": 48,
+              "air_to_stance": 4,
+              "air_to_air": 197
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.1481722593307495,
+            "p99": 0.15505263209342957,
+            "p99p9": 0.16865050792694092,
+            "max": 0.18116486072540283,
+            "over_0p10_count": 308,
+            "over_0p10_ratio": 0.30799999833106995,
+            "over_near_same_leg_contact_transition": 260,
+            "over_near_transition_ratio": 0.8441558480262756,
+            "mean_abs_joint_velocity_when_over": 2.47711181640625,
+            "max_abs_joint_velocity_when_over": 5.642279624938965,
+            "mean_abs_torque_when_over": 1.3083761930465698,
+            "mean_foot_height_when_over": 0.03577495366334915,
+            "mean_abs_foot_vertical_velocity_when_over": 0.12820614874362946,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 53,
+              "stance_to_air": 48,
+              "air_to_stance": 8,
+              "air_to_air": 199
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.16285249590873718,
+            "p99": 0.17493672668933868,
+            "p99p9": 0.1956775188446045,
+            "max": 0.21178153157234192,
+            "over_0p10_count": 177,
+            "over_0p10_ratio": 0.1770000010728836,
+            "over_near_same_leg_contact_transition": 175,
+            "over_near_transition_ratio": 0.9887005686759949,
+            "mean_abs_joint_velocity_when_over": 1.7278534173965454,
+            "max_abs_joint_velocity_when_over": 3.8385205268859863,
+            "mean_abs_torque_when_over": 1.1672707796096802,
+            "mean_foot_height_when_over": 0.03301841765642166,
+            "mean_abs_foot_vertical_velocity_when_over": 0.07295825332403183,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 26,
+              "stance_to_air": 50,
+              "air_to_stance": 4,
+              "air_to_air": 97
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.17421405017375946,
+            "p99": 0.19050893187522888,
+            "p99p9": 0.3113050162792206,
+            "max": 0.319499671459198,
+            "over_0p10_count": 178,
+            "over_0p10_ratio": 0.17800000309944153,
+            "over_near_same_leg_contact_transition": 163,
+            "over_near_transition_ratio": 0.915730357170105,
+            "mean_abs_joint_velocity_when_over": 1.8438748121261597,
+            "max_abs_joint_velocity_when_over": 3.9994640350341797,
+            "mean_abs_torque_when_over": 1.7698421478271484,
+            "mean_foot_height_when_over": 0.03477920964360237,
+            "mean_abs_foot_vertical_velocity_when_over": 0.07172750681638718,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 30,
+              "stance_to_air": 49,
+              "air_to_stance": 0,
+              "air_to_air": 99
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.34148427844047546,
+          "frame": 19,
+          "time_s": 0.38,
+          "env": 3,
+          "joint_index": 5,
+          "joint_name": "FR_thigh_joint",
+          "raw_action_previous": 1.4368617534637451,
+          "raw_action_current": 0.07092459499835968,
+          "q_des_previous": 1.1592154502868652,
+          "q_des_current": 0.8177311420440674,
+          "contact_before": true,
+          "contact_after": true,
+          "foot_height_before": 0.01985211670398712,
+          "foot_velocity_before": [
+            0.5671627521514893,
+            0.33267658948898315,
+            -0.3469395339488983
+          ],
+          "joint_velocity_after": -1.8881412744522095,
+          "torque_after": -9.441328048706055
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 1852,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.15433333814144135,
+        "delta_q_des_control_frames_over_0p10": 853,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.8530000448226929,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            -1.0,
+            0.0,
+            0.0
+          ],
+          [
+            -1.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "vy_pos_0p2_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          0.0,
+          0.20000000298023224,
+          0.0
+        ],
+        "mean_velocity_body": [
+          0.0029517393559217453,
+          0.19366459548473358,
+          0.003069428028538823
+        ],
+        "final_1s_mean_velocity_body": [
+          0.0035308045335114002,
+          0.19501592218875885,
+          0.0015642591752111912
+        ],
+        "mean_height_m": 0.30151423811912537,
+        "min_height_m": 0.2905873954296112,
+        "max_abs_roll_rad": 0.06349153071641922,
+        "max_abs_pitch_rad": 0.05891961231827736,
+        "foot_contact_duty": [
+          0.6650000214576721,
+          0.5230000019073486,
+          0.5680000185966492,
+          0.6040000319480896
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            13,
+            14,
+            16,
+            13
+          ],
+          [
+            13,
+            14,
+            14,
+            13
+          ],
+          [
+            13,
+            14,
+            14,
+            13
+          ],
+          [
+            13,
+            14,
+            14,
+            13
+          ]
+        ],
+        "max_joint_velocity_rad_s": 4.3996076583862305,
+        "max_torque_nm": 10.325297355651855,
+        "delta_q_des_mean_rad": 0.0206852238625288,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.07212308049201965,
+          "p99": 0.1074354499578476,
+          "p99p9": 0.14724351465702057
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.04561217501759529,
+          "q_des_abs_mean_rad": 0.009462464600801468,
+          "q_des_abs_p95_rad": 0.03540641814470291,
+          "q_des_abs_p99_rad": 0.05372709780931473,
+          "q_des_abs_p99p9_rad": 0.09273882955312729,
+          "q_des_abs_max_rad": 0.1012037992477417
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.05278705060482025,
+            "p99": 0.0652695968747139,
+            "p99p9": 0.08713313192129135,
+            "max": 0.08897371590137482,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.042744025588035583,
+            "p99": 0.05436529219150543,
+            "p99p9": 0.05968720093369484,
+            "max": 0.05978427082300186,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.06089845672249794,
+            "p99": 0.0691123828291893,
+            "p99p9": 0.0725337490439415,
+            "max": 0.0736493170261383,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.046346042305231094,
+            "p99": 0.062466610223054886,
+            "p99p9": 0.06571656465530396,
+            "max": 0.06661824882030487,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.05766185745596886,
+            "p99": 0.06503389775753021,
+            "p99p9": 0.07235840708017349,
+            "max": 0.07312528789043427,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.05254659801721573,
+            "p99": 0.09154032170772552,
+            "p99p9": 0.1026531457901001,
+            "max": 0.10344027727842331,
+            "over_0p10_count": 2,
+            "over_0p10_ratio": 0.0020000000949949026,
+            "over_near_same_leg_contact_transition": 2,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.42302995920181274,
+            "max_abs_joint_velocity_when_over": 0.4324643313884735,
+            "mean_abs_torque_when_over": 3.5713729858398438,
+            "mean_foot_height_when_over": 0.019935492426156998,
+            "mean_abs_foot_vertical_velocity_when_over": 0.08654139190912247,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 2,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.025747055187821388,
+            "p99": 0.02976781129837036,
+            "p99p9": 0.045670222491025925,
+            "max": 0.04669831693172455,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.025014333426952362,
+            "p99": 0.03560497984290123,
+            "p99p9": 0.04229484871029854,
+            "max": 0.04260072112083435,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.11104696244001389,
+            "p99": 0.12996822595596313,
+            "p99p9": 0.14687980711460114,
+            "max": 0.14826235175132751,
+            "over_0p10_count": 79,
+            "over_0p10_ratio": 0.07900000363588333,
+            "over_near_same_leg_contact_transition": 79,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.7121033668518066,
+            "max_abs_joint_velocity_when_over": 2.457310914993286,
+            "mean_abs_torque_when_over": 1.636250376701355,
+            "mean_foot_height_when_over": 0.021083762869238853,
+            "mean_abs_foot_vertical_velocity_when_over": 0.14257721602916718,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 36,
+              "stance_to_air": 27,
+              "air_to_stance": 16,
+              "air_to_air": 0
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.10753363370895386,
+            "p99": 0.1480284482240677,
+            "p99p9": 0.15407247841358185,
+            "max": 0.15590043365955353,
+            "over_0p10_count": 57,
+            "over_0p10_ratio": 0.05700000002980232,
+            "over_near_same_leg_contact_transition": 57,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.5565779209136963,
+            "max_abs_joint_velocity_when_over": 2.6006999015808105,
+            "mean_abs_torque_when_over": 4.538016319274902,
+            "mean_foot_height_when_over": 0.027246994897723198,
+            "mean_abs_foot_vertical_velocity_when_over": 0.26204735040664673,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 23,
+              "stance_to_air": 0,
+              "air_to_stance": 28,
+              "air_to_air": 6
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.09481271356344223,
+            "p99": 0.10348571091890335,
+            "p99p9": 0.11630953103303909,
+            "max": 0.1166197806596756,
+            "over_0p10_count": 21,
+            "over_0p10_ratio": 0.020999999716877937,
+            "over_near_same_leg_contact_transition": 21,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.5450387001037598,
+            "max_abs_joint_velocity_when_over": 1.0180325508117676,
+            "mean_abs_torque_when_over": 2.723681688308716,
+            "mean_foot_height_when_over": 0.019985264167189598,
+            "mean_abs_foot_vertical_velocity_when_over": 0.028528548777103424,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 18,
+              "stance_to_air": 3,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.09540419280529022,
+            "p99": 0.10334283858537674,
+            "p99p9": 0.10698912292718887,
+            "max": 0.1073477566242218,
+            "over_0p10_count": 23,
+            "over_0p10_ratio": 0.023000000044703484,
+            "over_near_same_leg_contact_transition": 23,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.4838734865188599,
+            "max_abs_joint_velocity_when_over": 2.349785089492798,
+            "mean_abs_torque_when_over": 1.4735504388809204,
+            "mean_foot_height_when_over": 0.021596593782305717,
+            "mean_abs_foot_vertical_velocity_when_over": 0.05109989270567894,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 6,
+              "stance_to_air": 5,
+              "air_to_stance": 0,
+              "air_to_air": 12
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.15590043365955353,
+          "frame": 61,
+          "time_s": 1.22,
+          "env": 0,
+          "joint_index": 9,
+          "joint_name": "FR_calf_joint",
+          "raw_action_previous": -0.14838574826717377,
+          "raw_action_current": 0.47521597146987915,
+          "q_des_previous": -1.537096381187439,
+          "q_des_current": -1.3811960220336914,
+          "contact_before": false,
+          "contact_after": true,
+          "foot_height_before": 0.0219997838139534,
+          "foot_velocity_before": [
+            -0.36791831254959106,
+            0.5248927474021912,
+            -0.5765296220779419
+          ],
+          "joint_velocity_after": -1.3845057487487793,
+          "torque_after": 5.861216068267822
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 182,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.015166666358709335,
+        "delta_q_des_control_frames_over_0p10": 125,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.125,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            0.0,
+            0.20000000298023224,
+            0.0
+          ],
+          [
+            0.0,
+            0.20000000298023224,
+            0.0
+          ]
+        ]
+      },
+      "vy_neg_0p2_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          0.0,
+          -0.20000000298023224,
+          0.0
+        ],
+        "mean_velocity_body": [
+          0.0017683164915069938,
+          -0.19213223457336426,
+          -0.0043355543166399
+        ],
+        "final_1s_mean_velocity_body": [
+          0.002243606373667717,
+          -0.19243808090686798,
+          -0.006209058687090874
+        ],
+        "mean_height_m": 0.30156734585762024,
+        "min_height_m": 0.2906064987182617,
+        "max_abs_roll_rad": 0.0625535100698471,
+        "max_abs_pitch_rad": 0.0668037161231041,
+        "foot_contact_duty": [
+          0.49900001287460327,
+          0.6640000343322754,
+          0.628000020980835,
+          0.5420000553131104
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            14,
+            13,
+            13,
+            14
+          ],
+          [
+            14,
+            13,
+            13,
+            14
+          ],
+          [
+            14,
+            13,
+            13,
+            14
+          ],
+          [
+            14,
+            13,
+            13,
+            14
+          ]
+        ],
+        "max_joint_velocity_rad_s": 4.18600606918335,
+        "max_torque_nm": 10.547628402709961,
+        "delta_q_des_mean_rad": 0.0205544363707304,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.07430441677570343,
+          "p99": 0.1077737882733345,
+          "p99p9": 0.15433631837368011
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.04861414059996605,
+          "q_des_abs_mean_rad": 0.009473409503698349,
+          "q_des_abs_p95_rad": 0.03563179075717926,
+          "q_des_abs_p99_rad": 0.05842532217502594,
+          "q_des_abs_p99p9_rad": 0.10272904485464096,
+          "q_des_abs_max_rad": 0.11791178584098816
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.036416828632354736,
+            "p99": 0.04864790290594101,
+            "p99p9": 0.05583444982767105,
+            "max": 0.058221377432346344,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.0549863763153553,
+            "p99": 0.06039545685052872,
+            "p99p9": 0.09176599234342575,
+            "max": 0.09528342634439468,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.04944484680891037,
+            "p99": 0.06671906262636185,
+            "p99p9": 0.07301393151283264,
+            "max": 0.07522597908973694,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.061034202575683594,
+            "p99": 0.068552665412426,
+            "p99p9": 0.07762745767831802,
+            "max": 0.07959234714508057,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.05647480487823486,
+            "p99": 0.09340302646160126,
+            "p99p9": 0.09908413887023926,
+            "max": 0.1046990230679512,
+            "over_0p10_count": 1,
+            "over_0p10_ratio": 0.0010000000474974513,
+            "over_near_same_leg_contact_transition": 1,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.5019813776016235,
+            "max_abs_joint_velocity_when_over": 0.5019813776016235,
+            "mean_abs_torque_when_over": 3.61964750289917,
+            "mean_foot_height_when_over": 0.019801020622253418,
+            "mean_abs_foot_vertical_velocity_when_over": 0.05883045122027397,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 1,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.05513245612382889,
+            "p99": 0.07346401363611221,
+            "p99p9": 0.08110491931438446,
+            "max": 0.0814608633518219,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.022556088864803314,
+            "p99": 0.03037911280989647,
+            "p99p9": 0.03662903606891632,
+            "max": 0.036699309945106506,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.022265365347266197,
+            "p99": 0.030982254073023796,
+            "p99p9": 0.04670846462249756,
+            "max": 0.04834337532520294,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.12070025503635406,
+            "p99": 0.1562325656414032,
+            "p99p9": 0.1665446162223816,
+            "max": 0.1684698462486267,
+            "over_0p10_count": 58,
+            "over_0p10_ratio": 0.057999998331069946,
+            "over_near_same_leg_contact_transition": 58,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.889097809791565,
+            "max_abs_joint_velocity_when_over": 3.2911691665649414,
+            "mean_abs_torque_when_over": 5.000103950500488,
+            "mean_foot_height_when_over": 0.028105610981583595,
+            "mean_abs_foot_vertical_velocity_when_over": 0.3046115040779114,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 21,
+              "stance_to_air": 0,
+              "air_to_stance": 28,
+              "air_to_air": 9
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.10975615680217743,
+            "p99": 0.14280273020267487,
+            "p99p9": 0.15265825390815735,
+            "max": 0.15529471635818481,
+            "over_0p10_count": 72,
+            "over_0p10_ratio": 0.07199999690055847,
+            "over_near_same_leg_contact_transition": 72,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.7448900938034058,
+            "max_abs_joint_velocity_when_over": 2.4557957649230957,
+            "mean_abs_torque_when_over": 1.676377296447754,
+            "mean_foot_height_when_over": 0.021669456735253334,
+            "mean_abs_foot_vertical_velocity_when_over": 0.18273551762104034,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 28,
+              "stance_to_air": 23,
+              "air_to_stance": 21,
+              "air_to_air": 0
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.09355782717466354,
+            "p99": 0.1023477092385292,
+            "p99p9": 0.10478689521551132,
+            "max": 0.10705233365297318,
+            "over_0p10_count": 15,
+            "over_0p10_ratio": 0.014999999664723873,
+            "over_near_same_leg_contact_transition": 15,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.4245505928993225,
+            "max_abs_joint_velocity_when_over": 1.8214210271835327,
+            "mean_abs_torque_when_over": 2.9980509281158447,
+            "mean_foot_height_when_over": 0.020091833546757698,
+            "mean_abs_foot_vertical_velocity_when_over": 0.043423354625701904,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 11,
+              "stance_to_air": 3,
+              "air_to_stance": 0,
+              "air_to_air": 1
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.09636729955673218,
+            "p99": 0.11188195645809174,
+            "p99p9": 0.11760956794023514,
+            "max": 0.1190156638622284,
+            "over_0p10_count": 33,
+            "over_0p10_ratio": 0.032999999821186066,
+            "over_near_same_leg_contact_transition": 33,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.6806017756462097,
+            "max_abs_joint_velocity_when_over": 1.420404314994812,
+            "mean_abs_torque_when_over": 3.371537685394287,
+            "mean_foot_height_when_over": 0.019993342459201813,
+            "mean_abs_foot_vertical_velocity_when_over": 0.021771391853690147,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 23,
+              "stance_to_air": 10,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.1684698462486267,
+          "frame": 209,
+          "time_s": 4.18,
+          "env": 2,
+          "joint_index": 8,
+          "joint_name": "FL_calf_joint",
+          "raw_action_previous": -0.04645130783319473,
+          "raw_action_current": 0.6274280548095703,
+          "q_des_previous": -1.5116127729415894,
+          "q_des_current": -1.3431429862976074,
+          "contact_before": true,
+          "contact_after": true,
+          "foot_height_before": 0.019935429096221924,
+          "foot_velocity_before": [
+            -0.21763725578784943,
+            -0.28113406896591187,
+            -0.06344377994537354
+          ],
+          "joint_velocity_after": -1.5571740865707397,
+          "torque_after": 7.254495143890381
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 179,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.01491666678339243,
+        "delta_q_des_control_frames_over_0p10": 134,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.1340000033378601,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            0.0,
+            -0.20000000298023224,
+            0.0
+          ],
+          [
+            0.0,
+            -0.20000000298023224,
+            0.0
+          ]
+        ]
+      },
+      "yaw_pos_0p5_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          0.0,
+          0.0,
+          0.5
+        ],
+        "mean_velocity_body": [
+          -0.0011735630687326193,
+          -0.0029807616956532,
+          0.45279809832572937
+        ],
+        "final_1s_mean_velocity_body": [
+          -0.00407369202002883,
+          -0.005018808878958225,
+          0.4621042013168335
+        ],
+        "mean_height_m": 0.2980348467826843,
+        "min_height_m": 0.28083911538124084,
+        "max_abs_roll_rad": 0.08987027406692505,
+        "max_abs_pitch_rad": 0.06372935324907303,
+        "foot_contact_duty": [
+          0.9340000152587891,
+          0.8870000243186951,
+          0.8950000405311584,
+          0.9270000457763672
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            4,
+            4,
+            1,
+            6
+          ],
+          [
+            4,
+            8,
+            4,
+            6
+          ],
+          [
+            6,
+            5,
+            5,
+            6
+          ],
+          [
+            4,
+            3,
+            8,
+            6
+          ]
+        ],
+        "max_joint_velocity_rad_s": 4.917718410491943,
+        "max_torque_nm": 10.913369178771973,
+        "delta_q_des_mean_rad": 0.009917251765727997,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.03759424760937691,
+          "p99": 0.06106531620025635,
+          "p99p9": 0.08441808819770813
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.01307383831590414,
+          "q_des_abs_mean_rad": 0.0037909052334725857,
+          "q_des_abs_p95_rad": 0.01664012484252453,
+          "q_des_abs_p99_rad": 0.0342259481549263,
+          "q_des_abs_p99p9_rad": 0.07983684539794922,
+          "q_des_abs_max_rad": 0.10655612498521805
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.035900529474020004,
+            "p99": 0.054254062473773956,
+            "p99p9": 0.06617274880409241,
+            "max": 0.06624319404363632,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.034645505249500275,
+            "p99": 0.05482816696166992,
+            "p99p9": 0.06938096880912781,
+            "max": 0.07056748867034912,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.04007624834775925,
+            "p99": 0.058338653296232224,
+            "p99p9": 0.07245045900344849,
+            "max": 0.07643919438123703,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.05210117623209953,
+            "p99": 0.07319249212741852,
+            "p99p9": 0.08260397613048553,
+            "max": 0.08474159240722656,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.03049582801759243,
+            "p99": 0.04707011952996254,
+            "p99p9": 0.05909627676010132,
+            "max": 0.06872090697288513,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.023405959829688072,
+            "p99": 0.032414935529232025,
+            "p99p9": 0.037269771099090576,
+            "max": 0.03930647671222687,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.024492111057043076,
+            "p99": 0.033270347863435745,
+            "p99p9": 0.041274551302194595,
+            "max": 0.04658731818199158,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.016458306461572647,
+            "p99": 0.021608326584100723,
+            "p99p9": 0.047611866146326065,
+            "max": 0.04761488735675812,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.04528318718075752,
+            "p99": 0.07012630254030228,
+            "p99p9": 0.09732703864574432,
+            "max": 0.11011549830436707,
+            "over_0p10_count": 1,
+            "over_0p10_ratio": 0.0010000000474974513,
+            "over_near_same_leg_contact_transition": 1,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.9419116973876953,
+            "max_abs_joint_velocity_when_over": 0.9419116973876953,
+            "mean_abs_torque_when_over": 5.404624938964844,
+            "mean_foot_height_when_over": 0.020067162811756134,
+            "mean_abs_foot_vertical_velocity_when_over": 0.00939882081001997,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 1,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.038044966757297516,
+            "p99": 0.06088246405124664,
+            "p99p9": 0.07014703005552292,
+            "max": 0.07688815891742706,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.046106211841106415,
+            "p99": 0.07400072365999222,
+            "p99p9": 0.11548162996768951,
+            "max": 0.12680359184741974,
+            "over_0p10_count": 2,
+            "over_0p10_ratio": 0.0020000000949949026,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.7667763829231262,
+            "max_abs_joint_velocity_when_over": 1.0598266124725342,
+            "mean_abs_torque_when_over": 2.6691341400146484,
+            "mean_foot_height_when_over": 0.020015690475702286,
+            "mean_abs_foot_vertical_velocity_when_over": 0.013852560892701149,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 2,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.051486846059560776,
+            "p99": 0.06769269704818726,
+            "p99p9": 0.0887274518609047,
+            "max": 0.09222632646560669,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.12680359184741974,
+          "frame": 213,
+          "time_s": 4.26,
+          "env": 1,
+          "joint_index": 10,
+          "joint_name": "RL_calf_joint",
+          "raw_action_previous": 0.5290878415107727,
+          "raw_action_current": 0.021873489022254944,
+          "q_des_previous": -1.3677279949188232,
+          "q_des_current": -1.4945316314697266,
+          "contact_before": true,
+          "contact_after": true,
+          "foot_height_before": 0.02002008631825447,
+          "foot_velocity_before": [
+            -0.00013589096488431096,
+            -0.033235274255275726,
+            -0.001749994931742549
+          ],
+          "joint_velocity_after": -1.0598266124725342,
+          "torque_after": 1.7678544521331787
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 3,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.00024999998277053237,
+        "delta_q_des_control_frames_over_0p10": 3,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.003000000026077032,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            0.0,
+            0.0,
+            0.5
+          ],
+          [
+            0.0,
+            0.0,
+            0.5
+          ]
+        ]
+      },
+      "yaw_neg_0p5_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "mean_velocity_body": [
+          4.327655187807977e-05,
+          0.0011309898691251874,
+          -0.45911505818367004
+        ],
+        "final_1s_mean_velocity_body": [
+          -0.0029096785001456738,
+          0.007335789036005735,
+          -0.439732164144516
+        ],
+        "mean_height_m": 0.2999275326728821,
+        "min_height_m": 0.2863527536392212,
+        "max_abs_roll_rad": 0.06485067307949066,
+        "max_abs_pitch_rad": 0.06263849884271622,
+        "foot_contact_duty": [
+          0.8300000429153442,
+          0.9360000491142273,
+          0.906000018119812,
+          0.784000039100647
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            6,
+            4,
+            6,
+            4
+          ],
+          [
+            8,
+            6,
+            6,
+            8
+          ],
+          [
+            5,
+            4,
+            6,
+            8
+          ],
+          [
+            7,
+            4,
+            6,
+            8
+          ]
+        ],
+        "max_joint_velocity_rad_s": 5.286755084991455,
+        "max_torque_nm": 10.479211807250977,
+        "delta_q_des_mean_rad": 0.010155456140637398,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.03692249953746796,
+          "p99": 0.05879416689276695,
+          "p99p9": 0.07988406717777252
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.011988198384642601,
+          "q_des_abs_mean_rad": 0.003617839654907584,
+          "q_des_abs_p95_rad": 0.015722304582595825,
+          "q_des_abs_p99_rad": 0.032114721834659576,
+          "q_des_abs_p99p9_rad": 0.07533245533704758,
+          "q_des_abs_max_rad": 0.11149038374423981
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.03378847986459732,
+            "p99": 0.05689011514186859,
+            "p99p9": 0.07044092565774918,
+            "max": 0.07484772801399231,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.0324072539806366,
+            "p99": 0.05430973693728447,
+            "p99p9": 0.06515908241271973,
+            "max": 0.0663263201713562,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.05080733820796013,
+            "p99": 0.06484240293502808,
+            "p99p9": 0.08346524834632874,
+            "max": 0.08680656552314758,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.040827374905347824,
+            "p99": 0.05865190923213959,
+            "p99p9": 0.07542140036821365,
+            "max": 0.0864744633436203,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.022141190245747566,
+            "p99": 0.029622230678796768,
+            "p99p9": 0.03965568169951439,
+            "max": 0.04247702658176422,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.02481876313686371,
+            "p99": 0.037991445511579514,
+            "p99p9": 0.05891858786344528,
+            "max": 0.06185121834278107,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.017797453328967094,
+            "p99": 0.021626580506563187,
+            "p99p9": 0.0478605292737484,
+            "max": 0.04787163436412811,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.02225361205637455,
+            "p99": 0.03247237205505371,
+            "p99p9": 0.04207978397607803,
+            "max": 0.046304017305374146,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.037271708250045776,
+            "p99": 0.05305873975157738,
+            "p99p9": 0.06262406706809998,
+            "max": 0.06854591518640518,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.044739753007888794,
+            "p99": 0.07193691283464432,
+            "p99p9": 0.09717486798763275,
+            "max": 0.09823978692293167,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.04916781559586525,
+            "p99": 0.07178757339715958,
+            "p99p9": 0.08476922661066055,
+            "max": 0.08975432813167572,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.04519994184374809,
+            "p99": 0.06183220446109772,
+            "p99p9": 0.07824591547250748,
+            "max": 0.08319961279630661,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.09823978692293167,
+          "frame": 129,
+          "time_s": 2.58,
+          "env": 0,
+          "joint_index": 9,
+          "joint_name": "FR_calf_joint",
+          "raw_action_previous": -0.6163299083709717,
+          "raw_action_current": -0.223370760679245,
+          "q_des_previous": -1.6540825366973877,
+          "q_des_current": -1.555842638015747,
+          "contact_before": true,
+          "contact_after": true,
+          "foot_height_before": 0.02002141624689102,
+          "foot_velocity_before": [
+            -0.009329958818852901,
+            0.00792990904301405,
+            -0.0050811911933124065
+          ],
+          "joint_velocity_after": -0.8516204357147217,
+          "torque_after": 5.258217811584473
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 0,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.0,
+        "delta_q_des_control_frames_over_0p10": 0,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.0,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            0.0,
+            0.0,
+            -0.5
+          ],
+          [
+            0.0,
+            0.0,
+            -0.5
+          ]
+        ]
+      },
+      "mixed_pos_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          0.20000000298023224,
+          0.0,
+          0.5
+        ],
+        "mean_velocity_body": [
+          0.19678938388824463,
+          0.0026318980380892754,
+          0.5100550651550293
+        ],
+        "final_1s_mean_velocity_body": [
+          0.20232978463172913,
+          0.0042409938760101795,
+          0.51188725233078
+        ],
+        "mean_height_m": 0.2989675998687744,
+        "min_height_m": 0.28486913442611694,
+        "max_abs_roll_rad": 0.030544213950634003,
+        "max_abs_pitch_rad": 0.06837300211191177,
+        "foot_contact_duty": [
+          0.6600000262260437,
+          0.6550000309944153,
+          0.5570000410079956,
+          0.6030000448226929
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            13,
+            12,
+            12,
+            13
+          ],
+          [
+            14,
+            12,
+            14,
+            13
+          ],
+          [
+            13,
+            12,
+            14,
+            13
+          ],
+          [
+            14,
+            13,
+            15,
+            14
+          ]
+        ],
+        "max_joint_velocity_rad_s": 3.9866933822631836,
+        "max_torque_nm": 10.769327163696289,
+        "delta_q_des_mean_rad": 0.02142799086868763,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.07362238317728043,
+          "p99": 0.10363993793725967,
+          "p99p9": 0.13871344923973083
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.0507257878780365,
+          "q_des_abs_mean_rad": 0.009851054288446903,
+          "q_des_abs_p95_rad": 0.0360734760761261,
+          "q_des_abs_p99_rad": 0.055169884115457535,
+          "q_des_abs_p99p9_rad": 0.10834026336669922,
+          "q_des_abs_max_rad": 0.14466148614883423
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.05388082563877106,
+            "p99": 0.0730585977435112,
+            "p99p9": 0.08096925169229507,
+            "max": 0.08466467261314392,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.044581059366464615,
+            "p99": 0.049402158707380295,
+            "p99p9": 0.05961761996150017,
+            "max": 0.06377722322940826,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.058364320546388626,
+            "p99": 0.08125483244657516,
+            "p99p9": 0.09488476812839508,
+            "max": 0.10336491465568542,
+            "over_0p10_count": 1,
+            "over_0p10_ratio": 0.0010000000474974513,
+            "over_near_same_leg_contact_transition": 1,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.4803444743156433,
+            "max_abs_joint_velocity_when_over": 0.4803444743156433,
+            "mean_abs_torque_when_over": 0.5910506248474121,
+            "mean_foot_height_when_over": 0.020000167191028595,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0021794496569782495,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 1,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.07131677865982056,
+            "p99": 0.08959318697452545,
+            "p99p9": 0.1008511334657669,
+            "max": 0.11823827028274536,
+            "over_0p10_count": 3,
+            "over_0p10_ratio": 0.003000000026077032,
+            "over_near_same_leg_contact_transition": 3,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.5282151103019714,
+            "max_abs_joint_velocity_when_over": 0.6213453412055969,
+            "mean_abs_torque_when_over": 4.516995906829834,
+            "mean_foot_height_when_over": 0.019958442077040672,
+            "mean_abs_foot_vertical_velocity_when_over": 0.05188577622175217,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 3,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.059008870273828506,
+            "p99": 0.07779795676469803,
+            "p99p9": 0.08084940910339355,
+            "max": 0.08265838027000427,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.05090245231986046,
+            "p99": 0.06787733733654022,
+            "p99p9": 0.07154965400695801,
+            "max": 0.09091635048389435,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.04404255002737045,
+            "p99": 0.05387495085597038,
+            "p99p9": 0.06698225438594818,
+            "max": 0.06862740963697433,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.050045549869537354,
+            "p99": 0.07978863269090652,
+            "p99p9": 0.1413312554359436,
+            "max": 0.1422559767961502,
+            "over_0p10_count": 4,
+            "over_0p10_ratio": 0.004000000189989805,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 1.0677436590194702,
+            "max_abs_joint_velocity_when_over": 1.1441696882247925,
+            "mean_abs_torque_when_over": 2.8614327907562256,
+            "mean_foot_height_when_over": 0.020006665959954262,
+            "mean_abs_foot_vertical_velocity_when_over": 0.003342347452417016,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 4,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.09630285203456879,
+            "p99": 0.11417624354362488,
+            "p99p9": 0.12011338770389557,
+            "max": 0.12054002285003662,
+            "over_0p10_count": 38,
+            "over_0p10_ratio": 0.03799999877810478,
+            "over_near_same_leg_contact_transition": 38,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.4244240522384644,
+            "max_abs_joint_velocity_when_over": 2.367400646209717,
+            "mean_abs_torque_when_over": 1.7204686403274536,
+            "mean_foot_height_when_over": 0.020015977323055267,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0268652755767107,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 11,
+              "stance_to_air": 24,
+              "air_to_stance": 0,
+              "air_to_air": 3
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.10301452875137329,
+            "p99": 0.1352836936712265,
+            "p99p9": 0.14252632856369019,
+            "max": 0.16003024578094482,
+            "over_0p10_count": 51,
+            "over_0p10_ratio": 0.050999999046325684,
+            "over_near_same_leg_contact_transition": 51,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 2.5565807819366455,
+            "max_abs_joint_velocity_when_over": 3.856177568435669,
+            "mean_abs_torque_when_over": 0.5047860741615295,
+            "mean_foot_height_when_over": 0.02108246460556984,
+            "mean_abs_foot_vertical_velocity_when_over": 0.07053158432245255,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 10,
+              "stance_to_air": 24,
+              "air_to_stance": 0,
+              "air_to_air": 17
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.08913424611091614,
+            "p99": 0.10551709681749344,
+            "p99p9": 0.11378657817840576,
+            "max": 0.11975390464067459,
+            "over_0p10_count": 18,
+            "over_0p10_ratio": 0.017999999225139618,
+            "over_near_same_leg_contact_transition": 18,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.0047097206115723,
+            "max_abs_joint_velocity_when_over": 1.514939546585083,
+            "mean_abs_torque_when_over": 2.9635918140411377,
+            "mean_foot_height_when_over": 0.019976215437054634,
+            "mean_abs_foot_vertical_velocity_when_over": 0.038148898631334305,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 9,
+              "stance_to_air": 9,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.09655946493148804,
+            "p99": 0.11453866213560104,
+            "p99p9": 0.1403876096010208,
+            "max": 0.14701683819293976,
+            "over_0p10_count": 38,
+            "over_0p10_ratio": 0.03799999877810478,
+            "over_near_same_leg_contact_transition": 38,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.9019365906715393,
+            "max_abs_joint_velocity_when_over": 2.4050443172454834,
+            "mean_abs_torque_when_over": 3.9404332637786865,
+            "mean_foot_height_when_over": 0.02556687407195568,
+            "mean_abs_foot_vertical_velocity_when_over": 0.2700650095939636,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 19,
+              "stance_to_air": 0,
+              "air_to_stance": 18,
+              "air_to_air": 1
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.16003024578094482,
+          "frame": 23,
+          "time_s": 0.46,
+          "env": 0,
+          "joint_index": 9,
+          "joint_name": "FR_calf_joint",
+          "raw_action_previous": -0.2025255262851715,
+          "raw_action_current": -0.8426465392112732,
+          "q_des_previous": -1.5506314039230347,
+          "q_des_current": -1.7106616497039795,
+          "contact_before": false,
+          "contact_after": false,
+          "foot_height_before": 0.020456328988075256,
+          "foot_velocity_before": [
+            0.9871202111244202,
+            0.03952857851982117,
+            -0.19255651533603668
+          ],
+          "joint_velocity_after": -3.856177568435669,
+          "torque_after": 1.0085296630859375
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 153,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.012749999761581421,
+        "delta_q_des_control_frames_over_0p10": 138,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.1380000114440918,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            0.20000000298023224,
+            0.0,
+            0.5
+          ],
+          [
+            0.20000000298023224,
+            0.0,
+            0.5
+          ]
+        ]
+      },
+      "mixed_neg_abrupt": {
+        "mode": "fixed",
+        "final_command": [
+          0.20000000298023224,
+          0.0,
+          -0.5
+        ],
+        "mean_velocity_body": [
+          0.19757208228111267,
+          -0.0022054605651646852,
+          -0.5115932822227478
+        ],
+        "final_1s_mean_velocity_body": [
+          0.20410755276679993,
+          -0.004811590071767569,
+          -0.5195288062095642
+        ],
+        "mean_height_m": 0.2990446388721466,
+        "min_height_m": 0.2846878170967102,
+        "max_abs_roll_rad": 0.032495271414518356,
+        "max_abs_pitch_rad": 0.07603427022695541,
+        "foot_contact_duty": [
+          0.6310000419616699,
+          0.6880000233650208,
+          0.6440000534057617,
+          0.5230000019073486
+        ],
+        "foot_contact_transitions_per_env": [
+          [
+            13,
+            14,
+            14,
+            13
+          ],
+          [
+            13,
+            14,
+            14,
+            15
+          ],
+          [
+            13,
+            14,
+            14,
+            15
+          ],
+          [
+            13,
+            14,
+            14,
+            15
+          ]
+        ],
+        "max_joint_velocity_rad_s": 4.38137674331665,
+        "max_torque_nm": 10.77794075012207,
+        "delta_q_des_mean_rad": 0.02244962565600872,
+        "delta_q_des_percentiles_rad": {
+          "p95": 0.07235467433929443,
+          "p99": 0.1023511216044426,
+          "p99p9": 0.1324869692325592
+        },
+        "action_acceleration": {
+          "definition": "(raw_action[t]-raw_action[t-1])-(raw_action[t-1]-raw_action[t-2])",
+          "raw_action_l2_mean": 0.05016801506280899,
+          "q_des_abs_mean_rad": 0.010039928369224072,
+          "q_des_abs_p95_rad": 0.03571426123380661,
+          "q_des_abs_p99_rad": 0.05375250428915024,
+          "q_des_abs_p99p9_rad": 0.12088405340909958,
+          "q_des_abs_max_rad": 0.1482020765542984
+        },
+        "delta_q_des_by_joint": {
+          "FL_hip_joint": {
+            "p95": 0.040244363248348236,
+            "p99": 0.04761892184615135,
+            "p99p9": 0.060437556356191635,
+            "max": 0.0743703693151474,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_hip_joint": {
+            "p95": 0.05218622460961342,
+            "p99": 0.06556451320648193,
+            "p99p9": 0.08407411724328995,
+            "max": 0.08962225914001465,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_hip_joint": {
+            "p95": 0.07298406213521957,
+            "p99": 0.08446621149778366,
+            "p99p9": 0.11121699213981628,
+            "max": 0.14727191627025604,
+            "over_0p10_count": 2,
+            "over_0p10_ratio": 0.0020000000949949026,
+            "over_near_same_leg_contact_transition": 2,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.2962051331996918,
+            "max_abs_joint_velocity_when_over": 0.4380430579185486,
+            "mean_abs_torque_when_over": 4.945171356201172,
+            "mean_foot_height_when_over": 0.027574174106121063,
+            "mean_abs_foot_vertical_velocity_when_over": 0.407012939453125,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 1,
+              "stance_to_air": 0,
+              "air_to_stance": 1,
+              "air_to_air": 0
+            }
+          },
+          "RR_hip_joint": {
+            "p95": 0.0595073401927948,
+            "p99": 0.06918184459209442,
+            "p99p9": 0.10316158831119537,
+            "max": 0.11289320141077042,
+            "over_0p10_count": 2,
+            "over_0p10_ratio": 0.0020000000949949026,
+            "over_near_same_leg_contact_transition": 2,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 0.6476919651031494,
+            "max_abs_joint_velocity_when_over": 1.2093849182128906,
+            "mean_abs_torque_when_over": 0.9955187439918518,
+            "mean_foot_height_when_over": 0.01999901607632637,
+            "mean_abs_foot_vertical_velocity_when_over": 0.004797849804162979,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 1,
+              "stance_to_air": 1,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_thigh_joint": {
+            "p95": 0.0519273579120636,
+            "p99": 0.0599336214363575,
+            "p99p9": 0.0727967694401741,
+            "max": 0.08838352560997009,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FR_thigh_joint": {
+            "p95": 0.05624441057443619,
+            "p99": 0.0717095211148262,
+            "p99p9": 0.07463374733924866,
+            "max": 0.08146092295646667,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RL_thigh_joint": {
+            "p95": 0.058358412235975266,
+            "p99": 0.07235775887966156,
+            "p99p9": 0.14078401029109955,
+            "max": 0.140797957777977,
+            "over_0p10_count": 4,
+            "over_0p10_ratio": 0.004000000189989805,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.8196557760238647,
+            "max_abs_joint_velocity_when_over": 0.8842868208885193,
+            "mean_abs_torque_when_over": 2.896226406097412,
+            "mean_foot_height_when_over": 0.020005881786346436,
+            "mean_abs_foot_vertical_velocity_when_over": 0.003145179245620966,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 4,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "RR_thigh_joint": {
+            "p95": 0.04385644569993019,
+            "p99": 0.05655595660209656,
+            "p99p9": 0.0669042319059372,
+            "max": 0.0734887570142746,
+            "over_0p10_count": 0,
+            "over_0p10_ratio": 0.0,
+            "over_near_same_leg_contact_transition": 0,
+            "over_near_transition_ratio": 0.0,
+            "mean_abs_joint_velocity_when_over": 0.0,
+            "max_abs_joint_velocity_when_over": 0.0,
+            "mean_abs_torque_when_over": 0.0,
+            "mean_foot_height_when_over": 0.0,
+            "mean_abs_foot_vertical_velocity_when_over": 0.0,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 0,
+              "stance_to_air": 0,
+              "air_to_stance": 0,
+              "air_to_air": 0
+            }
+          },
+          "FL_calf_joint": {
+            "p95": 0.10373130440711975,
+            "p99": 0.13143962621688843,
+            "p99p9": 0.1397215574979782,
+            "max": 0.1594509482383728,
+            "over_0p10_count": 60,
+            "over_0p10_ratio": 0.05999999865889549,
+            "over_near_same_leg_contact_transition": 60,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 2.504633903503418,
+            "max_abs_joint_velocity_when_over": 4.38137674331665,
+            "mean_abs_torque_when_over": 0.4889031946659088,
+            "mean_foot_height_when_over": 0.021853677928447723,
+            "mean_abs_foot_vertical_velocity_when_over": 0.061685215681791306,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 9,
+              "stance_to_air": 26,
+              "air_to_stance": 0,
+              "air_to_air": 25
+            }
+          },
+          "FR_calf_joint": {
+            "p95": 0.09623648971319199,
+            "p99": 0.10694198310375214,
+            "p99p9": 0.12209620326757431,
+            "max": 0.12500005960464478,
+            "over_0p10_count": 35,
+            "over_0p10_ratio": 0.03500000014901161,
+            "over_near_same_leg_contact_transition": 35,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.2128574848175049,
+            "max_abs_joint_velocity_when_over": 2.153672456741333,
+            "mean_abs_torque_when_over": 2.8713815212249756,
+            "mean_foot_height_when_over": 0.020518211647868156,
+            "mean_abs_foot_vertical_velocity_when_over": 0.08948087692260742,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 16,
+              "stance_to_air": 15,
+              "air_to_stance": 4,
+              "air_to_air": 0
+            }
+          },
+          "RL_calf_joint": {
+            "p95": 0.08694934844970703,
+            "p99": 0.10693930089473724,
+            "p99p9": 0.145307257771492,
+            "max": 0.1560893952846527,
+            "over_0p10_count": 22,
+            "over_0p10_ratio": 0.02199999988079071,
+            "over_near_same_leg_contact_transition": 22,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.1316626071929932,
+            "max_abs_joint_velocity_when_over": 3.0891213417053223,
+            "mean_abs_torque_when_over": 4.033226013183594,
+            "mean_foot_height_when_over": 0.026651328429579735,
+            "mean_abs_foot_vertical_velocity_when_over": 0.25447285175323486,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 14,
+              "stance_to_air": 0,
+              "air_to_stance": 4,
+              "air_to_air": 4
+            }
+          },
+          "RR_calf_joint": {
+            "p95": 0.08983273059129715,
+            "p99": 0.10297638922929764,
+            "p99p9": 0.11896957457065582,
+            "max": 0.12183995544910431,
+            "over_0p10_count": 19,
+            "over_0p10_ratio": 0.01899999938905239,
+            "over_near_same_leg_contact_transition": 19,
+            "over_near_transition_ratio": 1.0,
+            "mean_abs_joint_velocity_when_over": 1.1217573881149292,
+            "max_abs_joint_velocity_when_over": 2.132532835006714,
+            "mean_abs_torque_when_over": 1.7363803386688232,
+            "mean_foot_height_when_over": 0.020002633333206177,
+            "mean_abs_foot_vertical_velocity_when_over": 0.050489600747823715,
+            "contact_state_counts_when_over": {
+              "stance_to_stance": 4,
+              "stance_to_air": 13,
+              "air_to_stance": 1,
+              "air_to_air": 1
+            }
+          }
+        },
+        "delta_q_des_max": {
+          "value": 0.1594509482383728,
+          "frame": 25,
+          "time_s": 0.5,
+          "env": 0,
+          "joint_index": 8,
+          "joint_name": "FL_calf_joint",
+          "raw_action_previous": 0.04911377280950546,
+          "raw_action_current": -0.5886900424957275,
+          "q_des_previous": -1.487721562385559,
+          "q_des_current": -1.647172451019287,
+          "contact_before": true,
+          "contact_after": false,
+          "foot_height_before": 0.020016908645629883,
+          "foot_velocity_before": [
+            -0.006717843934893608,
+            0.051789291203022,
+            0.022948091849684715
+          ],
+          "joint_velocity_after": -3.153369188308716,
+          "torque_after": 1.1699836254119873
+        },
+        "delta_q_des_joint_control_steps_over_0p10": 144,
+        "delta_q_des_joint_control_step_samples": 12000,
+        "delta_q_des_joint_control_step_ratio": 0.012000000104308128,
+        "delta_q_des_control_frames_over_0p10": 123,
+        "delta_q_des_control_frame_samples": 1000,
+        "delta_q_des_control_frame_ratio": 0.12300000339746475,
+        "reset_count": 0,
+        "base_contact_count": 0,
+        "command_trace_first_last": [
+          [
+            0.20000000298023224,
+            0.0,
+            -0.5
+          ],
+          [
+            0.20000000298023224,
+            0.0,
+            -0.5
+          ]
+        ]
+      }
+    }
+  }
+}

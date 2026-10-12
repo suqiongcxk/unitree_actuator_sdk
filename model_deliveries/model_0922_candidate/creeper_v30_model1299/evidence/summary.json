@@ -1,0 +1,31 @@
+{
+  "model": "V30 model_1299.pt",
+  "checkpoint_sha256": "4285d2262ed122da182bba8e0790a8c477f11ad31940ad2fb1d502721da3a7cd",
+  "policy_frequency_hz": 50,
+  "q_des_definition": "default_joint_pos + 0.25 * raw_action",
+  "provisional_threshold_rad_per_policy_frame": 0.5,
+  "threshold_status": "user-selected offline engineering criterion; not a verified hardware limit",
+  "isaac": {
+    "status": "PASS",
+    "maximum_delta_q_des_rad": 0.34148427844047546,
+    "maximum_case": "zero to vx=-1.0 abrupt",
+    "ratio_over_0p30_in_maximum_case": 0.0005,
+    "ratio_over_0p50": 0.0,
+    "reset_count": 0,
+    "base_contact_count": 0
+  },
+  "mujoco": {
+    "status": "PASS",
+    "maximum_fixed_case_delta_q_des_rad": 0.2415490746498108,
+    "maximum_fixed_case": "zero to vx=-1.0 with formal ramp",
+    "keyboard_sequence_maximum_delta_q_des_rad": 0.20632338523864746,
+    "ratio_over_0p30": 0.0,
+    "ratio_over_0p50": 0.0,
+    "fall_count": 0,
+    "nonfoot_contact_frames": 0,
+    "base_contact_frames": 0
+  },
+  "legacy_0p10_result": "FAIL retained without modification",
+  "hardware_safety": "unverified",
+  "real_robot_deployment": "not authorized and not performed"
+}

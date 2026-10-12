@@ -7,7 +7,8 @@
  *   sudo ./robot_control [选项]
  *
  * 选项:
- *   --onnx <path>       ONNX 模型文件路径
+ *   --onnx <path>       覆盖默认ONNX模型文件路径
+ *   --standing-policy   显式使用StandingPolicy，不加载ONNX
  *   --dry-run           NN 计算但不发送电机指令 (安全测试)
  *   --monitor-only      跳过标定/站立，电机只阻尼，强制 NN dry-run
  *   --step7-diagnostics 正常标定/站立，强制 NN dry-run，输出接触与里程计详情
@@ -23,14 +24,14 @@
  *   -h, --help         打印帮助
  *
  * 验证工作流示例:
- *   # 第1步: 干运行 ONNX 模型, 记录日志, 对比站立策略
- *   sudo ./robot_control --onnx model.onnx --dry-run --log --compare
+ *   # 第1步: 干运行默认 ONNX 模型, 记录日志, 对比站立策略
+ *   sudo ./robot_control --dry-run --log --compare
  *
  *   # 第2步: 检查日志确认输出合理后, 去掉 --dry-run 实际控制
- *   sudo ./robot_control --onnx model.onnx --log --compare
+ *   sudo ./robot_control --log --compare
  *
  *   # 第3步: 确认稳定后, 去掉调试选项
- *   sudo ./robot_control --onnx model.onnx
+ *   sudo ./robot_control
  */
 
 #include "robot_controller.h"
@@ -386,7 +387,8 @@ static void printHelp(const char* prog)
 {
     std::cout << "用法: sudo " << prog << " [选项]\n\n"
               << "选项:\n"
-              << "  --onnx <path>       ONNX 模型文件路径\n"
+              << "  --onnx <path>       覆盖默认ONNX模型文件路径\n"
+              << "  --standing-policy   显式使用 StandingPolicy，不加载 ONNX\n"
               << "  --dry-run           NN 计算但不发送指令（仍会执行标定/站立）\n"
               << "  --monitor-only      跳过标定/站立，电机只阻尼，强制 dry-run\n"
               << "  --step7-diagnostics 正常标定/站立，强制 NN dry-run，输出接触/里程计详情\n"
@@ -414,12 +416,12 @@ static void printHelp(const char* prog)
               << "平滑回零: z 后回车\n"
               << "接触诊断标记: 1=基线，2=卸载，3=重新承重（均需按回车）\n"
               << "\n验证工作流:\n"
-              << "  # 第1步: 干运行 ONNX 模型, 记录日志, 对比站立策略\n"
-              << "  sudo " << prog << " --onnx model.onnx --dry-run --log --compare\n\n"
+              << "  # 第1步: 干运行默认 ONNX 模型, 记录日志, 对比站立策略\n"
+              << "  sudo " << prog << " --dry-run --log --compare\n\n"
               << "  # 第2步: 检查日志确认合理后, 实际控制电机\n"
-              << "  sudo " << prog << " --onnx model.onnx --log --compare\n\n"
+              << "  sudo " << prog << " --log --compare\n\n"
               << "  # 第3步: 稳定后去掉调试选项\n"
-              << "  sudo " << prog << " --onnx model.onnx\n"
+              << "  sudo " << prog << "\n"
               << std::endl;
 }
 
@@ -432,6 +434,7 @@ int main(int argc, char* argv[])
     resetEmergencyStop();
     // ── 解析命令行参数 ──
     RobotControlConfig config = RobotController::getDefaultConfig();
+    bool onnx_path_explicit = false;
     bool contact_diagnostics = false;
     std::string command_fifo_path = "/tmp/creeper_velocity_command.fifo";
     bool command_fifo_enabled = true;
@@ -441,6 +444,11 @@ int main(int argc, char* argv[])
 
         if (arg == "--onnx" && i + 1 < argc) {
             config.onnx_model_path = argv[++i];
+            onnx_path_explicit = true;
+        }
+        else if (arg == "--standing-policy") {
+            config.onnx_model_path.clear();
+            onnx_path_explicit = false;
         }
         else if (arg == "--dry-run") {
             config.nn_flags.dry_run = true;
@@ -549,10 +557,12 @@ int main(int argc, char* argv[])
                          "Step 7 需要机械标定后的 URDF 关节角" << std::endl;
             return 1;
         }
-        if (!config.onnx_model_path.empty()) {
+        if (onnx_path_explicit) {
             std::cerr << "--step7-diagnostics 禁止同时加载 ONNX 模型" << std::endl;
             return 1;
         }
+        // Step 7只测试开环站立与状态估计；默认模型不应改变既有诊断语义。
+        config.onnx_model_path.clear();
         // 只保留站立过渡结束时锁存的低刚度目标，禁止 NN 线程覆盖电机命令。
         config.nn_flags.dry_run = true;
         config.nn_flags.validate = false;

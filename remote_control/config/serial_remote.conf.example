@@ -1,0 +1,35 @@
+# ESP32-S3 -> RK3588 UART1_M1直连串口遥控配置（Protocol V1）
+
+# GPIO1_B7=RX、GPIO1_B6=TX；需由用户启用uart1-m1 overlay并重启。
+device=/dev/ttyS1
+baud_rate=115200
+data_bits=8
+parity=none
+stop_bits=1
+flow_control=none
+
+# 手机/ESP32建议20Hz发送速度；RK3588接收循环可更高频轮询。
+command_rate_hz=20
+heartbeat_rate_hz=5
+receive_poll_ms=5
+
+# cmd_vel与heartbeat必须使用两个独立计时器。
+command_timeout_ms=250
+heartbeat_timeout_ms=600
+
+# 与当前训练/部署速度语义一致：[vx, vy, yaw_rate]。
+vx_min_mps=-1.0
+vx_max_mps=1.0
+vy_min_mps=-1.0
+vy_max_mps=1.0
+yaw_rate_min_radps=-1.0
+yaw_rate_max_radps=1.0
+
+# 继续复用现有VelocityCommandManager的平滑速率。
+vx_slew_rate_mps2=0.5
+vy_slew_rate_mps2=0.5
+yaw_rate_slew_rate_radps2=1.0
+
+max_payload_bytes=48
+max_consecutive_crc_errors=20
+status_rate_hz=10

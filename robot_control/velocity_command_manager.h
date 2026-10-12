@@ -9,8 +9,10 @@ struct VelocityCommandConfig {
     // model_700.pt 训练最终范围，单位[m/s,m/s,rad/s]。
     std::array<float, 3> minimum{{-1.0f, -1.0f, -1.0f}};
     std::array<float, 3> maximum{{ 1.0f,  1.0f,  1.0f}};
-    // 真机部署平滑参数，单位[m/s²,m/s²,rad/s²]。
-    std::array<float, 3> slew_rate{{0.5f, 0.5f, 1.0f}};
+    // V45训练一致的命令斜坡，单位[m/s²,m/s²,rad/s²]。
+    // 平移加速0.3、减速0.8；交付材料未改变偏航斜率，仍保持1.0。
+    std::array<float, 3> acceleration_rate{{0.3f, 0.3f, 1.0f}};
+    std::array<float, 3> deceleration_rate{{0.8f, 0.8f, 1.0f}};
     uint64_t watchdog_timeout_ns = 500'000'000ULL;
     uint64_t max_single_hold_ns = 5'000'000'000ULL;
 };

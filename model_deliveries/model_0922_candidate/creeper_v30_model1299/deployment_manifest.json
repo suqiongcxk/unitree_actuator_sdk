@@ -1,0 +1,449 @@
+{
+  "schema_version": "1.0",
+  "delivery_id": "creeper_v30_model1299",
+  "created_at": "2026-09-22T13:15:53.064934+00:00",
+  "model_version": "V30",
+  "checkpoint_number": 1299,
+  "training": {
+    "task": "Isaac-Velocity-Flat-Creeper-20260906-V30-v0",
+    "play_task": "Isaac-Velocity-Flat-Creeper-20260906-V30-Play-v0",
+    "run_directory": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v30/2026-09-22_13-09-59_calf_tail_w0p05_from_v29_1050",
+    "seed": 42,
+    "num_envs": 4096
+  },
+  "source_control": {
+    "git_commit": null,
+    "unavailable_reason": "The editable /workspace/isaaclab runtime Creeper source has no trustworthy Git baseline; no commit was created for delivery.",
+    "source_snapshot_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v29_action_continuity/source"
+  },
+  "interface": {
+    "observation_size": 48,
+    "observation_order": [
+      "base_linear_velocity_body[3]",
+      "base_angular_velocity_body[3]",
+      "projected_gravity_body[3]",
+      "command_vx_vy_yaw_rate[3]",
+      "joint_position_relative_to_default[12]",
+      "joint_velocity[12]",
+      "previous_raw_action[12]"
+    ],
+    "action_size": 12,
+    "action_order": [
+      "FL_hip_joint",
+      "FR_hip_joint",
+      "RL_hip_joint",
+      "RR_hip_joint",
+      "FL_thigh_joint",
+      "FR_thigh_joint",
+      "RL_thigh_joint",
+      "RR_thigh_joint",
+      "FL_calf_joint",
+      "FR_calf_joint",
+      "RL_calf_joint",
+      "RR_calf_joint"
+    ],
+    "policy_frequency_hz": 50.0,
+    "physics_frequency_hz": 200.0,
+    "default_joint_position": [
+      0.10000000149011612,
+      -0.10000000149011612,
+      0.10000000149011612,
+      -0.10000000149011612,
+      0.800000011920929,
+      0.800000011920929,
+      1.0,
+      1.0,
+      -1.5,
+      -1.5,
+      -1.5,
+      -1.5
+    ],
+    "action_scale": 0.25,
+    "q_des_formula": "default_joint_position + action_scale * raw_action",
+    "previous_action_semantics": "observation[36:48] is previous Actor raw_action",
+    "onnx": {
+      "input": {
+        "name": "obs",
+        "shape": [
+          1,
+          48
+        ],
+        "dtype": "tensor(float)"
+      },
+      "output": {
+        "name": "actions",
+        "shape": [
+          1,
+          12
+        ],
+        "dtype": "tensor(float)"
+      },
+      "opsets": {
+        "ai.onnx": 18
+      },
+      "onnxruntime_version": "1.22.1",
+      "providers": [
+        "CPUExecutionProvider"
+      ]
+    }
+  },
+  "acceptance": {
+    "isaac": "PASS",
+    "mujoco": "PASS",
+    "hardware": null,
+    "q_des_threshold_rad_per_20ms": 0.5,
+    "threshold_note": "Temporary offline engineering criterion selected by the user; not a hardware-validated physical limit. Historical 0.10 rad/20 ms FAIL is retained."
+  },
+  "artifacts": {
+    "onnx": {
+      "path": "creeper_model_v30_model1299_actor.onnx",
+      "sha256": "280e3429e72573be96955a1341a9c00e492838db004b0b51c982279e97f45382",
+      "size_bytes": 164792
+    },
+    "onnx_sha256": {
+      "path": "creeper_model_v30_model1299_actor.onnx.sha256",
+      "sha256": "29614cc4a49dceacf2b162518a584ed781a35b7a748c2cbd20cd6e74f960bb33",
+      "size_bytes": 105
+    },
+    "checkpoint": {
+      "path": "model_1299.pt",
+      "sha256": "4285d2262ed122da182bba8e0790a8c477f11ad31940ad2fb1d502721da3a7cd",
+      "size_bytes": 983925
+    },
+    "golden_vectors": {
+      "path": "policy_golden_vectors.json",
+      "sha256": "3213183322def736743359d134c54f85ba6789c70c4883935e79b8217b0a9416",
+      "size_bytes": 459390
+    },
+    "simulation_report": {
+      "path": "simulation_report.md",
+      "sha256": "93705b8d90201ef401cafcbcb1f0c9bec41ad8014efc8f84eb1c88547de4edfe",
+      "size_bytes": 5015
+    },
+    "onnx_verification": {
+      "path": "verification/creeper_model_v30_model1299_actor.onnx.verification.json",
+      "sha256": "dc5175e5808ca15ff770a6c6195590a01fd70f69226f1cd2b0cfbc2920268163",
+      "size_bytes": 627
+    }
+  },
+  "assets": [
+    {
+      "role": "urdf",
+      "path": "assets/urdf/Creeper20260906.urdf",
+      "sha256": "37ff462cfe9a9c353fa3bb0befc1cda09372f63837fafc30aba96adb04c9ebf0",
+      "size_bytes": 20076,
+      "source_path": "/root/gpufree-data/Creeper20260906/urdf/Creeper20260906.urdf"
+    },
+    {
+      "role": "usd",
+      "path": "assets/usd/Creeper20260906.usd",
+      "sha256": "c25ba016bba0107b7d2d356dd7d6bda41bd26cc972eba3a4616b0bc1547d7289",
+      "size_bytes": 1464,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/Creeper20260906.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_base.usd",
+      "sha256": "070df3bb9e8384ec5da1cf74dc9ed22cc7b907d468787c814ca39b01461b47bd",
+      "size_bytes": 58664421,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_base.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_physics.usd",
+      "sha256": "c8ebde1fb515d30f43665be27dd0d09201c3d23cd5f40b23b8ec7b654ca7bb4f",
+      "size_bytes": 6330,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_physics.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_robot.usd",
+      "sha256": "c30037f94fedb8186d41066a9b7c84b27772cf3b7f367b4d2f339d2813c19453",
+      "size_bytes": 2080,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_robot.usd"
+    },
+    {
+      "role": "usd_layer",
+      "path": "assets/usd/configuration/Creeper20260906_sensor.usd",
+      "sha256": "d7a03e24632394b4b672bb308f15364aff3922facefc374ab19503346289f337",
+      "size_bytes": 655,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/configuration/Creeper20260906_sensor.usd"
+    },
+    {
+      "role": "usd_import_config",
+      "path": "assets/usd/config.yaml",
+      "sha256": "70531843778fb039c47a96f55b6c15ec5c0600f670d0b396dc628ecf969622e5",
+      "size_bytes": 644,
+      "source_path": "/root/gpufree-data/CreeperLab/assets/creeper/urdf_import_20260906/config.yaml"
+    },
+    {
+      "role": "mjcf",
+      "path": "assets/mujoco/Creeper20260906.xml",
+      "sha256": "e27f49a9adbaaebddfe78c01a313cf277ef44338c4dc2b9666aa09b4c4fbf81c",
+      "size_bytes": 14733,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/Creeper20260906.xml"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/base_part0.stl",
+      "sha256": "70418dfa084fcfa3664f841123f6f893f2785d72c0825edb3a4baa9a51938340",
+      "size_bytes": 7500084,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/base_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/base_part1.stl",
+      "sha256": "4da008742a235d002304276822a7c9a243a12f137411fb4271d14267c0a1615b",
+      "size_bytes": 5594084,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/base_part1.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FL_hip_part0.stl",
+      "sha256": "4b918b2fbfd615dd053d24b07d5b94927876917b6111b3d6483cc4907d44e66e",
+      "size_bytes": 3151584,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FL_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FL_thigh_part0.stl",
+      "sha256": "6328bd40f7ffd0e568856cd73606ba142c42d55ac5d47914c846901b3fd22b9e",
+      "size_bytes": 3428484,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FL_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FL_calf_part0.stl",
+      "sha256": "a51cf1ecdefaa1cfe5e0930022300e102b246f28957b34b07c997e512de2b0be",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FL_calf_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FR_hip_part0.stl",
+      "sha256": "2dbead8080ce30f97287b5570cd40c9eea93fbc5c85b0eb05a6549e343c777c4",
+      "size_bytes": 3152384,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FR_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FR_thigh_part0.stl",
+      "sha256": "0013b329338f8b83ce8174d5f99f98310663b6802b01b51ba019bea750fefd7f",
+      "size_bytes": 3433084,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FR_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/FR_calf_part0.stl",
+      "sha256": "de703c23442634c001874ceedea5635377b8e1af0bf71cf1db3542d2ce36f608",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/FR_calf_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RL_hip_part0.stl",
+      "sha256": "90ee8b9e6fe32e4be6baaa67cfa06a23455055efb3ef2c0e46310c2c7ee92cb5",
+      "size_bytes": 3152384,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RL_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RL_thigh_part0.stl",
+      "sha256": "6fdf9b22be3fd10b4a96447b25c3c4ef14212ec64fe5662eff49630c50ae82aa",
+      "size_bytes": 3428884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RL_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RL_calf_part0.stl",
+      "sha256": "f4fc2dd64241f563777c4eaebbff5785aa4425c44e5a0a465c63138aaad54a1d",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RL_calf_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RR_hip_part0.stl",
+      "sha256": "e08b7bae7408d36d5852149bbefe9e843b94683c1389ada35cd4dfc5820a0cbe",
+      "size_bytes": 3151584,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RR_hip_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RR_thigh_part0.stl",
+      "sha256": "ac4f7ed7e22a9b36cd9ea8725da6f9574ecc6df89399c9be7ce7a95f4bc0f5cf",
+      "size_bytes": 3433584,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RR_thigh_part0.stl"
+    },
+    {
+      "role": "mjcf_mesh",
+      "path": "assets/mujoco/meshes/RR_calf_part0.stl",
+      "sha256": "841b6783aa8b3042f646cda15f32adc2a64614f7a0edb285b3a4c52ba4e4c02c",
+      "size_bytes": 325884,
+      "source_path": "/root/gpufree-data/CreeperLab/creeper_lab/sim2sim/mujoco/models/meshes/RR_calf_part0.stl"
+    }
+  ],
+  "configs": [
+    {
+      "role": "env",
+      "path": "configs/env.yaml",
+      "sha256": "824bd07a04ba56b15b04f49903e0004cc0bdc5e96f80564607cb2a38c9b4d36d",
+      "size_bytes": 37036,
+      "source_path": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v30/2026-09-22_13-09-59_calf_tail_w0p05_from_v29_1050/params/env.yaml"
+    },
+    {
+      "role": "agent",
+      "path": "configs/agent.yaml",
+      "sha256": "ef6b150a0600961e8ed3e5bc4df004792e5bcb081e4ea35abc2d114dbe5bb952",
+      "size_bytes": 1272,
+      "source_path": "/workspace/isaaclab/logs/rsl_rl/creeper_20260906_flat_v30/2026-09-22_13-09-59_calf_tail_w0p05_from_v29_1050/params/agent.yaml"
+    }
+  ],
+  "evidence": [
+    {
+      "label": "authoritative V30 offline reacceptance report",
+      "path": "evidence/reacceptance_REPORT.md",
+      "sha256": "6c0d62aa0f30d093daf39be12920f81b1cb83602fe48ca76d2340c2b5a2ebc2d",
+      "size_bytes": 5344,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/REPORT.md"
+    },
+    {
+      "label": "reacceptance summary",
+      "path": "evidence/summary.json",
+      "sha256": "4012ebf7149ad9172522c1649770a6526d7fca9b48599289c41e9d96403fc39f",
+      "size_bytes": 1168,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/summary.json"
+    },
+    {
+      "label": "original archive checksums",
+      "path": "evidence/SHA256SUMS",
+      "sha256": "f54d7decc62c1e9a552bff84ce2a1cea28742b556d62933f8775577056aba18a",
+      "size_bytes": 6332,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/SHA256SUMS"
+    },
+    {
+      "label": "Isaac extended fixed commands",
+      "path": "evidence/isaac/extended_fixed_commands_seed42.json",
+      "sha256": "3c919da03f1cd4d8457d82d1d0c55c7f4f8ca458c26a946a7971f3548ad5934d",
+      "size_bytes": 98501,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/isaac/extended_fixed_commands_seed42.json"
+    },
+    {
+      "label": "MuJoCo recomputed continuity",
+      "path": "evidence/mujoco/recomputed_delta_metrics.json",
+      "sha256": "6d5b28da124fd541e4555adcd6b4b177f1aed1cd0995f9e50b2ac82c31714965",
+      "size_bytes": 8273,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/recomputed_delta_metrics.json"
+    },
+    {
+      "label": "MuJoCo standing 20 seconds",
+      "path": "evidence/mujoco/standing20.json",
+      "sha256": "b0734309f77439969811e3217b0f938cdd7b1d98d3c9d7599ccc209089b30c95",
+      "size_bytes": 4252,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/standing20.json"
+    },
+    {
+      "label": "MuJoCo standing trajectory",
+      "path": "evidence/mujoco/standing20_trace.npz",
+      "sha256": "980085249deb6669d92f36489237f75d3cba5bd9b60d83e2a73f46551b8642f4",
+      "size_bytes": 785653,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/standing20_trace.npz"
+    },
+    {
+      "label": "MuJoCo keyboard sequence",
+      "path": "evidence/mujoco/keyboard_sequence.json",
+      "sha256": "4717d726f20dae995f10ec9ce06e235b7448a32b49b1edb8660e4742a82ca8ca",
+      "size_bytes": 4725,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/keyboard_sequence.json"
+    },
+    {
+      "label": "MuJoCo keyboard trajectory",
+      "path": "evidence/mujoco/keyboard_sequence_trace.npz",
+      "sha256": "cc30ea9dc4178f608aec7c48ff5884bd65130686696381f839d311b1d418a345",
+      "size_bytes": 601463,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/keyboard_sequence_trace.npz"
+    },
+    {
+      "label": "MuJoCo vx positive 0.2",
+      "path": "evidence/mujoco/vx_pos_0p2.json",
+      "sha256": "187d81de6408ec3d22dfb963bb21188660676fbe8b8539265688fd8705c14c2d",
+      "size_bytes": 4275,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_0p2.json"
+    },
+    {
+      "label": "MuJoCo vx positive 0.5",
+      "path": "evidence/mujoco/vx_pos_0p5.json",
+      "sha256": "61f795055376f93d60bcf38e8fd4d413264df5d28b4f15e179123db0cc3ebeee",
+      "size_bytes": 4220,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_0p5.json"
+    },
+    {
+      "label": "MuJoCo vx positive 1.0",
+      "path": "evidence/mujoco/vx_pos_1p0.json",
+      "sha256": "fcb8ca56a4b82ee76634b6727e415bd12619c05d004f787467f6b75626bcac18",
+      "size_bytes": 4238,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_1p0.json"
+    },
+    {
+      "label": "MuJoCo vx negative 1.0",
+      "path": "evidence/mujoco/vx_neg_1p0.json",
+      "sha256": "f490b371b201cbac3d94ab8f5021efa19d3e8fc8ccc40260e8f1ea8777c31b06",
+      "size_bytes": 4238,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_neg_1p0.json"
+    },
+    {
+      "label": "MuJoCo lateral positive",
+      "path": "evidence/mujoco/vy_pos_0p2.json",
+      "sha256": "baa272d845cad4c88f3b42c44fe4559e07a44dc8ede9310c5206c44aef9f449b",
+      "size_bytes": 4265,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vy_pos_0p2.json"
+    },
+    {
+      "label": "MuJoCo lateral negative",
+      "path": "evidence/mujoco/vy_neg_0p2.json",
+      "sha256": "e3ce61baf2cd0edfaaa12c818b185b19bdec730168a6678d02c16c2dc9994eca",
+      "size_bytes": 4271,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vy_neg_0p2.json"
+    },
+    {
+      "label": "MuJoCo yaw positive",
+      "path": "evidence/mujoco/yaw_pos_0p5.json",
+      "sha256": "d2e10bfb496d11df62ae332cce95fdf3f9d5e2573f91511f5039f31af59d4f01",
+      "size_bytes": 4184,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/yaw_pos_0p5.json"
+    },
+    {
+      "label": "MuJoCo yaw negative",
+      "path": "evidence/mujoco/yaw_neg_0p5.json",
+      "sha256": "81cc41ff0c475c32fb5fa0d2d890a613e78a005af30fbe743031d4330cad46a7",
+      "size_bytes": 4204,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/yaw_neg_0p5.json"
+    },
+    {
+      "label": "MuJoCo mixed positive",
+      "path": "evidence/mujoco/mixed_pos.json",
+      "sha256": "b14597d95b644d3952c024d52a5c01f72b65335699c599d848dfeff0002cd0b6",
+      "size_bytes": 4278,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/mixed_pos.json"
+    },
+    {
+      "label": "MuJoCo mixed negative",
+      "path": "evidence/mujoco/mixed_neg.json",
+      "sha256": "c6d9b969d8a69e0902bb7b168f7e4cd9810febea4775fc9e34838d4f6456da18",
+      "size_bytes": 4275,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/mixed_neg.json"
+    },
+    {
+      "label": "MuJoCo stop transition",
+      "path": "evidence/mujoco/transition_0p5_to_0.json",
+      "sha256": "1cdde1bbcd9702563e739e938c43f44276145b1b66c2d00b71b2bb268d878be8",
+      "size_bytes": 4692,
+      "source_path": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/transition_0p5_to_0.json"
+    }
+  ],
+  "notes": [
+    "Offline Isaac and MuJoCo PASS only under the provisional 0.50 rad/20 ms criterion.",
+    "Hardware safety and real robot deployment remain NOT_TESTED.",
+    "Historical 0.10 rad/20 ms FAIL is retained without modification."
+  ],
+  "hardware_status": "NOT_TESTED"
+}

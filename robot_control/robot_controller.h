@@ -84,7 +84,7 @@ struct RobotControlConfig {
     // ── 神经网络 ──
     int nn_hz = 50;
 
-    /// ONNX 模型文件路径 (空字符串 = 使用 StandingPolicy)
+    /// ONNX 模型文件路径。默认指向V30/model_1299；空字符串使用StandingPolicy。
     std::string onnx_model_path;
 
     /// ONNX 模型输出缩放因子 (训练时使用的 action_scale)

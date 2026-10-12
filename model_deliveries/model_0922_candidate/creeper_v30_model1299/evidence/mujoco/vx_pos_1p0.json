@@ -1,0 +1,145 @@
+{
+  "command_target": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "command_applied": [
+    1.0,
+    0.0,
+    0.0
+  ],
+  "control_mode": "policy",
+  "observation_size": 48,
+  "mode_flag": 1.0,
+  "translation_acceleration_mps2": 0.5,
+  "translation_deceleration_mps2": 0.5,
+  "sample_seconds": 5.0,
+  "mean_body_linear_velocity": [
+    1.0044615268707275,
+    -0.002058218466117978,
+    0.009781448170542717
+  ],
+  "mean_body_angular_velocity": [
+    -0.0007659548427909613,
+    -0.004859485197812319,
+    0.006485261954367161
+  ],
+  "mean_base_height_m": 0.2999431585958934,
+  "minimum_base_height_m": 0.2943991963711313,
+  "mean_front_support_width_m": 0.22661706778038843,
+  "mean_rear_support_width_m": 0.19329959748326014,
+  "mean_roll_rad": 0.0006296822288093038,
+  "max_abs_roll_rad": 0.03159096191939133,
+  "mean_pitch_rad": 0.010336152554151573,
+  "max_abs_pitch_rad": 0.031003572312131526,
+  "foot_contact_duty": [
+    0.52,
+    0.54,
+    0.502,
+    0.48
+  ],
+  "fell": false,
+  "nonfoot_contact_frames": 0,
+  "nonfoot_contact_rate": 0.0,
+  "base_contact_frames": 0,
+  "max_abs_joint_velocity_radps": 12.940970478658867,
+  "max_abs_joint_torque_nm": 12.417335948647514,
+  "hybrid_state": null,
+  "hybrid_settle_timeouts": null,
+  "hybrid_transition_counts": null,
+  "start_transition": {
+    "duration_s": 1.9999999999999574,
+    "distance_m": 0.8666947535839731,
+    "final_applied_command": [
+      0.9999993443489075,
+      0.0,
+      0.0
+    ],
+    "final_body_linear_velocity": [
+      0.9175714325748154,
+      -0.027278118852762562,
+      -0.12287218061542554
+    ],
+    "final_body_angular_velocity": [
+      -0.17095082088791766,
+      -0.23429298491988737,
+      -0.0026199244052932226
+    ],
+    "minimum_base_height_m": 0.27690349561835,
+    "max_delta_q_des_rad": 0.20632338523864746,
+    "max_abs_joint_velocity_radps": 18.490794035144198,
+    "max_abs_joint_torque_nm": 12.421094449446718,
+    "foot_contact_duty": [
+      0.705,
+      0.6525,
+      0.6375,
+      0.6725
+    ],
+    "nonfoot_contact_frames": 0,
+    "base_contact_frames": 0
+  },
+  "safe_stop": null,
+  "policy_step_diagnostics": {
+    "sample_count": 350,
+    "delta_q_des_abs_percentiles_rad": {
+      "50": 0.03237644582986832,
+      "95": 0.14904029667377472,
+      "99": 0.1793961524963379,
+      "99.9": 0.19996066391468048,
+      "100": 0.20632338523864746
+    },
+    "joint_step_count_over_0p10": 560,
+    "joint_step_sample_count": 4200,
+    "max_tracking_error_abs_rad": 0.49156295677710915,
+    "actual_joint_delta_abs_percentiles_rad_per_20ms": {
+      "50": 0.028486402265244348,
+      "95": 0.10378703087305292,
+      "99": 0.11943459326892764,
+      "99.9": 0.13612174185361045,
+      "100": 0.16763983871339483
+    },
+    "tracking_error_abs_percentiles_rad": {
+      "50": 0.07776027448375514,
+      "95": 0.4248774064783129,
+      "99": 0.46795442997570214,
+      "100": 0.49156295677710915
+    },
+    "max_abs_simulated_joint_torque_nm": 12.378744689289764,
+    "minimum_policy_step_base_height": {
+      "time_s": 3.7449999999999424,
+      "height_m": 0.27690349561835,
+      "roll_rad": -0.005116787045033445,
+      "pitch_rad": 0.02517770707594013
+    },
+    "first_nonfoot_contact": null,
+    "peak_delta_event": {
+      "phase": "command_ramp",
+      "time_s": 3.7049999999999432,
+      "joint_index": 11,
+      "joint_name": "RR_calf_joint",
+      "delta_q_des_rad": 0.20632338523864746,
+      "q_des_before_rad": -1.6915314197540283,
+      "q_des_after_rad": -1.4852080345153809,
+      "joint_position_after_one_physics_step_rad": -1.681540264252785,
+      "actual_joint_delta_since_previous_policy_step_rad": 0.14178548107692213,
+      "tracking_error_after_one_physics_step_rad": 0.19633222973740416,
+      "joint_velocity_after_one_physics_step_radps": 14.225629617021768,
+      "simulated_joint_torque_after_one_physics_step_nm": 4.820509840866073,
+      "command": [
+        0.3599999248981476,
+        0.0,
+        0.0
+      ],
+      "foot_contact": [
+        true,
+        true,
+        true,
+        false
+      ],
+      "nonfoot_contact": false,
+      "base_contact": false
+    }
+  },
+  "diagnostic_trace_npz": "/root/gpufree-data/CreeperLab/training_archives/2026-09-22_v30_reacceptance_0p50/mujoco/vx_pos_1p0_trace.npz"
+}
